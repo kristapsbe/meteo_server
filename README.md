@@ -1,3 +1,10 @@
+https://pipx.pypa.io/stable/installation/
+
+set up virtualenv
+```bash
+pipx install virtualenv
+```
+
 create virtual env
 ```bash
 python3 -m venv .venv
