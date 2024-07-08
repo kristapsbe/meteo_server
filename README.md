@@ -47,4 +47,4 @@ root->result->resources->$n->url # get url to current resources .csv file and do
 use python, fastapi, gunicorn and pandas (?), and a cron job to restart the server if it decides to die?
 https://stackoverflow.com/questions/2366693/run-cron-job-only-if-it-isnt-already-running
 
-https://fastapi.tiangolo.com/deployment/server-workers/
+https://fastapi.tiangolo.com/deployment/server-workers/, oh, I guess uvicorn comes bundled in with fastapi https://fastapi.tiangolo.com/deployment/manually/#asgi-servers - so I can run with default initially (?)
