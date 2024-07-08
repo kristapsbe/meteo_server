@@ -43,3 +43,6 @@ root->result->resources->$n->url # get url to current resources .csv file and do
 # looks like the main csv fails weighs only 70megs, and I know I'm mostly going to read, writing to the db once an hour or so (maybe 30 mins?) -> sqlite
 # or, instead of using a db -> use pandas, and keep the table in-memory, and just filter when needed
 ```
+
+use python, fastapi, gunicorn and pandas (?), and a cron job to restart the server if it decides to die?
+https://stackoverflow.com/questions/2366693/run-cron-job-only-if-it-isnt-already-running
