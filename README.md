@@ -29,3 +29,17 @@ when done
 ```bash
 deactivate
 ```
+
+# endpoints
+
+```bash
+# note - it doesn't look like this requires auth of any kind
+https://data.gov.lv/dati/api/3/action/package_list # first gets a list of valid packages (probably irrelevant step)
+https://data.gov.lv/dati/api/3/action/package_show?id=<dataset_name> # get the current list of valid resources
+root->result->resources->$n->url # get url to current resources .csv file and download it
+# we don't want to ask them for data via the SQL api - it's very (and I do mean very) slow
+#
+# at this point we've got a couple of tables that we can work with (starting with the 9 day forecast for inhabitet locations)
+# looks like the main csv fails weighs only 70megs, and I know I'm mostly going to read, writing to the db once an hour or so (maybe 30 mins?) -> sqlite
+# or, instead of using a db -> use pandas, and keep the table in-memory, and just filter when needed
+```
