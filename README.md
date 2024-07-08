@@ -40,8 +40,8 @@ root->result->resources->$n->url # get url to current resources .csv file and do
 # we don't want to ask them for data via the SQL api - it's very (and I do mean very) slow
 #
 # at this point we've got a couple of tables that we can work with (starting with the 9 day forecast for inhabitet locations)
-# looks like the main csv fails weighs only 70megs, and I know I'm mostly going to read, writing to the db once an hour or so (maybe 30 mins?) -> sqlite
-# or, instead of using a db -> use pandas, and keep the table in-memory, and just filter when needed
+# looks like the main csv fails weighs only 70megs, and I know I'm mostly going to read, writing to the db once an hour or so (maybe 30 mins?)
+# use pandas, and keep the table in-memory, and just filter when needed
 ```
 
 use python, fastapi, gunicorn and pandas (?), and a cron job to restart the server if it decides to die?
