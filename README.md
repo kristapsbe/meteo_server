@@ -48,3 +48,11 @@ use python, fastapi, gunicorn and pandas (?), and a cron job to restart the serv
 https://stackoverflow.com/questions/2366693/run-cron-job-only-if-it-isnt-already-running
 
 https://fastapi.tiangolo.com/deployment/server-workers/, oh, I guess uvicorn comes bundled in with fastapi https://fastapi.tiangolo.com/deployment/manually/#asgi-servers - so I can run with default initially (?)
+
+```
+fastapi run main.py
+```
+
+```
+localhost:8001/meteorologiskas-prognozes-apdzivotam-vietam
+```

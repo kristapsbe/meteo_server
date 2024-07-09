@@ -15,6 +15,9 @@ pl_file = "data/package_list.json"
 
 
 def refresh(url, fpath, reload=3600):
+    # TODO: I should probably check if I actually need to make the dirs before I do
+    os.makedirs("/".join(fpath.split("/")[:-1]), exist_ok=True)
+
     if not os.path.exists(fpath) or os.path.getmtime(fpath)-time.time() > reload:
         r = requests.get(url)
         if r.status_code == 200:
@@ -41,6 +44,7 @@ def download_resources(ds_name):
             for r in ds_data['result']['resources']:
                 refresh(r['url'], f"data/{r['url'].split('/')[-1]}")
 
+    # TODO: fix, just messing around atm
     df = pd.read_csv("data/forecast_cities.csv")
     df = df[df['CITY_ID'] == 'P28']
     df = df[df['PARA_ID'] == 2]
