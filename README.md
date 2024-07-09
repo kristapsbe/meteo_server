@@ -54,5 +54,5 @@ fastapi run main.py
 ```
 
 ```
-localhost:8001/meteorologiskas-prognozes-apdzivotam-vietam
+localhost:8000/meteorologiskas-prognozes-apdzivotam-vietam
 ```
