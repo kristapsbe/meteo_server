@@ -56,3 +56,5 @@ fastapi run main.py
 ```
 localhost:8000/meteorologiskas-prognozes-apdzivotam-vietam
 ```
+
+setup and download looks to be pretty fast - keep asyncio in mind as an option if I need to download stuff in the background
