@@ -82,7 +82,8 @@ def get_city_data():
 async def download_dataset():
     for dr in [
         #"aktualie-celu-meteorologisko-staciju-dati", # some sort of mapserver page
-        #"hidrometeorologiskie-bridinajumi", # water level and temp stuff
+        # TODO: using warnings would be cool - it has both the warning texts and geo polygon that it applies to
+        "hidrometeorologiskie-bridinajumi",
         #"hidrometeorologiskie-noverojumi", # water level and temp stuff
         # TODO: skipping this for now - do I want a map at a later point?
         # "telpiskas-meteorologiskas-prognozes", # temp, humidity and pressure - no cloud coverage :/
