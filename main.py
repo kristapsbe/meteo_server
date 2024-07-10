@@ -58,7 +58,6 @@ def get_city_data():
     df = pd.read_csv("data/forecast_cities.csv")
     df = df[df['CITY_ID'] == 'P28'] # Rīga
     dates = sorted(df['DATUMS'].unique()) # YYYY-MM-DD HH:mm:SS - sortable as strings
-    print(dates)
     output = {
         'params': [],
         'dates': {d: [] for d in dates}
@@ -91,4 +90,8 @@ async def download_dataset():
         "meteorologiskas-prognozes-apdzivotam-vietam" # really nice hourly forecast data
     ]:
         download_resources(dr)
+    tmp_df = pd.read_csv("data/bridinajumu_metadata.csv")
+    print("===========================================================================")
+    print(tmp_df[['PARADIBA', 'INTENSITY_LV', 'TIME_FROM', 'TIME_TILL']])
+    print("===========================================================================")
     return get_city_data()
