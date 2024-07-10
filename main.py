@@ -44,6 +44,8 @@ def download_resources(ds_name):
             for r in ds_data['result']['resources']:
                 refresh(r['url'], f"data/{r['url'].split('/')[-1]}")
 
+
+def get_city_data():
     # TODO: fix, just messing around atm
     # the pram csv is slightly broken - there's an extra comma
     params = {} # TODO: I think I should hard-code both filenames and params
@@ -51,6 +53,8 @@ def download_resources(ds_name):
         for l in f.readlines()[1:]:
             parts = l.split(",")
             params[int(parts[0])] = parts[1]
+    # this is hourly data - the _day.csv may be a lot more useful for showing 
+    # results at a glance
     df = pd.read_csv("data/forecast_cities.csv")
     df = df[df['CITY_ID'] == 'P28'] # Rīga
     dates = sorted(df['DATUMS'].unique()) # YYYY-MM-DD HH:mm:SS - sortable as strings
@@ -76,4 +80,14 @@ def download_resources(ds_name):
 
 @app.get("/api/v1/forecast/cities")
 async def download_dataset():
-    return download_resources("meteorologiskas-prognozes-apdzivotam-vietam")
+    for dr in [
+        #"aktualie-celu-meteorologisko-staciju-dati", # some sort of mapserver page
+        #"hidrometeorologiskie-bridinajumi", # water level and temp stuff
+        #"hidrometeorologiskie-noverojumi", # water level and temp stuff
+        # TODO: skipping this for now - do I want a map at a later point?
+        # "telpiskas-meteorologiskas-prognozes", # temp, humidity and pressure - no cloud coverage :/
+        #"telpiskie-hidrometeorologiskie-noverojumi", # heavily delayed storm data
+        "meteorologiskas-prognozes-apdzivotam-vietam" # really nice hourly forecast data
+    ]:
+        download_resources(dr)
+    return get_city_data()
