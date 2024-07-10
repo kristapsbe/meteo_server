@@ -47,7 +47,7 @@ def download_resources(ds_name):
     # TODO: fix, just messing around atm
     # the pram csv is slightly broken - there's an extra comma
     params = {}
-    with open("data/forcity_param.csv", "r") as f:
+    with open("data/forcity_param.csv", "r") as f: # hard code param white-list?
         for l in f.readlines()[1:]:
             parts = l.split(",")
             params[int(parts[0])] = parts[1]
@@ -74,6 +74,6 @@ def download_resources(ds_name):
     return output
 
 
-@app.get("/{dataset_name}")
-async def download_dataset(dataset_name):
-    return download_resources(dataset_name)
+@app.get("/api/v1/forecast/cities")
+async def download_dataset():
+    return download_resources("meteorologiskas-prognozes-apdzivotam-vietam")
