@@ -46,7 +46,7 @@ def download_resources(ds_name):
 
     # TODO: fix, just messing around atm
     # the pram csv is slightly broken - there's an extra comma
-    params = {}
+    params = {} # TODO: I think I should hard-code both filenames and params
     with open("data/forcity_param.csv", "r") as f: # hard code param white-list?
         for l in f.readlines()[1:]:
             parts = l.split(",")
