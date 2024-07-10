@@ -45,11 +45,33 @@ def download_resources(ds_name):
                 refresh(r['url'], f"data/{r['url'].split('/')[-1]}")
 
     # TODO: fix, just messing around atm
+    # the pram csv is slightly broken - there's an extra comma
+    params = {}
+    with open("data/forcity_param.csv", "r") as f:
+        for l in f.readlines()[1:]:
+            parts = l.split(",")
+            params[int(parts[0])] = parts[1]
     df = pd.read_csv("data/forecast_cities.csv")
-    df = df[df['CITY_ID'] == 'P28']
-    df = df[df['PARA_ID'] == 2]
-    data = json.loads(df.to_json())
-    return [{data['DATUMS'][k]: data['VERTIBA'][k]} for k in data['CITY_ID'].keys()]
+    df = df[df['CITY_ID'] == 'P28'] # Rīga
+    dates = sorted(df['DATUMS'].unique()) # YYYY-MM-DD HH:mm:SS - sortable as strings
+    print(dates)
+    output = {
+        'params': [],
+        'dates': {d: [] for d in dates}
+    }
+
+    for p in [int(v) for v in df['PARA_ID'].unique()]:
+        if p in params:
+            output['params'].append(params[p])
+
+            tmp_df = df[df['PARA_ID'] == p]
+            data = json.loads(tmp_df.to_json())
+            tmp_data = {data['DATUMS'][k]: data['VERTIBA'][k] for k in data['CITY_ID'].keys()}
+
+            for d in dates:
+                output['dates'][d].append(tmp_data.get(d, None))
+
+    return output
 
 
 @app.get("/{dataset_name}")
