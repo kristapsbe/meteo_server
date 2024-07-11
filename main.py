@@ -23,6 +23,7 @@ def refresh(url, fpath, reload):
         logging.info(f"{fpath} - downloading")
         r = requests.get(url)
         if r.status_code == 200:
+            # TODO: check if we want to overwrite the file before writing (i.e. if the file doesn't look damaged)
             with open(fpath, "wb") as f: # this can be eiher a json or csv
                 f.write(r.content)
     else:
