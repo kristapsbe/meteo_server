@@ -50,11 +50,11 @@ https://stackoverflow.com/questions/2366693/run-cron-job-only-if-it-isnt-already
 https://fastapi.tiangolo.com/deployment/server-workers/, oh, I guess uvicorn comes bundled in with fastapi https://fastapi.tiangolo.com/deployment/manually/#asgi-servers - so I can run with default initially (?)
 
 ```
-fastapi run main.py
+python main.py
 ```
 
 ```
-localhost:8000/meteorologiskas-prognozes-apdzivotam-vietam
+localhost:8000/api/v1/forecast/cities
 ```
 
 setup and download looks to be pretty fast - keep asyncio in mind as an option if I need to download stuff in the background
