@@ -15,60 +15,61 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(m
 base_url = "https://data.gov.lv/dati/api/3/"
 
 
-def refresh(url, fpath, reload):
-    # TODO: I should probably check if I actually need to make the dirs before I do
-    os.makedirs("/".join(fpath.split("/")[:-1]), exist_ok=True)
-
+def refresh(url, fpath, reload, verify_download):
+    valid_new = False
     if not os.path.exists(fpath) or time.time()-os.path.getmtime(fpath) > reload:
-        logging.info(f"{fpath} - downloading")
+        logging.info(f"Downloading {fpath}")
         r = requests.get(url)
-        if r.status_code == 200:
-            # TODO: check if we want to overwrite the file before writing (i.e. if the file doesn't look damaged)
+        if r.status_code == 200 and verify_download(r.content):
             with open(fpath, "wb") as f: # this can be eiher a json or csv
                 f.write(r.content)
+            valid_new = True
     else:
-        logging.info(f"{fpath} is too new - not downloading ({time.time()-os.path.getmtime(fpath)})")
+        logging.info(f"A recent version of {fpath} exists - not downloading ({int(time.time()-os.path.getmtime(fpath))})")
+    return valid_new
 
 
-def refresh_and_get_json(url, fpath, reload):
-    refresh(url, fpath, reload)
-    
-    data = {}
+def verif_json(s):
     try:
-        if os.path.exists(fpath):
-            data = json.loads(open(fpath, "r").read())
+        return json.loads(s)['success'] == True
     except:
-        logging.info(f"{fpath} went bad - DELETE")
-        os.remove(fpath) # couldn't parse the json - delete it so that we re-download next time
-    return data
+        return False
+
+
+verif_funcs = {
+    "json": verif_json,
+    "csv": lambda s: True
+}
 
 
 def download_resources(ds_name, reload):
-    pl_data = refresh_and_get_json(f"{base_url}action/package_list", "data/package_list.json", reload)
+    ds_path = f"data/{ds_name}.json"
+    valid_new = refresh(f"{base_url}action/package_show?id={ds_name}", ds_path, reload, verif_funcs['json'])
+    ds_data = {}
+    if valid_new: # don't want to download new data csv's unless I get a new datasource json first
+        ds_data = json.loads(open(ds_path, "r").read())
+        for r in ds_data['result']['resources']:
+            refresh(r['url'], f"data/{ds_name}/{r['url'].split('/')[-1]}", reload, verif_funcs['csv'])
 
-    if pl_data['success'] and ds_name in pl_data['result']:
-        ds_data = refresh_and_get_json(f"{base_url}action/package_show?id={ds_name}", f"data/{ds_name}.json", reload)
-        if ds_data['success']:
-            for r in ds_data['result']['resources']:
-                refresh(r['url'], f"data/{r['url'].split('/')[-1]}", reload)
+
+target_ds = {
+    # TODO: using warnings would be cool - it has both the warning texts and geo polygon that it applies to
+    "hidrometeorologiskie-bridinajumi": 900,
+    # really nice hourly forecast data
+    "meteorologiskas-prognozes-apdzivotam-vietam": 900
+}
+
+for ds in target_ds:
+    os.makedirs(f"data/{ds}/", exist_ok=True)
 
 
 def run_downloads():
     try:
-        for dr in [
-            #"aktualie-celu-meteorologisko-staciju-dati", # some sort of mapserver page
-            # TODO: using warnings would be cool - it has both the warning texts and geo polygon that it applies to
-            "hidrometeorologiskie-bridinajumi",
-            #"hidrometeorologiskie-noverojumi", # water level and temp stuff
-            # TODO: skipping this for now - do I want a map at a later point?
-            # "telpiskas-meteorologiskas-prognozes", # temp, humidity and pressure - no cloud coverage :/
-            #"telpiskie-hidrometeorologiskie-noverojumi", # heavily delayed storm data
-            "meteorologiskas-prognozes-apdzivotam-vietam" # really nice hourly forecast data
-        ]:
-            logging.info(f"refreshing {dr}")
-            download_resources(dr, 900)
+        logging.info(f"Triggering refresh")
+        for ds, reload in target_ds.items():
+            download_resources(ds, reload)
     except:
-        logging.info("failed")
+        logging.info("Refresh failed")
     finally:
         # TODO: this is kind-of dumb - do I actually want to trigger multiple 
         # timers and keep re-checking files? it does mean that I'll download
@@ -83,13 +84,13 @@ def get_city_data():
     # TODO: fix, just messing around atm
     # the pram csv is slightly broken - there's an extra comma
     params = {} # TODO: I think I should hard-code both filenames and params
-    with open("data/forcity_param.csv", "r") as f: # hard code param white-list?
+    with open("data/meteorologiskas-prognozes-apdzivotam-vietam/forcity_param.csv", "r") as f: # hard code param white-list?
         for l in f.readlines()[1:]:
             parts = l.split(",")
             params[int(parts[0])] = parts[1]
     # this is hourly data - the _day.csv may be a lot more useful for showing 
     # results at a glance
-    df = pd.read_csv("data/forecast_cities.csv")
+    df = pd.read_csv("data/meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv")
     df = df[df['CITY_ID'] == 'P28'] # Rīga
     dates = sorted(df['DATUMS'].unique()) # YYYY-MM-DD HH:mm:SS - sortable as strings
     output = {
@@ -113,7 +114,7 @@ def get_city_data():
 
 @app.get("/api/v1/forecast/cities")
 async def download_dataset():
-    tmp_df = pd.read_csv("data/bridinajumu_metadata.csv")
+    tmp_df = pd.read_csv("data/hidrometeorologiskie-bridinajumi/bridinajumu_metadata.csv")
     logging.info("===========================================================================")
     logging.info(tmp_df[['PARADIBA', 'INTENSITY_LV', 'TIME_FROM', 'TIME_TILL']])
     logging.info("===========================================================================")
