@@ -3,6 +3,7 @@ import json
 import time
 import pandas as pd
 import logging
+import uvicorn
 import requests
 import threading
 
@@ -119,3 +120,7 @@ async def download_dataset():
     logging.info(tmp_df[['PARADIBA', 'INTENSITY_LV', 'TIME_FROM', 'TIME_TILL']])
     logging.info("===========================================================================")
     return get_city_data()
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
