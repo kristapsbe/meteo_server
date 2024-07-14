@@ -68,24 +68,7 @@ for ds in target_ds:
 os.makedirs(f"{parsed_f}cities/", exist_ok=True)
 
 
-def run_downloads(datasets):
-    try:
-        logging.info(f"Triggering refresh")
-        for ds, reload in datasets.items():
-            download_resources(ds, reload)
-    except:
-        logging.info("Refresh failed")
-    finally:
-        # TODO: this is kind-of dumb - do I actually want to trigger multiple 
-        # timers and keep re-checking files? it does mean that I'll download
-        # stuff reasonably quickly if stuff fails for some reason
-        timer = threading.Timer(30.0, run_downloads, [datasets])
-        timer.start()
-
-run_downloads(target_ds)
-
-
-def get_city_data():
+def get_city_data(city_id):
     # TODO: fix, just messing around atm
     # the pram csv is slightly broken - there's an extra comma
     params = {} # TODO: I think I should hard-code both filenames and params
@@ -96,7 +79,7 @@ def get_city_data():
     # this is hourly data - the _day.csv may be a lot more useful for showing 
     # results at a glance
     df = pd.read_csv(f"{raw_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv")
-    df = df[df['CITY_ID'] == 'P28'] # Rīga
+    df = df[df['CITY_ID'] == city_id] # Rīga
     dates = sorted(df['DATUMS'].unique()) # YYYY-MM-DD HH:mm:SS - sortable as strings
 
     ds_json = json.loads(open(f"{raw_f}meteorologiskas-prognozes-apdzivotam-vietam.json", "r").read())
@@ -120,13 +103,37 @@ def get_city_data():
     return output
 
 
-@app.get("/api/v1/forecast/cities")
-async def download_dataset():
+def regen_city_forecasts():
+    with open(f"{parsed_f}cities/Riga.json", "w") as f:
+        f.write(json.dumps(get_city_data('P28')))
+    
     tmp_df = pd.read_csv(f"{raw_f}hidrometeorologiskie-bridinajumi/bridinajumu_metadata.csv")
     logging.info("===========================================================================")
     logging.info(tmp_df[['PARADIBA', 'INTENSITY_LV', 'TIME_FROM', 'TIME_TILL']])
     logging.info("===========================================================================")
-    return get_city_data()
+        
+
+def run_downloads(datasets):
+    try:
+        logging.info(f"Triggering refresh")
+        for ds, reload in datasets.items():
+            download_resources(ds, reload)
+        regen_city_forecasts()
+    except:
+        logging.info("Refresh failed")
+    finally:
+        # TODO: this is kind-of dumb - do I actually want to trigger multiple 
+        # timers and keep re-checking files? it does mean that I'll download
+        # stuff reasonably quickly if stuff fails for some reason
+        timer = threading.Timer(30.0, run_downloads, [datasets])
+        timer.start()
+
+run_downloads(target_ds)
+
+
+@app.get("/api/v1/forecast/cities")
+async def download_dataset():
+    return [json.loads(open(f"{parsed_f}cities/{d}.json", "r").read()) for d in ["Riga"]]
 
 
 if __name__ == "__main__":
