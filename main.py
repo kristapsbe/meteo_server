@@ -131,7 +131,7 @@ def run_downloads(datasets):
 run_downloads(target_ds)
 
 
-@app.get("/api/v1/forecast/cities")
+@app.get("/api/v1/forecast/cities") # TODO: take city center coords, and get data within n km (?)
 async def download_dataset():
     return [json.loads(open(f"{parsed_f}cities/{d}.json", "r").read()) for d in ["Riga"]]
 
