@@ -14,6 +14,9 @@ app = FastAPI()
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s')
 
 base_url = "https://data.gov.lv/dati/api/3/"
+data_f = "data/"
+raw_f = f"{data_f}raw/"
+parsed_f = f"{data_f}parsed/"
 
 
 def refresh(url, fpath, reload, verify_download):
@@ -44,13 +47,13 @@ verif_funcs = {
 
 
 def download_resources(ds_name, reload):
-    ds_path = f"data/{ds_name}.json"
+    ds_path = f"{raw_f}{ds_name}.json"
     valid_new = refresh(f"{base_url}action/package_show?id={ds_name}", ds_path, reload, verif_funcs['json'])
     ds_data = {}
     if valid_new: # don't want to download new data csv's unless I get a new datasource json first
         ds_data = json.loads(open(ds_path, "r").read())
         for r in ds_data['result']['resources']:
-            refresh(r['url'], f"data/{ds_name}/{r['url'].split('/')[-1]}", reload, verif_funcs['csv'])
+            refresh(r['url'], f"{raw_f}{ds_name}/{r['url'].split('/')[-1]}", reload, verif_funcs['csv'])
 
 
 target_ds = {
@@ -61,13 +64,14 @@ target_ds = {
 }
 
 for ds in target_ds:
-    os.makedirs(f"data/{ds}/", exist_ok=True)
+    os.makedirs(f"{raw_f}{ds}/", exist_ok=True)
+os.makedirs(f"{parsed_f}cities/", exist_ok=True)
 
 
-def run_downloads():
+def run_downloads(datasets):
     try:
         logging.info(f"Triggering refresh")
-        for ds, reload in target_ds.items():
+        for ds, reload in datasets.items():
             download_resources(ds, reload)
     except:
         logging.info("Refresh failed")
@@ -75,27 +79,27 @@ def run_downloads():
         # TODO: this is kind-of dumb - do I actually want to trigger multiple 
         # timers and keep re-checking files? it does mean that I'll download
         # stuff reasonably quickly if stuff fails for some reason
-        timer = threading.Timer(30.0, run_downloads)
+        timer = threading.Timer(30.0, run_downloads, [datasets])
         timer.start()
 
-run_downloads()
+run_downloads(target_ds)
 
 
 def get_city_data():
     # TODO: fix, just messing around atm
     # the pram csv is slightly broken - there's an extra comma
     params = {} # TODO: I think I should hard-code both filenames and params
-    with open("data/meteorologiskas-prognozes-apdzivotam-vietam/forcity_param.csv", "r") as f: # hard code param white-list?
+    with open(f"{raw_f}meteorologiskas-prognozes-apdzivotam-vietam/forcity_param.csv", "r") as f: # hard code param white-list?
         for l in f.readlines()[1:]:
             parts = l.split(",")
             params[int(parts[0])] = parts[1]
     # this is hourly data - the _day.csv may be a lot more useful for showing 
     # results at a glance
-    df = pd.read_csv("data/meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv")
+    df = pd.read_csv(f"{raw_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv")
     df = df[df['CITY_ID'] == 'P28'] # Rīga
     dates = sorted(df['DATUMS'].unique()) # YYYY-MM-DD HH:mm:SS - sortable as strings
 
-    ds_json = json.loads(open("data/meteorologiskas-prognozes-apdzivotam-vietam.json", "r").read())
+    ds_json = json.loads(open(f"{raw_f}meteorologiskas-prognozes-apdzivotam-vietam.json", "r").read())
     output = {
         'params': [],
         'dates': {d: [] for d in dates},
@@ -118,7 +122,7 @@ def get_city_data():
 
 @app.get("/api/v1/forecast/cities")
 async def download_dataset():
-    tmp_df = pd.read_csv("data/hidrometeorologiskie-bridinajumi/bridinajumu_metadata.csv")
+    tmp_df = pd.read_csv(f"{raw_f}hidrometeorologiskie-bridinajumi/bridinajumu_metadata.csv")
     logging.info("===========================================================================")
     logging.info(tmp_df[['PARADIBA', 'INTENSITY_LV', 'TIME_FROM', 'TIME_TILL']])
     logging.info("===========================================================================")
