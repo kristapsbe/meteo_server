@@ -94,9 +94,12 @@ def get_city_data():
     df = pd.read_csv("data/meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv")
     df = df[df['CITY_ID'] == 'P28'] # Rīga
     dates = sorted(df['DATUMS'].unique()) # YYYY-MM-DD HH:mm:SS - sortable as strings
+
+    ds_json = json.loads(open("data/meteorologiskas-prognozes-apdzivotam-vietam.json", "r").read())
     output = {
         'params': [],
-        'dates': {d: [] for d in dates}
+        'dates': {d: [] for d in dates},
+        'last_modified': [e for e in ds_json['result']['resources'] if "forecast_cities.csv" in e["url"]][0]['last_modified']
     }
 
     for p in [int(v) for v in df['PARA_ID'].unique()]:
