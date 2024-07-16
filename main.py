@@ -1,7 +1,6 @@
 import os
 import json
 import time
-import pandas as pd
 import sqlite3
 import logging
 import uvicorn
@@ -11,7 +10,8 @@ import threading
 from fastapi import FastAPI
 
 
-con = sqlite3.connect("meteo.db") # https://stackoverflow.com/questions/18219779/bulk-insert-huge-data-into-sqlite-using-python
+con = sqlite3.connect("meteo.db")
+cur = con.cursor()
 app = FastAPI()
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s')
 
@@ -68,62 +68,74 @@ for ds in target_ds:
     os.makedirs(f"{data_f}{ds}/", exist_ok=True)
 
 
-def get_city_data(r):
-    # TODO: fix, just messing around atm
-    # the pram csv is slightly broken - there's an extra comma
-    params = {} # TODO: I think I should hard-code both filenames and params
-    with open(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forcity_param.csv", "r") as f: # hard code param white-list?
+def update_db():
+    upd_con = sqlite3.connect("meteo.db")
+    upd_cur = upd_con.cursor()
+
+    cities = []
+    with open(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/cities.csv", "r") as f:
         for l in f.readlines()[1:]:
             parts = l.split(",")
-            params[int(parts[0])] = parts[1]
-    # this is hourly data - the _day.csv may be a lot more useful for showing 
-    # results at a glance
-    df = pd.read_csv(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv")
-    df = df[df['CITY_ID'] == r['CITY_ID']] # Rīga
-    dates = sorted(df['DATUMS'].unique()) # YYYY-MM-DD HH:mm:SS - sortable as strings
-
-    ds_json = json.loads(open(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam.json", "r").read())
-    output = {
-        'params': [],
-        'city_info': {
-            'name': r['NOSAUKUMS'],
-            'lat': r['LAT'],
-            'lon': r['LON'],
-            'type': r['TIPS']
-        },
-        'dates': {d: [] for d in dates},
-        'last_modified': [e for e in ds_json['result']['resources'] if "forecast_cities.csv" in e["url"]][0]['last_modified']
-    }
-
-    for p in [int(v) for v in df['PARA_ID'].unique()]:
-        if p in params:
-            output['params'].append(params[p])
-
-            tmp_df = df[df['PARA_ID'] == p]
-            data = json.loads(tmp_df.to_json())
-            tmp_data = {data['DATUMS'][k]: data['VERTIBA'][k] for k in data['CITY_ID'].keys()}
-
-            for d in dates:
-                output['dates'][d].append(tmp_data.get(d, None))
-
-    return output
-
-
-def update_db():
-    return
+            cities.append((
+                parts[0].strip(), # id
+                parts[1].strip(), # name
+                float(parts[2].strip()), # lat 
+                float(parts[3].strip()), # lon
+                parts[4].strip() # type
+            ))
+    upd_cur.execute("""
+        CREATE TABLE IF NOT EXISTS cities(
+            id TEXT PRIMARY KEY,
+            name TEXT,
+            lat REAL,
+            lon REAL,
+            type TEXT
+        )        
+    """)
+    upd_cur.executemany("""
+        INSERT OR REPLACE INTO cities (id, name, lat, lon, type) 
+        VALUES (?, ?, ?, ?, ?)
+    """, cities)
+    forecast_cities = []
+    with open(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv", "r") as f:
+        for l in f.readlines()[1:]:
+            parts = l.split(",")
+            forecast_cities.append((
+                parts[0].strip(), # city_id
+                int(parts[1].strip()), # param_id
+                parts[2].strip(), # date 
+                float(parts[3].strip()) # value
+            ))
+    upd_cur.execute("""
+        CREATE TABLE IF NOT EXISTS forecast_cities(
+            city_id TEXT,
+            param_id INTEGER,
+            date TEXT,
+            value INTEGER,
+            PRIMARY KEY (city_id, param_id, date)
+        )        
+    """)
+    upd_cur.executemany("""
+        INSERT OR REPLACE INTO forecast_cities (city_id, param_id, date, value) 
+        VALUES (?, ?, ?, ?)
+    """, forecast_cities)
+    upd_con.commit()
+    logging.info("DB updated")
+    
 
 
 def run_downloads(datasets):
-    try:
+    if True:
+    #try:
         logging.info(f"Triggering refresh")
         valid_new = False
         for ds, reload in datasets.items():
-            valid_new = valid_new or download_resources(ds, reload)
-        if valid_new:
+            valid_new = download_resources(ds, reload) or valid_new
+        if True or valid_new:
             update_db()
-    except:
-        logging.info("Refresh failed")
-    finally:
+    #except:
+    #    logging.info("Refresh failed")
+    #finally:
         # TODO: this is kind-of dumb - do I actually want to trigger multiple 
         # timers and keep re-checking files? it does mean that I'll download
         # stuff reasonably quickly if stuff fails for some reason
@@ -136,7 +148,15 @@ run_downloads(target_ds)
 # TODO cities.csv actually has coords in it - don't have to look for this in another source
 @app.get("/api/v1/forecast/cities") # TODO: take city center coords, and get data within n km (?)
 async def download_dataset():
-    return []
+    res = cur.execute("""
+        SELECT 
+            * 
+        FROM 
+            forecast_cities
+        WHERE
+            city_id='P28'
+    """)
+    return res.fetchall()
 
 
 if __name__ == "__main__":
