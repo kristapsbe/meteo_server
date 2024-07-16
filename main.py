@@ -148,6 +148,7 @@ run_downloads(target_ds)
 # TODO cities.csv actually has coords in it - don't have to look for this in another source
 @app.get("/api/v1/forecast/cities") # TODO: take city center coords, and get data within n km (?)
 async def download_dataset():
+    # TODO: get stuff that's close enough via SQL (?) https://stackoverflow.com/a/67161833
     res = cur.execute("""
         SELECT 
             * 
