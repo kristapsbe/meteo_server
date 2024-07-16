@@ -54,6 +54,7 @@ def download_resources(ds_name, reload):
         ds_data = json.loads(open(ds_path, "r").read())
         for r in ds_data['result']['resources']:
             refresh(r['url'], f"{raw_f}{ds_name}/{r['url'].split('/')[-1]}", reload, verif_funcs['csv'])
+    return valid_new
 
 
 target_ds = {
@@ -68,7 +69,7 @@ for ds in target_ds:
 os.makedirs(f"{parsed_f}cities/", exist_ok=True)
 
 
-def get_city_data(city_id):
+def get_city_data(r):
     # TODO: fix, just messing around atm
     # the pram csv is slightly broken - there's an extra comma
     params = {} # TODO: I think I should hard-code both filenames and params
@@ -79,12 +80,18 @@ def get_city_data(city_id):
     # this is hourly data - the _day.csv may be a lot more useful for showing 
     # results at a glance
     df = pd.read_csv(f"{raw_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv")
-    df = df[df['CITY_ID'] == city_id] # Rīga
+    df = df[df['CITY_ID'] == r['CITY_ID']] # Rīga
     dates = sorted(df['DATUMS'].unique()) # YYYY-MM-DD HH:mm:SS - sortable as strings
 
     ds_json = json.loads(open(f"{raw_f}meteorologiskas-prognozes-apdzivotam-vietam.json", "r").read())
     output = {
         'params': [],
+        'city_info': {
+            'name': r['NOSAUKUMS'],
+            'lat': r['LAT'],
+            'lon': r['LON'],
+            'type': r['TIPS']
+        },
         'dates': {d: [] for d in dates},
         'last_modified': [e for e in ds_json['result']['resources'] if "forecast_cities.csv" in e["url"]][0]['last_modified']
     }
@@ -104,9 +111,14 @@ def get_city_data(city_id):
 
 
 def regen_city_forecasts():
-    with open(f"{parsed_f}cities/Riga.json", "w") as f:
-        f.write(json.dumps(get_city_data('P28')))
-    
+    df = pd.read_csv(f"{raw_f}meteorologiskas-prognozes-apdzivotam-vietam/cities.csv")
+    for _,r in df.iterrows():
+        if r['NOSAUKUMS'] == 'Rīga':
+            with open(f"{parsed_f}cities/{r['NOSAUKUMS']}.json", "w") as f:
+                f.write(json.dumps(get_city_data(r)))
+    logging.info("===========================================================================")
+    logging.info("REGEN FINISHED")
+    logging.info("===========================================================================")
     tmp_df = pd.read_csv(f"{raw_f}hidrometeorologiskie-bridinajumi/bridinajumu_metadata.csv")
     logging.info("===========================================================================")
     logging.info(tmp_df[['PARADIBA', 'INTENSITY_LV', 'TIME_FROM', 'TIME_TILL']])
@@ -116,9 +128,11 @@ def regen_city_forecasts():
 def run_downloads(datasets):
     try:
         logging.info(f"Triggering refresh")
+        valid_new = False
         for ds, reload in datasets.items():
-            download_resources(ds, reload)
-        regen_city_forecasts()
+            valid_new = valid_new or download_resources(ds, reload)
+        if valid_new:
+            regen_city_forecasts() # TODO: very slow, kludgy solution atm
     except:
         logging.info("Refresh failed")
     finally:
@@ -134,7 +148,7 @@ run_downloads(target_ds)
 # TODO cities.csv actually has coords in it - don't have to look for this in another source
 @app.get("/api/v1/forecast/cities") # TODO: take city center coords, and get data within n km (?)
 async def download_dataset():
-    return [json.loads(open(f"{parsed_f}cities/{d}.json", "r").read()) for d in ["Riga"]]
+    return [json.loads(open(f"{parsed_f}cities/{d}.json", "r").read()) for d in ["Rīga"]]
 
 
 if __name__ == "__main__":
