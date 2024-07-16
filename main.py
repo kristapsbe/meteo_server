@@ -106,6 +106,7 @@ def update_db():
                 parts[2].strip(), # date 
                 float(parts[3].strip()) # value
             ))
+    # TODO: add last updated (?) add it from the file (?)
     upd_cur.execute("""
         CREATE TABLE IF NOT EXISTS forecast_cities(
             city_id TEXT,
