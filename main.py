@@ -19,7 +19,7 @@ base_url = "https://data.gov.lv/dati/api/3/"
 data_f = "data/"
 
 
-def refresh_file(url, fpath, reload, verify_download):
+def refresh_file(url, fpath, reload, verify_download): # TODO: I should check the last updated date in the metadata file instead of just pulling files every N minutes
     valid_new = False
     if not os.path.exists(fpath) or time.time()-os.path.getmtime(fpath) > reload:
         logging.info(f"Downloading {fpath}")
