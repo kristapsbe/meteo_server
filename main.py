@@ -155,9 +155,6 @@ def run_downloads(datasets):
     except:
         logging.info("Refresh failed")
     finally:
-        # TODO: this is kind-of dumb - do I actually want to trigger multiple 
-        # timers and keep re-checking files? it does mean that I'll download
-        # stuff reasonably quickly if stuff fails for some reason
         timer = threading.Timer(30.0, run_downloads, [datasets])
         timer.start()
 
