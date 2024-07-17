@@ -150,7 +150,7 @@ def run_downloads(datasets):
         valid_new = False
         for ds, reload in datasets.items():
             valid_new = download_resources(ds, reload) or valid_new
-        if True or valid_new:
+        if valid_new:
             update_db()
     except:
         logging.info("Refresh failed")
