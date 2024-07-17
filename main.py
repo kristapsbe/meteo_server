@@ -61,7 +61,9 @@ target_ds = {
     # TODO: using warnings would be cool - it has both the warning texts and geo polygon that it applies to
     "hidrometeorologiskie-bridinajumi": 900,
     # really nice hourly forecast data
-    "meteorologiskas-prognozes-apdzivotam-vietam": 900
+    "meteorologiskas-prognozes-apdzivotam-vietam": 900,
+    # TODO: this would let me get hourly (or 3-hourly) forecasts for more than 24h
+    "telpiskas-meteorologiskas-prognozes": 900
 }
 
 for ds in target_ds:
@@ -196,6 +198,12 @@ async def download_dataset(lat: float = 56.87508631077478, lon: float = 23.86587
     valid_cities_q = "','".join([c[0] for c in cities])
     param_queries = ",".join([f"(SELECT value FROM forecast_cities AS fci WHERE fc.city_id=fci.city_id AND fc.date=fci.date AND param_id={p[0]})" for p in params])
     # TODO: only return results that are >= current hour
+    # TODO: NB hourly data's only provided for the next 24h, and the other table contains daily data for the next 7 days https://data.gov.lv/dati/dataset/meteorologiskas-prognozes-apdzivotam-vietam
+    # I should move to using https://data.gov.lv/dati/dataset/telpiskas-meteorologiskas-prognozes instead
+    # it provides hourly data for the next 3 days, and datapoints for every 3 hours for the next 6 days after that (so 9 days in total)
+    # 
+    # when I switch do I just take the 1 closest forecast (since they're coord based)?
+    # or should I take a couple that are closest to the nearby cities?
     forecast = cur.execute(f"""
         SELECT 
             city_id, date,
