@@ -39,3 +39,7 @@ python main.py
 ```
 localhost:8000/api/v1/forecast/cities
 ```
+
+```
+locust --host http://localhost:8000
+```
