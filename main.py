@@ -206,6 +206,8 @@ async def download_dataset(lat: float = 56.87508631077478, lon: float = 23.86587
     # or should I take a couple that are closest to the nearby cities?
     #
     # then again - I need to consider what I specifically need - the 9 day thing only really has humidity and temp
+    # 
+    # I could fill out the forecasts after the first 24h with data from https://developer.yr.no/
     forecast = cur.execute(f"""
         SELECT 
             city_id, date,
