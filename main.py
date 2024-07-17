@@ -144,19 +144,17 @@ def update_db():
     logging.info("DB updated")
     
 
-
 def run_downloads(datasets):
-    if True:
-    #try:
+    try:
         logging.info(f"Triggering refresh")
         valid_new = False
         for ds, reload in datasets.items():
             valid_new = download_resources(ds, reload) or valid_new
         if True or valid_new:
             update_db()
-    #except:
-    #    logging.info("Refresh failed")
-    #finally:
+    except:
+        logging.info("Refresh failed")
+    finally:
         # TODO: this is kind-of dumb - do I actually want to trigger multiple 
         # timers and keep re-checking files? it does mean that I'll download
         # stuff reasonably quickly if stuff fails for some reason
@@ -179,10 +177,8 @@ param_whitelist = [
 param_whitelist_q = "','".join(param_whitelist)
 
 
-# TODO cities.csv actually has coords in it - don't have to look for this in another source
-@app.get("/api/v1/forecast/cities") # TODO: take city center coords, and get data within n km (?)
+@app.get("/api/v1/forecast/cities")
 async def download_dataset(lat: float = 56.87508631077478, lon: float = 23.865878101797325):
-    # TODO: get stuff that's close enough via SQL (?) https://stackoverflow.com/a/67161833
     params = cur.execute(f"""
         SELECT 
             id, title_lv, title_en
@@ -191,8 +187,6 @@ async def download_dataset(lat: float = 56.87508631077478, lon: float = 23.86587
         WHERE
             title_lv in ('{param_whitelist_q}')
     """).fetchall()
-    # pretending the world's flat for the time being
-    # 
     cities = cur.execute(f"""
         SELECT
             id, name, lat, lon, type
@@ -204,6 +198,7 @@ async def download_dataset(lat: float = 56.87508631077478, lon: float = 23.86587
     """).fetchall()
     valid_cities_q = "','".join([c[0] for c in cities])
     param_queries = ",".join([f"(SELECT value FROM forecast_cities AS fci WHERE fc.city_id=fci.city_id AND fc.date=fci.date AND param_id={p[0]})" for p in params])
+    # TODO: only return results that are >= current hour
     forecast = cur.execute(f"""
         SELECT 
             city_id, date,
