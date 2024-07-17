@@ -36,9 +36,9 @@ deactivate
 python main.py
 ```
 
-2*cores+1
+2*cores
 ```
-uvicorn main:app --workers 3
+uvicorn main:app --workers 2
 ```
 
 ```
