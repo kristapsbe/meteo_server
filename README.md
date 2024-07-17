@@ -36,6 +36,11 @@ deactivate
 python main.py
 ```
 
+2*cores+1
+```
+uvicorn main:app --workers 3
+```
+
 ```
 localhost:8000/api/v1/forecast/cities
 ```
