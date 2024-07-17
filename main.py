@@ -96,6 +96,26 @@ def update_db():
         INSERT OR REPLACE INTO cities (id, name, lat, lon, type) 
         VALUES (?, ?, ?, ?, ?)
     """, cities)
+    forecast_cities_params = []
+    with open(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forcity_param.csv", "r") as f:
+        for l in f.readlines()[1:]:
+            parts = l.split(",")
+            forecast_cities_params.append((
+                int(parts[0].strip()), # id
+                parts[1].strip(), # title_lv
+                ",".join(parts[2:]).strip(), # title_en 
+            ))
+    upd_cur.execute("""
+        CREATE TABLE IF NOT EXISTS forecast_cities_params(
+            id INTEGER PRIMARY KEY,
+            title_lv TEXT,
+            title_en TEXT
+        )        
+    """)
+    upd_cur.executemany("""
+        INSERT OR REPLACE INTO forecast_cities_params (id, title_lv, title_en) 
+        VALUES (?, ?, ?)
+    """, forecast_cities_params)
     forecast_cities = []
     with open(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv", "r") as f:
         for l in f.readlines()[1:]:
@@ -145,20 +165,61 @@ def run_downloads(datasets):
 
 run_downloads(target_ds)
 
+param_whitelist = [
+    'Laika apstākļu piktogramma',
+    'Temperatūra (°C)',
+    'Sajūtu temperatūra (°C)',
+    'Vēja ātrums (m/s)',
+    'Vēja virziens (°)',
+    'Brāzmas (m/s)',
+    'Nokrišņi (mm)',
+    'UV indekss (0-10)',
+    'Pērkona negaisa varbūtība (%)'
+]
+param_whitelist_q = "','".join(param_whitelist)
+
 
 # TODO cities.csv actually has coords in it - don't have to look for this in another source
 @app.get("/api/v1/forecast/cities") # TODO: take city center coords, and get data within n km (?)
-async def download_dataset():
+async def download_dataset(lat: float = 56.87508631077478, lon: float = 23.865878101797325):
     # TODO: get stuff that's close enough via SQL (?) https://stackoverflow.com/a/67161833
-    res = cur.execute("""
+    params = cur.execute(f"""
         SELECT 
-            * 
+            id, title_lv, title_en
         FROM 
-            forecast_cities
+            forecast_cities_params
         WHERE
-            city_id='P28'
-    """)
-    return res.fetchall()
+            title_lv in ('{param_whitelist_q}')
+    """).fetchall()
+    # pretending the world's flat for the time being
+    # 
+    cities = cur.execute(f"""
+        SELECT
+            id, name, lat, lon, type
+        FROM
+            cities
+        WHERE
+            25 > ACOS((SIN(RADIANS(lat))*SIN(RADIANS({lat})))+(COS(RADIANS(lat))*COS(RADIANS({lat})))*(COS(RADIANS({lon})-RADIANS(lon))))*6371 AND 
+            type in ('republikas pilseta', 'citas pilsētas', 'rajona centrs', 'pagasta centrs')
+    """).fetchall()
+    valid_cities_q = "','".join([c[0] for c in cities])
+    param_queries = ",".join([f"(SELECT value FROM forecast_cities AS fci WHERE fc.city_id=fci.city_id AND fc.date=fci.date AND param_id={p[0]})" for p in params])
+    forecast = cur.execute(f"""
+        SELECT 
+            city_id, date,
+            {param_queries}
+        FROM 
+            forecast_cities AS fc
+        WHERE
+            city_id in ('{valid_cities_q}')
+        GROUP BY
+            city_id, date
+    """).fetchall()
+    return {
+        "params": params,
+        "cities": cities,
+        "forecast": forecast
+    }
 
 
 if __name__ == "__main__":
