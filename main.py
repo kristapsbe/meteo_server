@@ -61,9 +61,7 @@ target_ds = {
     # TODO: using warnings would be cool - it has both the warning texts and geo polygon that it applies to
     "hidrometeorologiskie-bridinajumi": 900,
     # really nice hourly forecast data
-    "meteorologiskas-prognozes-apdzivotam-vietam": 900,
-    # TODO: this would let me get hourly (or 3-hourly) forecasts for more than 24h
-    "telpiskas-meteorologiskas-prognozes": 900
+    "meteorologiskas-prognozes-apdzivotam-vietam": 900
 }
 
 for ds in target_ds:
