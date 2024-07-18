@@ -76,9 +76,10 @@ def update_db():
     with open(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/cities.csv", "r") as f:
         for l in f.readlines()[1:]:
             parts = l.split(",")
+            n_part = parts[1].strip()
             cities.append((
                 parts[0].strip(), # id
-                parts[1].strip(), # name
+                f"{n_part[0].upper()}{n_part[1:].lower()}", # name
                 float(parts[2].strip()), # lat 
                 float(parts[3].strip()), # lon
                 parts[4].strip() # type
@@ -196,15 +197,8 @@ async def download_dataset(lat: float = 56.87508631077478, lon: float = 23.86587
     valid_cities_q = "','".join([c[0] for c in cities])
     param_queries = ",".join([f"(SELECT value FROM forecast_cities AS fci WHERE fc.city_id=fci.city_id AND fc.date=fci.date AND param_id={p[0]})" for p in params])
     # TODO: only return results that are >= current hour
-    # TODO: NB hourly data's only provided for the next 24h, and the other table contains daily data for the next 7 days https://data.gov.lv/dati/dataset/meteorologiskas-prognozes-apdzivotam-vietam
-    # I should move to using https://data.gov.lv/dati/dataset/telpiskas-meteorologiskas-prognozes instead
-    # it provides hourly data for the next 3 days, and datapoints for every 3 hours for the next 6 days after that (so 9 days in total)
-    # 
-    # when I switch do I just take the 1 closest forecast (since they're coord based)?
-    # or should I take a couple that are closest to the nearby cities?
-    #
-    # then again - I need to consider what I specifically need - the 9 day thing only really has humidity and temp
-    # 
+    # TODO: NB hourly data's only provided for the next 24h
+    # and the other table contains daily data for the next 7 days https://data.gov.lv/dati/dataset/meteorologiskas-prognozes-apdzivotam-vietam
     # I could fill out the forecasts after the first 24h with data from https://developer.yr.no/
     forecast = cur.execute(f"""
         SELECT 
