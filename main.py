@@ -212,7 +212,7 @@ async def download_dataset(lat: float = 56.87508631077478, lon: float = 23.86587
             city_id, date
     """).fetchall()
     return {
-        "params": params,
+        "params": [p[1:] for p in params],
         "cities": cities,
         "forecast": forecast
     }
