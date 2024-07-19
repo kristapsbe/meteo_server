@@ -8,12 +8,28 @@ import datetime
 import requests
 import threading
 
-from fastapi import FastAPI
+from typing import Annotated
+from fastapi import FastAPI, Query
 
 
 con = sqlite3.connect("meteo.db")
 cur = con.cursor()
-app = FastAPI()
+app = FastAPI(
+    title="Meteo",
+    description="Meteo description",
+    summary="Meteo summary",
+    version="0.0.1",
+    terms_of_service="httos://localhost:8000/tos",
+    contact={
+        "name": "TestName",
+        "url": "httos://localhost:8000/contact/",
+        "email": "test@example.com",
+    },
+    license_info={
+        "name": "MIT",
+        "url": "https://opensource.org/license/mit",
+    },
+)
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s')
 
 base_url = "https://data.gov.lv/dati/api/3/"
@@ -176,8 +192,16 @@ param_whitelist = [
 param_whitelist_q = "','".join(param_whitelist)
 
 
-@app.get("/api/v1/forecast/cities")
-async def download_dataset(lat: float, lon: float, radius: int = 25):
+@app.get("/api/v1/forecast/cities", tags=["forecast"])
+async def get_city_forecasts(
+    lat: Annotated[float, Query(title="Latitude")], 
+    lon: Annotated[float, Query(title="Longitude")], 
+    radius: Annotated[int, Query(gt=0, lt=50, title="Radius")] = 25
+):
+    ''' 
+    # City forecast data
+    This is a doc string... and automatically will be a published documentation 
+    '''
     params = cur.execute(f"""
         SELECT 
             id, title_lv, title_en
