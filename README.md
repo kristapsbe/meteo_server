@@ -42,7 +42,7 @@ uvicorn main:app --workers 2
 ```
 
 ```
-localhost:8000/api/v1/forecast/cities
+http://localhost:8000/api/v1/forecast/cities?lat=56.8750&lon=23.8658&radius=10
 ```
 
 ```

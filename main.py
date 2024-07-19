@@ -177,7 +177,7 @@ param_whitelist_q = "','".join(param_whitelist)
 
 
 @app.get("/api/v1/forecast/cities")
-async def download_dataset(lat: float = 56.87508631077478, lon: float = 23.865878101797325):
+async def download_dataset(lat: float, lon: float, radius: int = 25):
     params = cur.execute(f"""
         SELECT 
             id, title_lv, title_en
@@ -192,7 +192,7 @@ async def download_dataset(lat: float = 56.87508631077478, lon: float = 23.86587
         FROM
             cities
         WHERE
-            25 > ACOS((SIN(RADIANS(lat))*SIN(RADIANS({lat})))+(COS(RADIANS(lat))*COS(RADIANS({lat})))*(COS(RADIANS({lon})-RADIANS(lon))))*6371 AND 
+            {radius} > ACOS((SIN(RADIANS(lat))*SIN(RADIANS({lat})))+(COS(RADIANS(lat))*COS(RADIANS({lat})))*(COS(RADIANS({lon})-RADIANS(lon))))*6371 AND 
             type in ('republikas pilseta', 'citas pilsētas', 'rajona centrs', 'pagasta centrs')
     """).fetchall()
     valid_cities_q = "','".join([c[0] for c in cities])
