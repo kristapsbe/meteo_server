@@ -4,6 +4,7 @@ import time
 import sqlite3
 import logging
 import uvicorn
+import datetime
 import requests
 import threading
 
@@ -124,7 +125,7 @@ def update_db():
             forecast_cities.append((
                 parts[0].strip(), # city_id
                 int(parts[1].strip()), # param_id
-                parts[2].strip(), # date 
+                parts[2].strip().replace("-", "").replace(" ", "").replace(":", "")[:10], # date 
                 float(parts[3].strip()) # value
             ))
     # TODO: add last updated (?) add it from the file (?)
@@ -196,10 +197,10 @@ async def download_dataset(lat: float = 56.87508631077478, lon: float = 23.86587
     """).fetchall()
     valid_cities_q = "','".join([c[0] for c in cities])
     param_queries = ",".join([f"(SELECT value FROM forecast_cities AS fci WHERE fc.city_id=fci.city_id AND fc.date=fci.date AND param_id={p[0]})" for p in params])
-    # TODO: only return results that are >= current hour
     # TODO: NB hourly data's only provided for the next 24h
     # and the other table contains daily data for the next 7 days https://data.gov.lv/dati/dataset/meteorologiskas-prognozes-apdzivotam-vietam
     # I could fill out the forecasts after the first 24h with data from https://developer.yr.no/
+    c_date = datetime.datetime.now().strftime("%Y%m%d%H%M")[:10]
     forecast = cur.execute(f"""
         SELECT 
             city_id, date,
@@ -207,7 +208,7 @@ async def download_dataset(lat: float = 56.87508631077478, lon: float = 23.86587
         FROM 
             forecast_cities AS fc
         WHERE
-            city_id in ('{valid_cities_q}')
+            city_id in ('{valid_cities_q}') AND date >= '{c_date}'
         GROUP BY
             city_id, date
     """).fetchall()
