@@ -16,19 +16,7 @@ con = sqlite3.connect("meteo.db")
 cur = con.cursor()
 app = FastAPI(
     title="Meteo",
-    description="Meteo description",
-    summary="Meteo summary",
     version="0.0.1",
-    terms_of_service="httos://localhost:8000/tos",
-    contact={
-        "name": "TestName",
-        "url": "httos://localhost:8000/contact/",
-        "email": "test@example.com",
-    },
-    license_info={
-        "name": "MIT",
-        "url": "https://opensource.org/license/mit",
-    },
 )
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s')
 
@@ -141,10 +129,9 @@ def update_db():
             forecast_cities.append((
                 parts[0].strip(), # city_id
                 int(parts[1].strip()), # param_id
-                parts[2].strip().replace("-", "").replace(" ", "").replace(":", "")[:10], # date 
+                parts[2].strip().replace("-", "").replace(" ", "").replace(":", "")[:10], # date YYYYMMDDHH
                 float(parts[3].strip()) # value
             ))
-    # TODO: add last updated (?) add it from the file (?)
     upd_cur.execute("""
         CREATE TABLE IF NOT EXISTS forecast_cities(
             city_id TEXT,
@@ -192,11 +179,11 @@ param_whitelist = [
 param_whitelist_q = "','".join(param_whitelist)
 
 
-@app.get("/api/v1/forecast/cities", tags=["forecast"])
+@app.get("/api/v1/forecast/cities")
 async def get_city_forecasts(
-    lat: Annotated[float, Query(title="Latitude")], 
-    lon: Annotated[float, Query(title="Longitude")], 
-    radius: Annotated[int, Query(gt=0, lt=50, title="Radius")] = 25
+    lat: Annotated[float, Query(title="Current location (Latitude)")], 
+    lon: Annotated[float, Query(title="Current locatino (Longitude)")], 
+    radius: Annotated[int, Query(gt=0, lt=50, title="Radius for which to fetch data (km)")] = 25
 ):
     ''' 
     # City forecast data
@@ -210,14 +197,15 @@ async def get_city_forecasts(
         WHERE
             title_lv in ('{param_whitelist_q}')
     """).fetchall()
+    # TODO: should I let a get param set the minimum category of city to return?
     cities = cur.execute(f"""
         SELECT
             id, name, lat, lon, type
         FROM
             cities
         WHERE
-            {radius} > ACOS((SIN(RADIANS(lat))*SIN(RADIANS({lat})))+(COS(RADIANS(lat))*COS(RADIANS({lat})))*(COS(RADIANS({lon})-RADIANS(lon))))*6371 AND 
-            type in ('republikas pilseta', 'citas pilsētas', 'rajona centrs', 'pagasta centrs')
+            {radius} > ACOS((SIN(RADIANS(lat))*SIN(RADIANS({lat})))+(COS(RADIANS(lat))*COS(RADIANS({lat})))*(COS(RADIANS({lon})-RADIANS(lon))))*6371 
+            AND type in ('republikas pilseta', 'citas pilsētas', 'rajona centrs', 'pagasta centrs')
     """).fetchall()
     valid_cities_q = "','".join([c[0] for c in cities])
     param_queries = ",".join([f"(SELECT value FROM forecast_cities AS fci WHERE fc.city_id=fci.city_id AND fc.date=fci.date AND param_id={p[0]})" for p in params])
@@ -236,10 +224,12 @@ async def get_city_forecasts(
         GROUP BY
             city_id, date
     """).fetchall()
+    metadata = json.loads(open("data/meteorologiskas-prognozes-apdzivotam-vietam.json", "r").read())
     return {
         "params": [p[1:] for p in params],
         "cities": cities,
-        "forecast": forecast
+        "forecast": forecast,
+        "last_updated": metadata["result"]["metadata_modified"].replace("-", "").replace("T", "").replace(":", "")[:12],
     }
 
 
