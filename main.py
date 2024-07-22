@@ -123,6 +123,15 @@ def update_db():
         VALUES (?, ?, ?)
     """, forecast_cities_params)
     forecast_cities = []
+    with open(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities_day.csv", "r") as f:
+        for l in f.readlines()[1:]:
+            parts = l.split(",")
+            forecast_cities.append((
+                parts[0].strip(), # city_id
+                int(parts[1].strip()), # param_id
+                parts[2].strip().replace("-", "").replace(" ", "").replace(":", "")[:10], # date YYYYMMDDHH
+                float(parts[3].strip()) # value
+            ))    
     with open(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv", "r") as f:
         for l in f.readlines()[1:]:
             parts = l.split(",")
@@ -131,7 +140,7 @@ def update_db():
                 int(parts[1].strip()), # param_id
                 parts[2].strip().replace("-", "").replace(" ", "").replace(":", "")[:10], # date YYYYMMDDHH
                 float(parts[3].strip()) # value
-            ))
+            ))   
     upd_cur.execute("""
         CREATE TABLE IF NOT EXISTS forecast_cities(
             city_id TEXT,
@@ -165,7 +174,7 @@ def run_downloads(datasets):
 
 run_downloads(target_ds)
 
-param_whitelist = [
+hourly_params = [
     'Laika apstākļu piktogramma',
     'Temperatūra (°C)',
     'Sajūtu temperatūra (°C)',
@@ -174,9 +183,21 @@ param_whitelist = [
     'Brāzmas (m/s)',
     'Nokrišņi (mm)',
     'UV indekss (0-10)',
-    'Pērkona negaisa varbūtība (%)'
+    'Pērkona negaisa varbūtība (%)',
 ]
-param_whitelist_q = "','".join(param_whitelist)
+hourly_params_q = "','".join(hourly_params)
+
+daily_params = [
+    'Diennakts vidējā vēja vērtība (m/s)',
+    'Diennakts maksimālā vēja brāzma (m/s)',
+    'Diennakts maksimālā temperatūra (°C)',
+    'Diennakts minimālā temperatūra (°C)',
+    'Diennakts nokrišņu summa (mm)',
+    'Diennakts nokrišņu varbūtība (%)',
+    'Laika apstākļu piktogramma nakti',
+    'Laika apstākļu piktogramma diena',
+]
+daily_params_q = "','".join(daily_params)
 
 
 @app.get("/api/v1/forecast/cities")
@@ -189,13 +210,21 @@ async def get_city_forecasts(
     # City forecast data
     This is a doc string... and automatically will be a published documentation 
     '''
-    params = cur.execute(f"""
+    h_params = cur.execute(f"""
         SELECT 
             id, title_lv, title_en
         FROM 
             forecast_cities_params
         WHERE
-            title_lv in ('{param_whitelist_q}')
+            title_lv in ('{hourly_params_q}')
+    """).fetchall()
+    d_params = cur.execute(f"""
+        SELECT 
+            id, title_lv, title_en
+        FROM 
+            forecast_cities_params
+        WHERE
+            title_lv in ('{daily_params_q}')
     """).fetchall()
     # TODO: should I let a get param set the minimum category of city to return?
     cities = cur.execute(f"""
@@ -208,27 +237,46 @@ async def get_city_forecasts(
             AND type in ('republikas pilseta', 'citas pilsētas', 'rajona centrs', 'pagasta centrs')
     """).fetchall()
     valid_cities_q = "','".join([c[0] for c in cities])
-    param_queries = ",".join([f"(SELECT value FROM forecast_cities AS fci WHERE fc.city_id=fci.city_id AND fc.date=fci.date AND param_id={p[0]})" for p in params])
-    # TODO: NB hourly data's only provided for the next 24h
-    # and the other table contains daily data for the next 7 days https://data.gov.lv/dati/dataset/meteorologiskas-prognozes-apdzivotam-vietam
-    # I could fill out the forecasts after the first 24h with data from https://developer.yr.no/
     c_date = datetime.datetime.now().strftime("%Y%m%d%H%M")[:10]
-    forecast = cur.execute(f"""
-        SELECT 
-            city_id, date,
-            {param_queries}
-        FROM 
-            forecast_cities AS fc
-        WHERE
-            city_id in ('{valid_cities_q}') AND date >= '{c_date}'
-        GROUP BY
-            city_id, date
+    h_param_queries = ",".join([f"(SELECT value FROM forecast_cities AS fci WHERE fc.city_id=fci.city_id AND fc.date=fci.date AND param_id={p[0]}) AS val_{p[0]}" for p in h_params])
+    h_param_where = " OR ".join([f"val_{p[0]} IS NOT NULL" for p in h_params])
+    h_forecast = cur.execute(f"""
+        WITH h_temp AS (
+            SELECT 
+                city_id, date,
+                {h_param_queries}
+            FROM 
+                forecast_cities AS fc
+            WHERE
+                city_id in ('{valid_cities_q}') AND date >= '{c_date}'
+            GROUP BY
+                city_id, date                    
+        )
+        SELECT * FROM h_temp WHERE {h_param_where}
+    """).fetchall()
+    d_param_queries = ",".join([f"(SELECT value FROM forecast_cities AS fci WHERE fc.city_id=fci.city_id AND fc.date=fci.date AND param_id={p[0]}) AS val_{p[0]}" for p in d_params])
+    d_param_where = " OR ".join([f"val_{p[0]} IS NOT NULL" for p in d_params])
+    d_forecast = cur.execute(f"""     
+        WITH d_temp AS (
+            SELECT 
+                city_id, date,
+                {d_param_queries}
+            FROM 
+                forecast_cities AS fc
+            WHERE
+                city_id in ('{valid_cities_q}') AND date >= '{c_date}'
+            GROUP BY
+                city_id, date
+        )
+        SELECT * FROM d_temp WHERE {d_param_where}
     """).fetchall()
     metadata = json.loads(open("data/meteorologiskas-prognozes-apdzivotam-vietam.json", "r").read())
     return {
-        "params": [p[1:] for p in params],
+        "hourly_params": [p[1:] for p in h_params],
+        "daily_params": [p[1:] for p in d_params],
         "cities": cities,
-        "forecast": forecast,
+        "hourly_forecast": h_forecast,
+        "daily_forecast": d_forecast,
         "last_updated": metadata["result"]["metadata_modified"].replace("-", "").replace("T", "").replace(":", "")[:12],
     }
 
