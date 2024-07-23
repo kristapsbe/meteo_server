@@ -272,8 +272,8 @@ async def get_city_forecasts(
     """).fetchall()
     metadata = json.loads(open("data/meteorologiskas-prognozes-apdzivotam-vietam.json", "r").read())
     return {
-        "hourly_params": [p[1:] for p in h_params],
-        "daily_params": [p[1:] for p in d_params],
+        "hourly_params": [p[1:] for p in h_params], # don't need the id col, getting rid of it
+        "daily_params": [p[1:] for p in d_params], # don't need the id col, getting rid of it
         "cities": cities,
         "hourly_forecast": h_forecast,
         "daily_forecast": d_forecast,
