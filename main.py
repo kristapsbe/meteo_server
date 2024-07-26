@@ -200,6 +200,7 @@ daily_params = [
 daily_params_q = "','".join(daily_params)
 
 
+# TODO: get forecasts per region from national weather agencies before trips (?)
 @app.get("/api/v1/forecast/cities")
 async def get_city_forecasts(
     lat: Annotated[float, Query(title="Current location (Latitude)")], 
