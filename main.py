@@ -275,9 +275,10 @@ async def get_city_forecasts(
     return {
         "hourly_params": [p[1:] for p in h_params], # don't need the id col, getting rid of it
         "daily_params": [p[1:] for p in d_params], # don't need the id col, getting rid of it
-        "cities": cities,
-        "hourly_forecast": h_forecast,
-        "daily_forecast": d_forecast,
+        # TODO: casting everything to string for now, to make serializing in android for now
+        "cities": [[str(c) for c in r] for r in cities],
+        "hourly_forecast": [[str(c) for c in r] for r in h_forecast],
+        "daily_forecast": [[str(c) for c in r] for r in d_forecast],
         "last_updated": metadata["result"]["metadata_modified"].replace("-", "").replace("T", "").replace(":", "")[:12],
     }
 
