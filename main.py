@@ -146,7 +146,7 @@ def update_db():
             city_id TEXT,
             param_id INTEGER,
             date TEXT,
-            value INTEGER,
+            value REAL,
             PRIMARY KEY (city_id, param_id, date)
         )        
     """)
@@ -230,7 +230,7 @@ async def get_city_forecasts(
     # TODO: should I let a get param set the minimum category of city to return?
     cities = cur.execute(f"""
         SELECT
-            id, name, lat, lon, type
+            id, name, type, lat, lon
         FROM
             cities
         WHERE
@@ -275,10 +275,25 @@ async def get_city_forecasts(
     return {
         "hourly_params": [p[1:] for p in h_params], # don't need the id col, getting rid of it
         "daily_params": [p[1:] for p in d_params], # don't need the id col, getting rid of it
-        # TODO: casting everything to string for now, to make serializing in android for now
-        "cities": [[str(c) for c in r] for r in cities],
-        "hourly_forecast": [[str(c) for c in r] for r in h_forecast],
-        "daily_forecast": [[str(c) for c in r] for r in d_forecast],
+        "cities": [{
+            "id": str(c[0]),
+            "name": str(c[1]),
+            "type": str(c[2]),
+            "coords": {
+                "lat": c[3],
+                "lon": c[4]
+            }
+        } for c in cities],
+        "hourly_forecast": [{
+            "id": f[0],
+            "time": f[1],
+            "vals": f[2:]
+        } for f in h_forecast],
+        "daily_forecast": [{
+            "id": f[0],
+            "time": f[1],
+            "vals": f[2:]
+        } for f in d_forecast],
         "last_updated": metadata["result"]["metadata_modified"].replace("-", "").replace("T", "").replace(":", "")[:12],
     }
 
