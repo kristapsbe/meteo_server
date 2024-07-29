@@ -77,88 +77,126 @@ target_ds = {
 for ds in target_ds:
     os.makedirs(f"{data_f}{ds}/", exist_ok=True)
 
+col_parsers = {
+    "TEXT": lambda s: s.strip(),
+    "CAPITTEXT": lambda s: s.strip(),
+    "INTEGER": lambda s: int(s.strip()),
+    "REAL": lambda s: float(s.strip()),
+    "DATEH": lambda s: s.strip().replace("-", "").replace(" ", "").replace(":", "")[:10] # YYYYMMDDHH
+}
+
+col_types = {
+    "DATEH": "TEXT"
+}
+
+table_conf = [{
+    "files": [f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/cities.csv"],
+    "table_name": "cities",
+    "cols": [
+        {"name": "id", "type": "TEXT", "pk": True},
+        {"name": "name", "type": "TEXT"},
+        {"name": "lat", "type": "REAL"},
+        {"name": "lon", "type": "REAL"},
+        {"name": "type", "type": "TEXT"},
+    ]
+},{
+    "files": [f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forcity_param.csv"],
+    "table_name": "forecast_cities_params",
+    "cols": [
+        {"name": "id", "type": "INTEGER", "pk": True},
+        {"name": "title_lv", "type": "TEXT"},
+        {"name": "title_en", "type": "TEXT"},
+    ]
+},{
+    "files": [
+        f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities_day.csv",
+        f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv"
+    ],
+    "table_name": "forecast_cities",
+    "cols": [
+        {"name": "city_id", "type": "TEXT", "pk": True},
+        {"name": "param_id", "type": "INTEGER", "pk": True},
+        {"name": "date", "type": "DATEH", "pk": True},
+        {"name": "value", "type": "REAL"},
+    ]
+},{
+    "files": [f"{data_f}hidrometeorologiskie-bridinajumi/novadi.csv"],
+    "table_name": "municipalities",
+    "cols": [
+        {"name": "id", "type": "INTEGER", "pk": True},
+        {"name": "name_lv", "type": "TEXT"},
+        {"name": "name_en", "type": "TEXT"},
+    ]
+},{
+    "files": [f"{data_f}hidrometeorologiskie-bridinajumi/bridinajumu_novadi.csv"],
+    "table_name": "warnings_municipalities",
+    "cols": [
+        {"name": "warning_id", "type": "INTEGER"},
+        {"name": "municipality_id", "type": "INTEGER"},
+    ]
+},{
+    "files": [f"{data_f}hidrometeorologiskie-bridinajumi/bridinajumu_poligoni.csv"],
+    "table_name": "warnings_polygons",
+    "cols": [
+        {"name": "warning_id", "type": "INTEGER", "pk": True},
+        {"name": "polygon_id", "type": "INTEGER", "pk": True},
+        {"name": "lat", "type": "REAL"},
+        {"name": "lon", "type": "REAL"},
+        {"name": "order_id", "type": "INTEGER", "pk": True},
+    ]
+},{ # TODO: partial at the moment - finish this
+    "files": [f"{data_f}hidrometeorologiskie-bridinajumi/bridinajumu_metadata.csv"],
+    "table_name": "warnings",
+    "cols": [
+        {"name": "number", "type": "TEXT", "pk": True},
+        {"name": "id", "type": "INTEGER", "pk": True},
+        {"name": "intensity_lv", "type": "TEXT"},
+        {"name": "intensity_en", "type": "TEXT"},
+        {"name": "regions_lv", "type": "TEXT"},
+        {"name": "regions_en", "type": "TEXT"},
+        {"name": "type_lv", "type": "TEXT"},
+        {"name": "type_en", "type": "TEXT"},
+    ]
+}]
+
+
+def update_table(t_conf, db_cur):
+    vals = []
+    for data_file in t_conf["files"]:
+        with open(data_file, "r") as f:
+            curr_line = ""
+            for l in f.readlines()[1:]:
+                curr_line = f"{curr_line}{l}"
+                # bridinajumu_metadata contains newlines in "" - just merging the lines for now
+                if len(curr_line.split('"')) % 2 == 1:
+                    parts = curr_line.split(",") # TODO - need to account for entries that are wrapped in ""
+                    tmp = []
+                    for c in range(len(t_conf["cols"])):
+                        # TODO: forcity_param has a broken line (it has an extra comma in it) 
+                        # come up with a nice way to deal with it
+                        tmp.append(col_parsers[t_conf["cols"][c]["type"]](parts[c]))
+                    vals.append(tmp)
+                    curr_line = ""
+    pks = [c["name"] for c in t_conf["cols"] if c.get("pk", False)]
+    primary_key_q = "" if len(pks) < 1 else f", PRIMARY KEY ({", ".join(pks)})"
+    db_cur.execute(f"""
+        CREATE TABLE IF NOT EXISTS {t_conf["table_name"]} (
+            {", ".join([f"{c["name"]} {col_types.get(c["name"], c["type"])}" for c in t_conf["cols"]])}
+            {primary_key_q}
+        )        
+    """)
+    db_cur.executemany(f"""
+        INSERT OR REPLACE INTO {t_conf["table_name"]} ({", ".join([c["name"] for c in t_conf["cols"]])}) 
+        VALUES ({", ".join(["?"]*len(t_conf["cols"]))})
+    """, vals)
+    print(f"TABLE '{t_conf["table_name"]}' updated")
+
 
 def update_db():
     upd_con = sqlite3.connect("meteo.db")
     upd_cur = upd_con.cursor()
-
-    cities = []
-    with open(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/cities.csv", "r") as f:
-        for l in f.readlines()[1:]:
-            parts = l.split(",")
-            n_part = parts[1].strip()
-            cities.append((
-                parts[0].strip(), # id
-                f"{n_part[0].upper()}{n_part[1:].lower()}", # name
-                float(parts[2].strip()), # lat 
-                float(parts[3].strip()), # lon
-                parts[4].strip() # type
-            ))
-    upd_cur.execute("""
-        CREATE TABLE IF NOT EXISTS cities(
-            id TEXT PRIMARY KEY,
-            name TEXT,
-            lat REAL,
-            lon REAL,
-            type TEXT
-        )        
-    """)
-    upd_cur.executemany("""
-        INSERT OR REPLACE INTO cities (id, name, lat, lon, type) 
-        VALUES (?, ?, ?, ?, ?)
-    """, cities)
-    forecast_cities_params = []
-    with open(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forcity_param.csv", "r") as f:
-        for l in f.readlines()[1:]:
-            parts = l.split(",")
-            forecast_cities_params.append((
-                int(parts[0].strip()), # id
-                parts[1].strip(), # title_lv
-                ",".join(parts[2:]).strip(), # title_en 
-            ))
-    upd_cur.execute("""
-        CREATE TABLE IF NOT EXISTS forecast_cities_params(
-            id INTEGER PRIMARY KEY,
-            title_lv TEXT,
-            title_en TEXT
-        )        
-    """)
-    upd_cur.executemany("""
-        INSERT OR REPLACE INTO forecast_cities_params (id, title_lv, title_en) 
-        VALUES (?, ?, ?)
-    """, forecast_cities_params)
-    forecast_cities = []
-    with open(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities_day.csv", "r") as f:
-        for l in f.readlines()[1:]:
-            parts = l.split(",")
-            forecast_cities.append((
-                parts[0].strip(), # city_id
-                int(parts[1].strip()), # param_id
-                parts[2].strip().replace("-", "").replace(" ", "").replace(":", "")[:10], # date YYYYMMDDHH
-                float(parts[3].strip()) # value
-            ))    
-    with open(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv", "r") as f:
-        for l in f.readlines()[1:]:
-            parts = l.split(",")
-            forecast_cities.append((
-                parts[0].strip(), # city_id
-                int(parts[1].strip()), # param_id
-                parts[2].strip().replace("-", "").replace(" ", "").replace(":", "")[:10], # date YYYYMMDDHH
-                float(parts[3].strip()) # value
-            ))   
-    upd_cur.execute("""
-        CREATE TABLE IF NOT EXISTS forecast_cities(
-            city_id TEXT,
-            param_id INTEGER,
-            date TEXT,
-            value REAL,
-            PRIMARY KEY (city_id, param_id, date)
-        )        
-    """)
-    upd_cur.executemany("""
-        INSERT OR REPLACE INTO forecast_cities (city_id, param_id, date, value) 
-        VALUES (?, ?, ?, ?)
-    """, forecast_cities)
+    for t_conf in table_conf:
+        update_table(t_conf, upd_cur)
     upd_con.commit()
     logging.info("DB updated")
     
@@ -281,6 +319,29 @@ async def get_city_forecasts(
         )
         SELECT * FROM d_temp WHERE {d_param_where}
     """).fetchall()
+    relevant_warnings = cur.execute(f"""
+        SELECT DISTINCT
+            warning_id
+        FROM
+            warnings_polygons
+        WHERE
+            {radius} > ACOS((SIN(RADIANS(lat))*SIN(RADIANS({lat})))+(COS(RADIANS(lat))*COS(RADIANS({lat})))*(COS(RADIANS({lon})-RADIANS(lon))))*6371 
+    """).fetchall()
+    warnings = []
+    if len(relevant_warnings) > 0:
+        warnings = cur.execute(f"""
+            SELECT DISTINCT
+                intensity_lv,
+                intensity_en,
+                regions_lv,
+                regions_en,
+                type_lv,
+                type_en
+            FROM
+                warnings
+            WHERE
+                id in ({", ".join([str(w[0]) for w in relevant_warnings])})
+        """).fetchall()
     metadata = json.loads(open("data/meteorologiskas-prognozes-apdzivotam-vietam.json", "r").read())
     return {
         "hourly_params": [p[1:] for p in h_params], # don't need the id col, getting rid of it
@@ -304,6 +365,11 @@ async def get_city_forecasts(
             "time": f[1],
             "vals": f[2:]
         } for f in d_forecast],
+        "warnings": [{
+            "intensity": w[:2],
+            "regions": w[2:4],
+            "type": w[4:]
+        } for w in warnings],
         "last_updated": metadata["result"]["metadata_modified"].replace("-", "").replace("T", "").replace(":", "")[:12],
     }
 
