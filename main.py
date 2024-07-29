@@ -12,6 +12,9 @@ from typing import Annotated
 from fastapi import FastAPI, Query
 
 
+# TODO: delete this once you've figured out what to do with weather warnings
+warning_mode = True
+
 con = sqlite3.connect("meteo.db")
 cur = con.cursor()
 app = FastAPI(
@@ -22,6 +25,8 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(m
 
 base_url = "https://data.gov.lv/dati/api/3/"
 data_f = "data/"
+if warning_mode:
+    data_f = "data_warnings/"
 
 
 def refresh_file(url, fpath, reload, verify_download):
@@ -172,7 +177,10 @@ def run_downloads(datasets):
         timer = threading.Timer(30.0, run_downloads, [datasets])
         timer.start()
 
-run_downloads(target_ds)
+if warning_mode:
+    update_db()
+else:
+    run_downloads(target_ds)
 
 hourly_params = [
     'Laika apstākļu piktogramma',
