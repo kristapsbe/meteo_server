@@ -342,7 +342,7 @@ async def get_city_forecasts(
             WHERE
                 id in ({", ".join([str(w[0]) for w in relevant_warnings])})
         """).fetchall()
-    metadata = json.loads(open("data/meteorologiskas-prognozes-apdzivotam-vietam.json", "r").read())
+    metadata = json.loads(open(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam.json", "r").read())
     return {
         "hourly_params": [p[1:] for p in h_params], # don't need the id col, getting rid of it
         "daily_params": [p[1:] for p in d_params], # don't need the id col, getting rid of it
