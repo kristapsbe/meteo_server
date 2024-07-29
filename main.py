@@ -246,7 +246,9 @@ async def get_city_forecasts(
             AND type in ('republikas pilseta', 'citas pilsētas', 'rajona centrs', 'pagasta centrs')
     """).fetchall()
     valid_cities_q = "','".join([c[0] for c in cities])
-    c_date = datetime.datetime.now().strftime("%Y%m%d%H%M")[:10]
+    c_date = datetime.datetime.now().strftime("%Y%m%d%H%M")[:10] # TODO: I could just ommit the %M, right?
+    if warning_mode:
+        c_date = "2024072900"
     h_param_queries = ",".join([f"(SELECT value FROM forecast_cities AS fci WHERE fc.city_id=fci.city_id AND fc.date=fci.date AND param_id={p[0]}) AS val_{p[0]}" for p in h_params])
     h_param_where = " OR ".join([f"val_{p[0]} IS NOT NULL" for p in h_params])
     h_forecast = cur.execute(f"""
