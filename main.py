@@ -14,8 +14,13 @@ from fastapi import FastAPI, Query
 
 # TODO: delete this once you've figured out what to do with weather warnings
 warning_mode = True
+db_f = "meteo.db"
+if warning_mode:
+    db_f = "meteo_warning_test.db"
+    if os.path.isfile(db_f):
+        os.remove(db_f)
 
-con = sqlite3.connect("meteo.db")
+con = sqlite3.connect(db_f)
 cur = con.cursor()
 app = FastAPI(
     title="Meteo",
@@ -193,7 +198,7 @@ def update_table(t_conf, db_cur):
 
 
 def update_db():
-    upd_con = sqlite3.connect("meteo.db")
+    upd_con = sqlite3.connect(db_f)
     upd_cur = upd_con.cursor()
     for t_conf in table_conf:
         update_table(t_conf, upd_cur)
