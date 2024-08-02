@@ -52,7 +52,7 @@ uvicorn main:app --workers 2
 
 Fastapi makes api docs available via `http://localhost:8000/redoc`, the list of available endpoints can be found there.
 
-At the moment I prefer to use this for tesing
+At the moment I prefer to use this for testing
 ```
 http://localhost:8000/api/v1/forecast/cities?lat=56.8750&lon=23.8658&radius=10
 ```
