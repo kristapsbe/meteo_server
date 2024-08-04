@@ -250,6 +250,7 @@ daily_params = [
 daily_params_q = "','".join(daily_params)
 
 
+# http://localhost:8000/api/v1/forecast/cities?lat=56.8750&lon=23.8658&radius=10
 # TODO: get forecasts per region from national weather agencies before trips (?)
 @app.get("/api/v1/forecast/cities")
 async def get_city_forecasts(
@@ -387,7 +388,12 @@ async def get_test_ctemp(
     return {
         "hourly_params": [], 
         "daily_params": [], 
-        "cities": [],
+        "cities": [{
+            "id": "P1183",
+            "name": "Piņķi",
+            "type": "pagasta centrs",
+            "coords": {"lat": 56.9451, "lon": 23.9155}
+        }],
         "hourly_forecast": [{
             "id": "P1183",
             "time": 2024072921,
