@@ -378,5 +378,26 @@ async def get_city_forecasts(
     }
 
 
+# http://localhost:8000/api/v1/forecast/test_ctemp?temp=13.2
+@app.get("/api/v1/forecast/test_ctemp")
+async def get_test_ctemp(
+    temp: Annotated[float, Query(title="Current temp")], 
+):
+    metadata = json.loads(open(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam.json", "r").read())
+    return {
+        "hourly_params": [], 
+        "daily_params": [], 
+        "cities": [],
+        "hourly_forecast": [{
+            "id": "P1183",
+            "time": 2024072921,
+            "vals": [2103.0, temp, 13.7, 9.5, 320.0, 19.2, 0.0, 0.0, 0.0]
+        }],
+        "daily_forecast": [],
+        "warnings": [],
+        "last_updated": metadata["result"]["metadata_modified"].replace("-", "").replace("T", "").replace(":", "")[:12],
+    }
+
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
