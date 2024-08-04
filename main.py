@@ -88,6 +88,7 @@ for ds in target_ds:
 col_parsers = {
     "TEXT": lambda r: str(r).strip(),
     #"CAPITTEXT": lambda s: s.strip(),
+    #"IGNORE": lambda s: None, # TODO: not sure if I'll ever want this, but I could just skip over some cols by using something like this
     "INTEGER": lambda r: int(str(r).strip()),
     "REAL": lambda r: float(str(r).strip()),
     "DATEH": lambda r: str(r).strip().replace("-", "").replace(" ", "").replace(":", "")[:10] # YYYYMMDDHH
