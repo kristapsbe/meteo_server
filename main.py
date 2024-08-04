@@ -1,6 +1,7 @@
 import os
 import json
 import time
+import pandas as pd
 import sqlite3
 import logging
 import uvicorn
@@ -39,9 +40,11 @@ def refresh_file(url, fpath, reload, verify_download):
     if not os.path.exists(fpath) or time.time()-os.path.getmtime(fpath) > reload:
         logging.info(f"Downloading {fpath}")
         r = requests.get(url)
-        if r.status_code == 200 and verify_download(r.content):
+        # TODO: there's a damaged .csv - may want to deal with this in a more generic fashion (?)
+        r_text = r.content.replace(b'Pressure, (hPa)', b'Pressure (hPa)') if fpath == f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forcity_param.csv" else r.content
+        if r.status_code == 200 and verify_download(r_text):
             with open(fpath, "wb") as f: # this can be eiher a json or csv
-                f.write(r.content)
+                f.write(r_text)
             valid_new = True
     else:
         logging.info(f"A recent version of {fpath} exists - not downloading ({int(time.time()-os.path.getmtime(fpath))})")
@@ -83,11 +86,11 @@ for ds in target_ds:
     os.makedirs(f"{data_f}{ds}/", exist_ok=True)
 
 col_parsers = {
-    "TEXT": lambda s: s.strip(),
-    "CAPITTEXT": lambda s: s.strip(),
-    "INTEGER": lambda s: int(s.strip()),
-    "REAL": lambda s: float(s.strip()),
-    "DATEH": lambda s: s.strip().replace("-", "").replace(" ", "").replace(":", "")[:10] # YYYYMMDDHH
+    "TEXT": lambda r: str(r).strip(),
+    #"CAPITTEXT": lambda s: s.strip(),
+    "INTEGER": lambda r: int(str(r).strip()),
+    "REAL": lambda r: float(str(r).strip()),
+    "DATEH": lambda r: str(r).strip().replace("-", "").replace(" ", "").replace(":", "")[:10] # YYYYMMDDHH
 }
 
 col_types = {
@@ -166,26 +169,22 @@ table_conf = [{
 
 
 def update_table(t_conf, db_cur):
-    vals = []
+    logging.info(f"UPDATING '{t_conf["table_name"]}'")
+    df = None
     for data_file in t_conf["files"]:
-        with open(data_file, "r") as f:
-            curr_line = ""
-            for l in f.readlines()[1:]:
-                curr_line = f"{curr_line}{l}"
-                # bridinajumu_metadata contains newlines in "" - just merging the lines for now
-                if len(curr_line.split('"')) % 2 == 1:
-                    parts = curr_line.split(",") # TODO - need to account for entries that are wrapped in ""
-                    tmp = []
-                    for c in range(len(t_conf["cols"])):
-                        # TODO: forcity_param has a broken line (it has an extra comma in it) 
-                        # come up with a nice way to deal with it
-                        tmp.append(col_parsers[t_conf["cols"][c]["type"]](parts[c]))
-                    vals.append(tmp)
-                    curr_line = ""
+        tmp_df = pd.read_csv(data_file)
+        for ct in range(len(t_conf["cols"])):
+            tmp_df[f"_new_{t_conf["cols"][ct]["name"]}"] = tmp_df[tmp_df.columns[ct]].apply(col_parsers[t_conf["cols"][ct]["type"]])
+        tmp_df = tmp_df[[f"_new_{c["name"]}" for c in t_conf["cols"]]]
+        if df is None:
+            df = pd.DataFrame(tmp_df)
+        else:
+            df = pd.concat([df, tmp_df])
+    db_cur.execute(f"DROP TABLE IF EXISTS {t_conf["table_name"]}") # no point in storing old data
     pks = [c["name"] for c in t_conf["cols"] if c.get("pk", False)]
     primary_key_q = "" if len(pks) < 1 else f", PRIMARY KEY ({", ".join(pks)})"
     db_cur.execute(f"""
-        CREATE TABLE IF NOT EXISTS {t_conf["table_name"]} (
+        CREATE TABLE {t_conf["table_name"]} (
             {", ".join([f"{c["name"]} {col_types.get(c["name"], c["type"])}" for c in t_conf["cols"]])}
             {primary_key_q}
         )        
@@ -193,8 +192,8 @@ def update_table(t_conf, db_cur):
     db_cur.executemany(f"""
         INSERT OR REPLACE INTO {t_conf["table_name"]} ({", ".join([c["name"] for c in t_conf["cols"]])}) 
         VALUES ({", ".join(["?"]*len(t_conf["cols"]))})
-    """, vals)
-    print(f"TABLE '{t_conf["table_name"]}' updated")
+    """, df.values.tolist())
+    logging.info(f"TABLE '{t_conf["table_name"]}' updated")
 
 
 def update_db():
