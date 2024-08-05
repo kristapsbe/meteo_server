@@ -191,7 +191,7 @@ def update_table(t_conf, db_cur):
         )        
     """)
     db_cur.executemany(f"""
-        INSERT OR REPLACE INTO {t_conf["table_name"]} ({", ".join([c["name"] for c in t_conf["cols"]])}) 
+        INSERT INTO {t_conf["table_name"]} ({", ".join([c["name"] for c in t_conf["cols"]])}) 
         VALUES ({", ".join(["?"]*len(t_conf["cols"]))})
     """, df.values.tolist())
     logging.info(f"TABLE '{t_conf["table_name"]}' updated")
