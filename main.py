@@ -13,13 +13,11 @@ from typing import Annotated
 from fastapi import FastAPI, Query
 
 
-# TODO: delete this once you've figured out what to do with weather warnings
+# TODO: this flag depends on a responses containing weather warnings being present on the computer
 warning_mode = True
 db_f = "meteo.db"
 if warning_mode:
     db_f = "meteo_warning_test.db"
-    if os.path.isfile(db_f):
-        os.remove(db_f)
 
 con = sqlite3.connect(db_f)
 cur = con.cursor()
@@ -76,9 +74,7 @@ def download_resources(ds_name, reload):
 
 
 target_ds = {
-    # TODO: using warnings would be cool - it has both the warning texts and geo polygon that it applies to
     "hidrometeorologiskie-bridinajumi": 900,
-    # really nice hourly forecast data
     "meteorologiskas-prognozes-apdzivotam-vietam": 900
 }
 
@@ -87,8 +83,6 @@ for ds in target_ds:
 
 col_parsers = {
     "TEXT": lambda r: str(r).strip(),
-    #"CAPITTEXT": lambda s: s.strip(),
-    #"IGNORE": lambda s: None, # TODO: not sure if I'll ever want this, but I could just skip over some cols by using something like this
     "INTEGER": lambda r: int(str(r).strip()),
     "REAL": lambda r: float(str(r).strip()),
     "DATEH": lambda r: str(r).strip().replace("-", "").replace(" ", "").replace(":", "")[:10] # YYYYMMDDHH
@@ -201,12 +195,13 @@ def update_db():
     upd_con = sqlite3.connect(db_f)
     upd_cur = upd_con.cursor()
     for t_conf in table_conf:
+        # TODO: check if I should make a cursor and commit once, or once per function call
         update_table(t_conf, upd_cur)
     upd_con.commit()
-    logging.info("DB updated")
+    logging.info("DB update finished")
     
 
-def run_downloads(datasets):
+def run_downloads(datasets, refresh_timer=30.0):
     try:
         logging.info(f"Triggering refresh")
         valid_new = False
@@ -214,10 +209,10 @@ def run_downloads(datasets):
             valid_new = download_resources(ds, reload) or valid_new
         if valid_new:
             update_db()
-    except:
-        logging.info("Refresh failed")
+    except BaseException as e: # https://docs.python.org/3/library/exceptions.html#exception-hierarchy
+        logging.info(f"Refresh failed - {e}")
     finally:
-        timer = threading.Timer(30.0, run_downloads, [datasets])
+        timer = threading.Timer(refresh_timer, run_downloads, [datasets])
         timer.start()
 
 
@@ -297,7 +292,7 @@ daily_params_q = "','".join(daily_params)
 async def get_city_forecasts(
     lat: Annotated[float, Query(title="Current location (Latitude)")], 
     lon: Annotated[float, Query(title="Current locatino (Longitude)")], 
-    radius: Annotated[int, Query(gt=0, lt=50, title="Radius for which to fetch data (km)")] = 25
+    radius: Annotated[int, Query(gt=0, lt=51, title="Radius for which to fetch data (km)")] = 25
 ):
     ''' 
     # City forecast data
@@ -320,13 +315,14 @@ async def get_city_forecasts(
             title_lv in ('{daily_params_q}')
     """).fetchall()
     # TODO: should I let a get param set the minimum category of city to return?
+    where_distance_km = f"{radius} > ACOS((SIN(RADIANS(lat))*SIN(RADIANS({lat})))+(COS(RADIANS(lat))*COS(RADIANS({lat})))*(COS(RADIANS({lon})-RADIANS(lon))))*6371"
     cities = cur.execute(f"""
         SELECT
             id, name, type, lat, lon
         FROM
             cities
         WHERE
-            {radius} > ACOS((SIN(RADIANS(lat))*SIN(RADIANS({lat})))+(COS(RADIANS(lat))*COS(RADIANS({lat})))*(COS(RADIANS({lon})-RADIANS(lon))))*6371 
+            {where_distance_km}
             AND type in ('republikas pilseta', 'citas pilsētas', 'rajona centrs', 'pagasta centrs')
     """).fetchall()
     valid_cities_q = "','".join([c[0] for c in cities])
@@ -371,7 +367,7 @@ async def get_city_forecasts(
         FROM
             warnings_polygons
         WHERE
-            {radius} > ACOS((SIN(RADIANS(lat))*SIN(RADIANS({lat})))+(COS(RADIANS(lat))*COS(RADIANS({lat})))*(COS(RADIANS({lon})-RADIANS(lon))))*6371 
+            {where_distance_km}
     """).fetchall()
     warnings = []
     if len(relevant_warnings) > 0:
