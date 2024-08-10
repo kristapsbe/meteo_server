@@ -353,6 +353,8 @@ async def get_city_forecasts(
     """).fetchall()
     d_param_queries = ",".join([f"(SELECT value FROM forecast_cities AS fci WHERE fc.city_id=fci.city_id AND fc.date=fci.date AND param_id={p[0]}) AS val_{p[0]}" for p in d_params])
     d_param_where = " OR ".join([f"val_{p[0]} IS NOT NULL" for p in d_params])
+    # TODO: atm I assume I don't need to filter this by date because I'm refetching data every 15 mins or so - revisit this
+    # NOTE: this contains doesn't contain and entry for today 
     d_forecast = cur.execute(f"""     
         WITH d_temp AS (
             SELECT 
@@ -361,7 +363,7 @@ async def get_city_forecasts(
             FROM 
                 forecast_cities AS fc
             WHERE
-                city_id in ('{valid_cities_q}') AND date >= '{c_date}'
+                city_id in ('{valid_cities_q}')
             GROUP BY
                 city_id, date
         )
