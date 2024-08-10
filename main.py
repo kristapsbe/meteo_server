@@ -21,9 +21,14 @@ if warning_mode:
 
 con = sqlite3.connect(db_f)
 cur = con.cursor()
+# https://semver.org/
+# Given a version number MAJOR.MINOR.PATCH, increment the:
+#    MAJOR version when you make incompatible API changes
+#    MINOR version when you add functionality in a backward compatible manner
+#    PATCH version when you make backward compatible bug fixes
 app = FastAPI(
     title="Meteo",
-    version="0.0.1",
+    version="0.1.0",
 )
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s')
 
