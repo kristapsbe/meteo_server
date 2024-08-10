@@ -13,8 +13,8 @@ from typing import Annotated
 from fastapi import FastAPI, Query
 
 
-# TODO: this flag depends on a responses containing weather warnings being present on the computer
-warning_mode = True
+# TODO: when set to True this depends on responses containing weather warnings being present on the computer
+warning_mode = False
 db_f = "meteo.db"
 if warning_mode:
     db_f = "meteo_warning_test.db"
@@ -90,7 +90,8 @@ col_parsers = {
     "TEXT": lambda r: str(r).strip(),
     "INTEGER": lambda r: int(str(r).strip()),
     "REAL": lambda r: float(str(r).strip()),
-    "DATEH": lambda r: str(r).strip().replace("-", "").replace(" ", "").replace(":", "")[:10] # YYYYMMDDHH
+    # TODO: do I really need minutes? - would mean that I consistently work with datetime strings that are YYYYMMDDHHMM
+    "DATEH": lambda r: str(r).strip().replace("-", "").replace(" ", "").replace(":", "").ljust(12, "0")[:12] # YYYYMMDDHHMM
 }
 
 col_types = {
@@ -331,9 +332,9 @@ async def get_city_forecasts(
             AND type in ('republikas pilseta', 'citas pilsētas', 'rajona centrs', 'pagasta centrs')
     """).fetchall()
     valid_cities_q = "','".join([c[0] for c in cities])
-    c_date = datetime.datetime.now().strftime("%Y%m%d%H%M")[:10] # TODO: I could just ommit the %M, right?
+    c_date = datetime.datetime.now().strftime("%Y%m%d%H%M")
     if warning_mode:
-        c_date = "2024072700"
+        c_date = "202407270000"
     h_param_queries = ",".join([f"(SELECT value FROM forecast_cities AS fci WHERE fc.city_id=fci.city_id AND fc.date=fci.date AND param_id={p[0]}) AS val_{p[0]}" for p in h_params])
     h_param_where = " OR ".join([f"val_{p[0]} IS NOT NULL" for p in h_params])
     h_forecast = cur.execute(f"""
@@ -438,7 +439,7 @@ async def get_test_ctemp(
         }],
         "hourly_forecast": [{
             "id": "P1183",
-            "time": 2024072921,
+            "time": 202407292100,
             "vals": [2103.0, temp, 13.7, 9.5, 320.0, 19.2, 0.0, 0.0, 0.0]
         }],
         "daily_forecast": [],
