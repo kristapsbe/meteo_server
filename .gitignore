@@ -5,6 +5,7 @@ __pycache__/*
 data/*
 .DS_Store
 meteo.db
+git.version
 
 # I've got a bunch of warning data I'd like to save for later
 data_warnings/*

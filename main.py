@@ -30,6 +30,7 @@ app = FastAPI(
     title="Meteo",
     version="0.1.0",
 )
+git_commit = open("git.version", "r").read().strip()
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s')
 
 base_url = "https://data.gov.lv/dati/api/3/"
@@ -421,6 +422,15 @@ async def get_city_forecasts(
             "type": w[4:]
         } for w in warnings],
         "last_updated": metadata["result"]["metadata_modified"].replace("-", "").replace("T", "").replace(":", "")[:12],
+    }
+
+
+# http://localhost:8000/api/v1/version
+@app.get("/api/v1/version")
+async def get_version():
+    return {
+        "version": app.version,
+        "commit": git_commit
     }
 
 
