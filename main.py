@@ -171,15 +171,11 @@ table_conf = [{
 
 
 def update_table(t_conf, db_cur):
-    try: # TODO: deal with cases like when 
-        # bridinajumu_novadi.csv looks like
-        # WEATHER_WARNING_EV_ID,NOV_ID
-        # ,
-        # atm just skipping over the whole thing - should filter out bad rows instead
+    try:
         logging.info(f"UPDATING '{t_conf["table_name"]}'")
         df = None
         for data_file in t_conf["files"]:
-            tmp_df = pd.read_csv(data_file)
+            tmp_df = pd.read_csv(data_file).dropna()
             for ct in range(len(t_conf["cols"])):
                 tmp_df[f"_new_{t_conf["cols"][ct]["name"]}"] = tmp_df[tmp_df.columns[ct]].apply(col_parsers[t_conf["cols"][ct]["type"]])
             tmp_df = tmp_df[[f"_new_{c["name"]}" for c in t_conf["cols"]]]
