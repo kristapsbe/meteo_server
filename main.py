@@ -206,7 +206,7 @@ def update_db():
         for t_conf in table_conf:
             # TODO: check if I should make a cursor and commit once, or once per function call
             update_table(t_conf, upd_cur)
-        upd_con.commit()
+        upd_con.commit() # TODO: last updared should come from here
         logging.info("DB update finished")
     except BaseException as e:
         logging.info(f"DB update FAILED - {e}")
