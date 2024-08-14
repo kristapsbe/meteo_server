@@ -81,8 +81,8 @@ def download_resources(ds_name, reload):
 
 
 target_ds = {
-    "hidrometeorologiskie-bridinajumi": 0,
-    "meteorologiskas-prognozes-apdzivotam-vietam": 0
+    "hidrometeorologiskie-bridinajumi": 900,
+    "meteorologiskas-prognozes-apdzivotam-vietam": 900
 }
 
 for ds in target_ds:
