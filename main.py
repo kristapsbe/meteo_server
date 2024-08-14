@@ -19,6 +19,7 @@ db_f = "meteo.db"
 if warning_mode:
     db_f = "meteo_warning_test.db"
 
+# TODO: don't keep a global db con open - open it up when necessary
 con = sqlite3.connect(db_f)
 cur = con.cursor()
 # https://semver.org/
@@ -80,8 +81,8 @@ def download_resources(ds_name, reload):
 
 
 target_ds = {
-    "hidrometeorologiskie-bridinajumi": 900,
-    "meteorologiskas-prognozes-apdzivotam-vietam": 900
+    "hidrometeorologiskie-bridinajumi": 0,
+    "meteorologiskas-prognozes-apdzivotam-vietam": 0
 }
 
 for ds in target_ds:
@@ -171,44 +172,46 @@ table_conf = [{
 
 
 def update_table(t_conf, db_cur):
-    try:
-        logging.info(f"UPDATING '{t_conf["table_name"]}'")
-        df = None
-        for data_file in t_conf["files"]:
-            tmp_df = pd.read_csv(data_file).dropna()
-            for ct in range(len(t_conf["cols"])):
-                tmp_df[f"_new_{t_conf["cols"][ct]["name"]}"] = tmp_df[tmp_df.columns[ct]].apply(col_parsers[t_conf["cols"][ct]["type"]])
-            tmp_df = tmp_df[[f"_new_{c["name"]}" for c in t_conf["cols"]]]
-            if df is None:
-                df = pd.DataFrame(tmp_df)
-            else:
-                df = pd.concat([df, tmp_df])
-        db_cur.execute(f"DROP TABLE IF EXISTS {t_conf["table_name"]}") # no point in storing old data
-        pks = [c["name"] for c in t_conf["cols"] if c.get("pk", False)]
-        primary_key_q = "" if len(pks) < 1 else f", PRIMARY KEY ({", ".join(pks)})"
-        db_cur.execute(f"""
-            CREATE TABLE {t_conf["table_name"]} (
-                {", ".join([f"{c["name"]} {col_types.get(c["name"], c["type"])}" for c in t_conf["cols"]])}
-                {primary_key_q}
-            )        
-        """)
-        db_cur.executemany(f"""
-            INSERT INTO {t_conf["table_name"]} ({", ".join([c["name"] for c in t_conf["cols"]])}) 
-            VALUES ({", ".join(["?"]*len(t_conf["cols"]))})
-        """, df.values.tolist())
-        logging.info(f"TABLE '{t_conf["table_name"]}' updated")
-    except BaseException as e:
-        logging.info(f"Error updating TABLE '{t_conf["table_name"]}' - {e}")
+    logging.info(f"UPDATING '{t_conf["table_name"]}'")
+    df = None
+    for data_file in t_conf["files"]:
+        tmp_df = pd.read_csv(data_file)#.dropna()
+        for ct in range(len(t_conf["cols"])):
+            tmp_df[f"_new_{t_conf["cols"][ct]["name"]}"] = tmp_df[tmp_df.columns[ct]].apply(col_parsers[t_conf["cols"][ct]["type"]])
+        tmp_df = tmp_df[[f"_new_{c["name"]}" for c in t_conf["cols"]]]
+        if df is None:
+            df = pd.DataFrame(tmp_df)
+        else:
+            df = pd.concat([df, tmp_df])
+    db_cur.execute(f"DROP TABLE IF EXISTS {t_conf["table_name"]}") # no point in storing old data
+    pks = [c["name"] for c in t_conf["cols"] if c.get("pk", False)]
+    primary_key_q = "" if len(pks) < 1 else f", PRIMARY KEY ({", ".join(pks)})"
+    db_cur.execute(f"""
+        CREATE TABLE {t_conf["table_name"]} (
+            {", ".join([f"{c["name"]} {col_types.get(c["name"], c["type"])}" for c in t_conf["cols"]])}
+            {primary_key_q}
+        )        
+    """)
+    db_cur.executemany(f"""
+        INSERT INTO {t_conf["table_name"]} ({", ".join([c["name"] for c in t_conf["cols"]])}) 
+        VALUES ({", ".join(["?"]*len(t_conf["cols"]))})
+    """, df.values.tolist())
+    logging.info(f"TABLE '{t_conf["table_name"]}' updated")
 
 
 def update_db():
     upd_con = sqlite3.connect(db_f)
-    upd_cur = upd_con.cursor()
-    for t_conf in table_conf:
-        # TODO: check if I should make a cursor and commit once, or once per function call
-        update_table(t_conf, upd_cur)
-    upd_con.commit()
-    logging.info("DB update finished")
+    try:
+        upd_cur = upd_con.cursor()
+        for t_conf in table_conf:
+            # TODO: check if I should make a cursor and commit once, or once per function call
+            update_table(t_conf, upd_cur)
+        upd_con.commit()
+        logging.info("DB update finished")
+    except BaseException as e:
+        logging.info(f"DB update FAILED - {e}")
+    finally:
+        upd_con.close()
     
 
 def run_downloads(datasets, refresh_timer=30.0):
