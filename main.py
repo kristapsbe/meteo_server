@@ -30,6 +30,8 @@ cur = con.cursor()
 app = FastAPI(
     title="Meteo",
     version="0.1.0",
+    docs_url=None,
+    redoc_url=None
 )
 git_commit = open("git.version", "r").read().strip()
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s')
