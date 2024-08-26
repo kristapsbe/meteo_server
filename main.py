@@ -401,6 +401,14 @@ async def get_city_forecasts(
             WHERE
                 id in ({", ".join([str(w[0]) for w in relevant_warnings])})
         """).fetchall()
+    all_warnings = cur.execute(f"""
+        SELECT DISTINCT
+            intensity_en, COUNT(*)
+        FROM
+            warnings
+        GROUP BY
+            intensity_en
+    """).fetchall()
     metadata = json.loads(open(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam.json", "r").read())
     return {
         "hourly_params": [p[1:] for p in h_params], # don't need the id col, getting rid of it
@@ -429,6 +437,9 @@ async def get_city_forecasts(
             "regions": w[2:4],
             "type": w[4:]
         } for w in warnings],
+        "all_warnings": {
+            w[0]: w[1] for w in all_warnings
+        },
         "last_updated": metadata["result"]["metadata_modified"].replace("-", "").replace("T", "").replace(":", "")[:12],
     }
 
