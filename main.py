@@ -475,6 +475,7 @@ async def get_test_ctemp(
         }],
         "daily_forecast": [],
         "warnings": [],
+        "all_warnings": {},
         "last_updated": metadata["result"]["metadata_modified"].replace("-", "").replace("T", "").replace(":", "")[:12],
     }
 
