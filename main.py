@@ -245,36 +245,6 @@ else:
 #   * D - 1 to 6 inclusive denotes degreee of cloudiness (3 and 4 looks to be mixed up for foggy when displayed by lvgmc(?))
 # (there's a 7 and 9 in the warning set, not sure what it means - 
 # I'll assume everything > 3 is very heavy cloud coverage)
-#
-# unique vals in forecast
-# [1101.0, 1102.0, 1103.0, 1104.0, 1105.0, 1501.0, 1503.0, 
-# 1504.0, 1506.0, 2101.0, 2102.0, 2103.0, 2104.0, 2105.0, 
-# 2403.0, 2501.0, 2503.0, 2504.0, 2506.0, 2507.0, 2509.0]
-# [1101.0, 1102.0, 1103.0, 1104.0, 1403.0, 1506.0, 2101.0, 
-# 2102.0, 2103.0, 2104.0, 2401.0, 2403.0, 2404.0, 2504.0, 2506.0]
-#
-# poking around the lvgmc site, I can see
-# day
-# 1101 - clear
-# 1102 - cloudy, low
-# 1103 - cloudy, medium
-# 1104
-# 1105 - cloudy, very heavy
-#
-# 1506 - rain + cloudy, medium
-# 1504 - rain + cloudy, heavy
-#
-# night
-# 2101- - clear (not sure what's up with the "-" atm)
-# 2102 - cloudy, low
-# 2103 - cloudy, medium
-# 2104 - cloudy, heavy
-# 2105 - cloudy, very heavy
-# 
-# 2303 - thunderstorm + rain + cloudy, medium
-#
-# 2504 - rain + cloudy, heavy
-
 hourly_params = [
     'Laika apstākļu piktogramma',
     'Temperatūra (°C)',
