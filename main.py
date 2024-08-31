@@ -272,7 +272,6 @@ daily_params_q = "','".join(daily_params)
 
 
 # http://localhost:8000/api/v1/forecast/cities?lat=56.8750&lon=23.8658&radius=10
-# TODO: get forecasts per region from national weather agencies before trips (?)
 @app.get("/api/v1/forecast/cities")
 async def get_city_forecasts(
     lat: Annotated[float, Query(title="Current location (Latitude)")], 
@@ -299,7 +298,6 @@ async def get_city_forecasts(
         WHERE
             title_lv in ('{daily_params_q}')
     """).fetchall()
-    # TODO: should I let a get param set the minimum category of city to return?
     where_distance_km = f"{radius} > ACOS((SIN(RADIANS(lat))*SIN(RADIANS({lat})))+(COS(RADIANS(lat))*COS(RADIANS({lat})))*(COS(RADIANS({lon})-RADIANS(lon))))*6371"
     cities = cur.execute(f"""
         SELECT
@@ -332,8 +330,6 @@ async def get_city_forecasts(
     """).fetchall()
     d_param_queries = ",".join([f"(SELECT value FROM forecast_cities AS fci WHERE fc.city_id=fci.city_id AND fc.date=fci.date AND param_id={p[0]}) AS val_{p[0]}" for p in d_params])
     d_param_where = " OR ".join([f"val_{p[0]} IS NOT NULL" for p in d_params])
-    # TODO: atm I assume I don't need to filter this by date because I'm refetching data every 15 mins or so - revisit this
-    # NOTE: this contains doesn't contain and entry for today 
     d_forecast = cur.execute(f"""     
         WITH d_temp AS (
             SELECT 
@@ -381,8 +377,8 @@ async def get_city_forecasts(
     """).fetchall()
     metadata = json.loads(open(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam.json", "r").read())
     return {
-        "hourly_params": [p[1:] for p in h_params], # don't need the id col, getting rid of it
-        "daily_params": [p[1:] for p in d_params], # don't need the id col, getting rid of it
+        "hourly_params": [p[1:] for p in h_params],
+        "daily_params": [p[1:] for p in d_params],
         "cities": [{
             "id": str(c[0]),
             "name": str(c[1]),
