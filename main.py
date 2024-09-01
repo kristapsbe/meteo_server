@@ -245,36 +245,6 @@ else:
 #   * D - 1 to 6 inclusive denotes degreee of cloudiness (3 and 4 looks to be mixed up for foggy when displayed by lvgmc(?))
 # (there's a 7 and 9 in the warning set, not sure what it means - 
 # I'll assume everything > 3 is very heavy cloud coverage)
-#
-# unique vals in forecast
-# [1101.0, 1102.0, 1103.0, 1104.0, 1105.0, 1501.0, 1503.0, 
-# 1504.0, 1506.0, 2101.0, 2102.0, 2103.0, 2104.0, 2105.0, 
-# 2403.0, 2501.0, 2503.0, 2504.0, 2506.0, 2507.0, 2509.0]
-# [1101.0, 1102.0, 1103.0, 1104.0, 1403.0, 1506.0, 2101.0, 
-# 2102.0, 2103.0, 2104.0, 2401.0, 2403.0, 2404.0, 2504.0, 2506.0]
-#
-# poking around the lvgmc site, I can see
-# day
-# 1101 - clear
-# 1102 - cloudy, low
-# 1103 - cloudy, medium
-# 1104
-# 1105 - cloudy, very heavy
-#
-# 1506 - rain + cloudy, medium
-# 1504 - rain + cloudy, heavy
-#
-# night
-# 2101- - clear (not sure what's up with the "-" atm)
-# 2102 - cloudy, low
-# 2103 - cloudy, medium
-# 2104 - cloudy, heavy
-# 2105 - cloudy, very heavy
-# 
-# 2303 - thunderstorm + rain + cloudy, medium
-#
-# 2504 - rain + cloudy, heavy
-
 hourly_params = [
     'Laika apstākļu piktogramma',
     'Temperatūra (°C)',
@@ -302,7 +272,6 @@ daily_params_q = "','".join(daily_params)
 
 
 # http://localhost:8000/api/v1/forecast/cities?lat=56.8750&lon=23.8658&radius=10
-# TODO: get forecasts per region from national weather agencies before trips (?)
 @app.get("/api/v1/forecast/cities")
 async def get_city_forecasts(
     lat: Annotated[float, Query(title="Current location (Latitude)")], 
@@ -329,7 +298,6 @@ async def get_city_forecasts(
         WHERE
             title_lv in ('{daily_params_q}')
     """).fetchall()
-    # TODO: should I let a get param set the minimum category of city to return?
     where_distance_km = f"{radius} > ACOS((SIN(RADIANS(lat))*SIN(RADIANS({lat})))+(COS(RADIANS(lat))*COS(RADIANS({lat})))*(COS(RADIANS({lon})-RADIANS(lon))))*6371"
     cities = cur.execute(f"""
         SELECT
@@ -362,8 +330,6 @@ async def get_city_forecasts(
     """).fetchall()
     d_param_queries = ",".join([f"(SELECT value FROM forecast_cities AS fci WHERE fc.city_id=fci.city_id AND fc.date=fci.date AND param_id={p[0]}) AS val_{p[0]}" for p in d_params])
     d_param_where = " OR ".join([f"val_{p[0]} IS NOT NULL" for p in d_params])
-    # TODO: atm I assume I don't need to filter this by date because I'm refetching data every 15 mins or so - revisit this
-    # NOTE: this contains doesn't contain and entry for today 
     d_forecast = cur.execute(f"""     
         WITH d_temp AS (
             SELECT 
@@ -411,8 +377,8 @@ async def get_city_forecasts(
     """).fetchall()
     metadata = json.loads(open(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam.json", "r").read())
     return {
-        "hourly_params": [p[1:] for p in h_params], # don't need the id col, getting rid of it
-        "daily_params": [p[1:] for p in d_params], # don't need the id col, getting rid of it
+        "hourly_params": [p[1:] for p in h_params],
+        "daily_params": [p[1:] for p in d_params],
         "cities": [{
             "id": str(c[0]),
             "name": str(c[1]),
