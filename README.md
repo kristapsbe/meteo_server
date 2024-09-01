@@ -1,8 +1,3 @@
-# TODO
-
-- [ ] Add reverse proxy (haproxy?)
-- [ ] Rewrite in Go
-
 # Meteo
 
 A small webserver for caching, filtering, transforming, and serving weather forecast data published by the [Latvian meteorological institute](meteo.lv).
