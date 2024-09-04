@@ -62,3 +62,19 @@ http://localhost:8000/api/v1/forecast/cities?lat=56.8750&lon=23.8658&radius=10
 ```
 locust --host http://localhost:8000
 ```
+
+##
+
+digital ocean setup
+```bash
+dnf install git
+git clone https://github.com/kristapsbe/meteo_server.git
+#doesnt have make either
+git rev-parse HEAD > git.version
+dnf install pipx
+pipx ensurepath
+pipx install virtualenv
+python3 -m venv .venv
+dnf install screen
+screen -d -m python main.py
+```
