@@ -1,5 +1,6 @@
 import os
 import json
+import pytz
 import time
 import pandas as pd
 import sqlite3
@@ -309,7 +310,7 @@ async def get_city_forecasts(
             AND type in ('republikas pilseta', 'citas pilsētas', 'rajona centrs', 'pagasta centrs')
     """).fetchall()
     valid_cities_q = "','".join([c[0] for c in cities])
-    c_date = datetime.datetime.now().strftime("%Y%m%d%H%M")
+    c_date = datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
     if warning_mode:
         c_date = "202407270000"
     h_param_queries = ",".join([f"(SELECT value FROM forecast_cities AS fci WHERE fc.city_id=fci.city_id AND fc.date=fci.date AND param_id={p[0]}) AS val_{p[0]}" for p in h_params])
