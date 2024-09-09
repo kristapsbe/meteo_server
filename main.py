@@ -93,6 +93,7 @@ for ds in target_ds:
 
 col_parsers = {
     "TEXT": lambda r: str(r).strip(),
+    "TITLE_TEXT": lambda r: str(r).strip().title(),
     "INTEGER": lambda r: int(str(r).strip()),
     "REAL": lambda r: float(str(r).strip()),
     # TODO: do I really need minutes? - would mean that I consistently work with datetime strings that are YYYYMMDDHHMM
@@ -108,7 +109,7 @@ table_conf = [{
     "table_name": "cities",
     "cols": [
         {"name": "id", "type": "TEXT", "pk": True},
-        {"name": "name", "type": "TEXT"},
+        {"name": "name", "type": "TITLE_TEXT"},
         {"name": "lat", "type": "REAL"},
         {"name": "lon", "type": "REAL"},
         {"name": "type", "type": "TEXT"},
