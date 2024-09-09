@@ -273,7 +273,7 @@ daily_params = [
 daily_params_q = "','".join(daily_params)
 
 
-# http://localhost:8000/api/v1/forecast/cities?lat=56.8750&lon=23.8658&radius=10
+# http://localhost:8000/api/v1/forecast/cities?lat=56.9730&lon=24.1327&radius=10
 @app.get("/api/v1/forecast/cities")
 async def get_city_forecasts(
     lat: Annotated[float, Query(title="Current location (Latitude)")], 
