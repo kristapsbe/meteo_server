@@ -377,7 +377,8 @@ async def get_city_forecasts(
         GROUP BY
             intensity_en
     """).fetchall()
-    metadata = json.loads(open(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam.json", "r").read())
+    metadata_f = f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam.json"
+    metadata = json.loads(open(metadata_f, "r").read())
     return {
         "hourly_params": [p[1:] for p in h_params],
         "daily_params": [p[1:] for p in d_params],
@@ -409,6 +410,7 @@ async def get_city_forecasts(
             w[0]: w[1] for w in all_warnings
         },
         "last_updated": metadata["result"]["metadata_modified"].replace("-", "").replace("T", "").replace(":", "")[:12],
+        "last_downloaded": datetime.datetime.fromtimestamp(os.path.getmtime(metadata_f)).replace(tzinfo=pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"),
     }
 
 
@@ -426,7 +428,8 @@ async def get_version():
 async def get_test_ctemp(
     temp: Annotated[float, Query(title="Current temp")], 
 ):
-    metadata = json.loads(open(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam.json", "r").read())
+    metadata_f = f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam.json"
+    metadata = json.loads(open(metadata_f, "r").read())
     return {
         "hourly_params": [], 
         "daily_params": [], 
@@ -445,6 +448,7 @@ async def get_test_ctemp(
         "warnings": [],
         "all_warnings": {},
         "last_updated": metadata["result"]["metadata_modified"].replace("-", "").replace("T", "").replace(":", "")[:12],
+        "last_downloaded": datetime.datetime.fromtimestamp(os.path.getmtime(metadata_f)).replace(tzinfo=pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"),
     }
 
 
