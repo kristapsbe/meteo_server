@@ -410,7 +410,8 @@ async def get_city_forecasts(
             w[0]: w[1] for w in all_warnings
         },
         "last_updated": metadata["result"]["metadata_modified"].replace("-", "").replace("T", "").replace(":", "")[:12],
-        "last_downloaded": datetime.datetime.fromtimestamp(os.path.getmtime(metadata_f)).replace(tzinfo=pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"),
+        # TODO: get local timezone instead
+        "last_downloaded": datetime.datetime.fromtimestamp(os.path.getmtime(metadata_f)).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"),
     }
 
 
@@ -448,7 +449,8 @@ async def get_test_ctemp(
         "warnings": [],
         "all_warnings": {},
         "last_updated": metadata["result"]["metadata_modified"].replace("-", "").replace("T", "").replace(":", "")[:12],
-        "last_downloaded": datetime.datetime.fromtimestamp(os.path.getmtime(metadata_f)).replace(tzinfo=pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"),
+        # TODO: get local timezone instead
+        "last_downloaded": datetime.datetime.fromtimestamp(os.path.getmtime(metadata_f)).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"),
     }
 
 
