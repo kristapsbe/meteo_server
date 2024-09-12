@@ -88,6 +88,9 @@ dnf install screen
 screen -d -m python main.py
 ```
 
+
+**TODO: figure out if the update is going to actually work**
+
 cert setup
 ```bash
 sudo dnf install python3 augeas-libs
@@ -105,5 +108,18 @@ pip install --upgrade certbot
 ```
 
 ```bash
-cp /etc/letsencrypt/live/meteo.kristapsbe.lv/fullchain.pem /etc/haproxy/ssl/haproxy.pem
+dnf install haproxy
+```
+
+```bash
+mkdir /etc/haproxy/ssl/
+cp haproxy.cfg /etc/haproxy/haproxy.cfg
+sudo cat /etc/letsencrypt/live/meteo.kristapsbe.lv/fullchain.pem /etc/letsencrypt/live/meteo.kristapsbe.lv/privkey.pem > /etc/haproxy/ssl/haproxy.pem
+systemctl stop  haproxy
+haproxy -f /etc/haproxy/haproxy.cfg
+```
+
+```bash
+screen -d -m python main.py
+screen -d -m haproxy -f /etc/haproxy/haproxy.cfg
 ```
