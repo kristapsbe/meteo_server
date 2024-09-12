@@ -115,7 +115,7 @@ dnf install haproxy
 mkdir /etc/haproxy/ssl/
 cp haproxy.cfg /etc/haproxy/haproxy.cfg
 sudo cat /etc/letsencrypt/live/meteo.kristapsbe.lv/fullchain.pem /etc/letsencrypt/live/meteo.kristapsbe.lv/privkey.pem > /etc/haproxy/ssl/haproxy.pem
-systemctl stop  haproxy
+systemctl stop haproxy
 haproxy -f /etc/haproxy/haproxy.cfg
 ```
 
