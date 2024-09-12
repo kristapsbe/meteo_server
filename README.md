@@ -4,6 +4,17 @@ A small webserver for caching, filtering, transforming, and serving weather fore
 
 ## Installation
 
+
+```bash
+brew install haproxy
+```
+
+```bash
+sudo mkdir /etc/haproxy
+sudo cp haproxy.cfg /etc/haproxy/haproxy.cfg
+haproxy -f /etc/haproxy/haproxy.cfg
+```
+
 https://pipx.pypa.io/stable/installation/
 
 set up virtualenv
