@@ -89,7 +89,7 @@ screen -d -m python main.py
 ```
 
 
-**TODO: figure out if the update is going to actually work**
+**TODO: figure out if the update is going to actually work - pretty sure I need to cat the cert files, should make a script for this and use that instead of hte example cron**
 
 cert setup
 ```bash
