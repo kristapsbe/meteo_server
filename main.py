@@ -355,6 +355,8 @@ async def get_city_forecasts(
             warning_id
         FROM
             warnings_polygons
+        WHERE
+            {where_distance_km}
     """).fetchall()
     warnings = []
     if len(relevant_warnings) > 0:
