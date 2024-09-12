@@ -97,7 +97,7 @@ col_parsers = {
     "INTEGER": lambda r: int(str(r).strip()),
     "REAL": lambda r: float(str(r).strip()),
     # TODO: do I really need minutes? - would mean that I consistently work with datetime strings that are YYYYMMDDHHMM
-    "DATEH": lambda r: str(r).strip().replace("-", "").replace(" ", "").replace(":", "").ljust(12, "0")[:12] # YYYYMMDDHHMM
+    "DATEH": lambda r: str(r).strip().replace(".", "").replace("-", "").replace(" ", "").replace(":", "").ljust(12, "0")[:12] # YYYYMMDDHHMM
 }
 
 col_types = {
@@ -171,6 +171,8 @@ table_conf = [{
         {"name": "regions_en", "type": "TEXT"},
         {"name": "type_lv", "type": "TEXT"},
         {"name": "type_en", "type": "TEXT"},
+        {"name": "time_from", "type": "DATEH"},
+        {"name": "time_to", "type": "DATEH"},
     ]
 }]
 
@@ -358,12 +360,15 @@ async def get_city_forecasts(
     if len(relevant_warnings) > 0:
         warnings = cur.execute(f"""
             SELECT DISTINCT
+                id,
                 intensity_lv,
                 intensity_en,
                 regions_lv,
                 regions_en,
                 type_lv,
-                type_en
+                type_en,
+                time_from,
+                time_to
             FROM
                 warnings
             WHERE
@@ -402,9 +407,11 @@ async def get_city_forecasts(
             "vals": f[2:]
         } for f in d_forecast],
         "warnings": [{
-            "intensity": w[:2],
-            "regions": w[2:4],
-            "type": w[4:]
+            "id": w[0],
+            "intensity": w[1:3],
+            "regions": w[3:5],
+            "type": w[5:7],
+            "time": w[7:]
         } for w in warnings],
         "all_warnings": {
             w[0]: w[1] for w in all_warnings
