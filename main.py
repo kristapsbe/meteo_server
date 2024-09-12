@@ -173,6 +173,8 @@ table_conf = [{
         {"name": "type_en", "type": "TEXT"},
         {"name": "time_from", "type": "DATEH"},
         {"name": "time_to", "type": "DATEH"},
+        {"name": "description_lv", "type": "TEXT"},
+        {"name": "description_en", "type": "TEXT"},
     ]
 }]
 
@@ -353,8 +355,6 @@ async def get_city_forecasts(
             warning_id
         FROM
             warnings_polygons
-        WHERE
-            {where_distance_km}
     """).fetchall()
     warnings = []
     if len(relevant_warnings) > 0:
@@ -368,7 +368,9 @@ async def get_city_forecasts(
                 type_lv,
                 type_en,
                 time_from,
-                time_to
+                time_to,
+                description_lv,
+                description_en
             FROM
                 warnings
             WHERE
@@ -411,7 +413,8 @@ async def get_city_forecasts(
             "intensity": w[1:3],
             "regions": w[3:5],
             "type": w[5:7],
-            "time": w[7:]
+            "time": w[7:9],
+            "description": w[9:]
         } for w in warnings],
         "all_warnings": {
             w[0]: w[1] for w in all_warnings
