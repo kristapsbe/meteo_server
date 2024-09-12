@@ -74,9 +74,7 @@ http://localhost:8000/api/v1/forecast/cities?lat=56.8750&lon=23.8658&radius=10
 locust --host http://localhost:8000
 ```
 
-##
-
-digital ocean setup
+## digital ocean setup
 ```bash
 dnf install git
 git clone https://github.com/kristapsbe/meteo_server.git
@@ -88,4 +86,24 @@ pipx install virtualenv
 python3 -m venv .venv
 dnf install screen
 screen -d -m python main.py
+```
+
+cert setup
+```bash
+sudo dnf install python3 augeas-libs
+sudo dnf remove certbot
+sudo dnf install python3-pip
+pip install certbot
+ln -s /opt/certbot/bin/certbot /usr/bin/certbot
+certbot certonly --standalone
+echo "0 0,12 * * * root /opt/certbot/bin/python -c 'import random; import time; time.sleep(random.random() * 3600)' && sudo certbot renew -q" | sudo tee -a /etc/crontab > /dev/null
+```
+
+cert upgrade
+```bash
+pip install --upgrade certbot
+```
+
+```bash
+cp /etc/letsencrypt/live/meteo.kristapsbe.lv/fullchain.pem /etc/haproxy/ssl/haproxy.pem
 ```
