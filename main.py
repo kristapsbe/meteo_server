@@ -393,9 +393,7 @@ async def get_city_forecasts(lat, lon):
     return {
         "hourly_params": [p[1:] for p in h_params],
         "daily_params": [p[1:] for p in d_params],
-        "city": {
-            "name": str(city[1]) if len(city) > 0 else None,
-        },
+        "city": str(city[1]) if len(city) > 0 else "",
         "hourly_forecast": [{
             "time": f[1],
             "vals": f[2:]
