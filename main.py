@@ -351,7 +351,7 @@ def get_warnings(cur, lat, lon):
             GROUP BY
                 warning_id
         )
-        SELECT warning_id FROM warning_bounds WHERE {lat} >= min_lat AND {lat} <= max_lat AND {lon} <= min_lon AND {lon} >= max_lon
+        SELECT warning_id FROM warning_bounds WHERE {lat} >= min_lat AND {lat} <= max_lat AND {lon} >= min_lon AND {lon} <= max_lon
     """).fetchall()
     warnings = []
     if len(relevant_warnings) > 0:
