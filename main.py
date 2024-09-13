@@ -242,15 +242,6 @@ if warning_mode:
 else:
     run_downloads(target_ds)
 
-# pictograms
-#
-# the overall pattern appears to be ABCD where
-#   * A - 1 = day, 2 = night
-#   * B - 1 = clear, 3 = thunderstorm, 4 = fog, 5 = rain
-#   * C - always 0, appears to denote nothing
-#   * D - 1 to 6 inclusive denotes degreee of cloudiness (3 and 4 looks to be mixed up for foggy when displayed by lvgmc(?))
-# (there's a 7 and 9 in the warning set, not sure what it means - 
-# I'll assume everything > 3 is very heavy cloud coverage)
 hourly_params = [
     'Laika apstākļu piktogramma',
     'Temperatūra (°C)',
@@ -277,86 +268,90 @@ daily_params = [
 daily_params_q = "','".join(daily_params)
 
 
-# http://localhost:8000/api/v1/forecast/cities?lat=56.9730&lon=24.1327&radius=10
-@app.get("/api/v1/forecast/cities")
-async def get_city_forecasts(
-    lat: Annotated[float, Query(title="Current location (Latitude)")], 
-    lon: Annotated[float, Query(title="Current locatino (Longitude)")], 
-    radius: Annotated[int, Query(gt=0, lt=51, title="Radius for which to fetch data (km)")] = 25
-):
-    ''' 
-    # City forecast data
-    This is a doc string... and automatically will be a published documentation 
-    '''
-    h_params = cur.execute(f"""
+def get_params(cur, param_q):
+    return cur.execute(f"""
         SELECT 
             id, title_lv, title_en
         FROM 
             forecast_cities_params
         WHERE
-            title_lv in ('{hourly_params_q}')
+            title_lv in ('{param_q}')
     """).fetchall()
-    d_params = cur.execute(f"""
-        SELECT 
-            id, title_lv, title_en
-        FROM 
-            forecast_cities_params
-        WHERE
-            title_lv in ('{daily_params_q}')
-    """).fetchall()
-    where_distance_km = f"{radius} > ACOS((SIN(RADIANS(lat))*SIN(RADIANS({lat})))+(COS(RADIANS(lat))*COS(RADIANS({lat})))*(COS(RADIANS({lon})-RADIANS(lon))))*6371"
+
+
+def get_closest_city(cur, lat, lon, distance=15, max_distance=100):
     cities = cur.execute(f"""
+        WITH city_distances AS (
+            SELECT
+                id,
+                name,
+                CASE type
+                    WHEN 'republikas pilseta' THEN 1
+                    WHEN 'citas pilsētas' THEN 2
+                    WHEN 'rajona centrs' THEN 3
+                    WHEN 'pagasta centrs' THEN 4
+                END as ctype,
+                ACOS((SIN(RADIANS(lat))*SIN(RADIANS({lat})))+(COS(RADIANS(lat))*COS(RADIANS({lat})))*(COS(RADIANS({lon})-RADIANS(lon))))*6371 as distance
+            FROM
+                cities
+            WHERE
+                type in ('republikas pilseta', 'citas pilsētas', 'rajona centrs', 'pagasta centrs')
+        )
         SELECT
-            id, name, type, lat, lon
+            id, name, ctype, distance
         FROM
-            cities
+            city_distances
         WHERE
-            {where_distance_km}
-            AND type in ('republikas pilseta', 'citas pilsētas', 'rajona centrs', 'pagasta centrs')
+            distance <= {distance}
+        ORDER BY
+            ctype ASC, distance ASC
     """).fetchall()
-    valid_cities_q = "','".join([c[0] for c in cities])
-    c_date = datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
-    if warning_mode:
-        c_date = "202407270000"
-    h_param_queries = ",".join([f"(SELECT value FROM forecast_cities AS fci WHERE fc.city_id=fci.city_id AND fc.date=fci.date AND param_id={p[0]}) AS val_{p[0]}" for p in h_params])
-    h_param_where = " OR ".join([f"val_{p[0]} IS NOT NULL" for p in h_params])
-    h_forecast = cur.execute(f"""
+    if len(cities) == 0:
+        if distance < max_distance:
+            return get_closest_city(cur, lat, lon, distance+5)
+        else:
+            return ()
+    else:
+        return cities[0]
+    
+
+def get_forecast(cur, city, c_date, params):
+    if len(city) == 0:
+        return []
+    param_queries = ",".join([f"(SELECT value FROM forecast_cities AS fci WHERE fc.city_id=fci.city_id AND fc.date=fci.date AND param_id={p[0]}) AS val_{p[0]}" for p in params])
+    param_where = " OR ".join([f"val_{p[0]} IS NOT NULL" for p in params])
+    return cur.execute(f"""
         WITH h_temp AS (
             SELECT 
                 city_id, date,
-                {h_param_queries}
+                {param_queries}
             FROM 
                 forecast_cities AS fc
             WHERE
-                city_id in ('{valid_cities_q}') AND date >= '{c_date}'
+                city_id = '{city[0]}' AND date >= '{c_date}'
             GROUP BY
                 city_id, date                    
         )
-        SELECT * FROM h_temp WHERE {h_param_where}
+        SELECT * FROM h_temp WHERE {param_where}
     """).fetchall()
-    d_param_queries = ",".join([f"(SELECT value FROM forecast_cities AS fci WHERE fc.city_id=fci.city_id AND fc.date=fci.date AND param_id={p[0]}) AS val_{p[0]}" for p in d_params])
-    d_param_where = " OR ".join([f"val_{p[0]} IS NOT NULL" for p in d_params])
-    d_forecast = cur.execute(f"""     
-        WITH d_temp AS (
-            SELECT 
-                city_id, date,
-                {d_param_queries}
-            FROM 
-                forecast_cities AS fc
-            WHERE
-                city_id in ('{valid_cities_q}')
-            GROUP BY
-                city_id, date
-        )
-        SELECT * FROM d_temp WHERE {d_param_where}
-    """).fetchall()
+
+
+def get_warnings(cur, lat, lon):
+    # TODO: turning the warning polygons into big squares - this should at least work - should use the actual poly bounds at some point
     relevant_warnings = cur.execute(f"""
-        SELECT DISTINCT
-            warning_id
-        FROM
-            warnings_polygons
-        WHERE
-            {where_distance_km}
+        WITH warning_bounds AS (
+            SELECT
+                warning_id,
+                MIN(lat) as min_lat,
+                MAX(lat) as max_lat,
+                MIN(lon) as min_lon,
+                MAX(lon) as max_lon
+            FROM
+                warnings_polygons
+            GROUP BY
+                warning_id
+        )
+        SELECT warning_id FROM warning_bounds WHERE {lat} >= min_lat AND {lat} <= max_lat AND {lon} <= min_lon AND {lon} >= max_lon
     """).fetchall()
     warnings = []
     if len(relevant_warnings) > 0:
@@ -378,35 +373,34 @@ async def get_city_forecasts(
             WHERE
                 id in ({", ".join([str(w[0]) for w in relevant_warnings])})
         """).fetchall()
-    all_warnings = cur.execute(f"""
-        SELECT DISTINCT
-            intensity_en, COUNT(*)
-        FROM
-            warnings
-        GROUP BY
-            intensity_en
-    """).fetchall()
+    return warnings
+
+
+# http://localhost:8000/api/v1/forecast/cities?lat=56.9730&lon=24.1327
+@app.get("/api/v1/forecast/cities")
+async def get_city_forecasts(lat, lon):
+    h_params = get_params(cur, hourly_params_q)
+    d_params = get_params(cur, daily_params_q)
+    city = get_closest_city(cur, lat, lon)
+    c_date = datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
+    if warning_mode:
+        c_date = "202407270000"
+    h_forecast = get_forecast(cur, city, c_date, h_params)
+    d_forecast = get_forecast(cur, city, c_date, d_params)
+    warnings = get_warnings(cur, lat, lon)
     metadata_f = f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam.json"
     metadata = json.loads(open(metadata_f, "r").read())
     return {
         "hourly_params": [p[1:] for p in h_params],
         "daily_params": [p[1:] for p in d_params],
-        "cities": [{
-            "id": str(c[0]),
-            "name": str(c[1]),
-            "type": str(c[2]),
-            "coords": {
-                "lat": c[3],
-                "lon": c[4]
-            }
-        } for c in cities],
+        "city": {
+            "name": str(city[1]) if len(city) > 0 else None,
+        },
         "hourly_forecast": [{
-            "id": f[0],
             "time": f[1],
             "vals": f[2:]
         } for f in h_forecast],
         "daily_forecast": [{
-            "id": f[0],
             "time": f[1],
             "vals": f[2:]
         } for f in d_forecast],
@@ -418,9 +412,6 @@ async def get_city_forecasts(
             "time": w[7:9],
             "description": w[9:]
         } for w in warnings],
-        "all_warnings": {
-            w[0]: w[1] for w in all_warnings
-        },
         "last_updated": metadata["result"]["metadata_modified"].replace("-", "").replace("T", "").replace(":", "")[:12],
         # TODO: get local timezone instead
         "last_downloaded": datetime.datetime.fromtimestamp(os.path.getmtime(metadata_f)).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"),
@@ -438,28 +429,21 @@ async def get_version():
 
 # http://localhost:8000/api/v1/forecast/test_ctemp?temp=13.2
 @app.get("/api/v1/forecast/test_ctemp")
-async def get_test_ctemp(
-    temp: Annotated[float, Query(title="Current temp")], 
-):
+async def get_test_ctemp(temp):
     metadata_f = f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam.json"
     metadata = json.loads(open(metadata_f, "r").read())
     return {
         "hourly_params": [], 
         "daily_params": [], 
-        "cities": [{
-            "id": "P1183",
-            "name": "Piņķi",
-            "type": "pagasta centrs",
-            "coords": {"lat": 56.9451, "lon": 23.9155}
-        }],
+        "city": {
+            "name": "Piņķi"
+        },
         "hourly_forecast": [{
-            "id": "P1183",
             "time": 202407292100,
             "vals": [2103.0, temp, 13.7, 9.5, 320.0, 19.2, 0.0, 0.0, 0.0]
         }],
         "daily_forecast": [],
         "warnings": [],
-        "all_warnings": {},
         "last_updated": metadata["result"]["metadata_modified"].replace("-", "").replace("T", "").replace(":", "")[:12],
         # TODO: get local timezone instead
         "last_downloaded": datetime.datetime.fromtimestamp(os.path.getmtime(metadata_f)).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"),
