@@ -378,7 +378,7 @@ def get_warnings(cur, lat, lon):
 
 # http://localhost:8000/api/v1/forecast/cities?lat=56.9730&lon=24.1327
 @app.get("/api/v1/forecast/cities")
-async def get_city_forecasts(lat, lon):
+async def get_city_forecasts(lat: float, lon: float):
     h_params = get_params(cur, hourly_params_q)
     d_params = get_params(cur, daily_params_q)
     city = get_closest_city(cur, lat, lon)
@@ -427,7 +427,7 @@ async def get_version():
 
 # http://localhost:8000/api/v1/forecast/test_ctemp?temp=13.2
 @app.get("/api/v1/forecast/test_ctemp")
-async def get_test_ctemp(temp):
+async def get_test_ctemp(temp: float):
     metadata_f = f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam.json"
     metadata = json.loads(open(metadata_f, "r").read())
     return {
