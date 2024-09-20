@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import pytz
 import time
@@ -19,6 +20,8 @@ warning_mode = False
 db_f = "meteo.db"
 if warning_mode:
     db_f = "meteo_warning_test.db"
+
+regex = re.compile('[^a-zA-Z ēūīļķģšāčņĒŪĪĀŠĢĶĻŽČŅ]')
 
 # TODO: don't keep a global db con open - open it up when necessary
 con = sqlite3.connect(db_f)
@@ -464,7 +467,7 @@ async def get_city_forecasts(lat: float, lon: float):
 # http://localhost:8000/api/v1/forecast/cities/name?city_name=vamier
 @app.get("/api/v1/forecast/cities/name")
 async def get_city_forecasts(city_name: str):
-    city = get_city_by_name(city_name)
+    city = get_city_by_name(regex.sub('', city_name))
     return get_city_reponse(city, city[2] if len(city) > 0 else None, city[3] if len(city) > 0 else None)
 
 
