@@ -123,3 +123,9 @@ haproxy -f /etc/haproxy/haproxy.cfg
 screen -d -m python main.py
 screen -d -m haproxy -f /etc/haproxy/haproxy.cfg
 ```
+
+https://github.com/nalgeon/sqlpkg-cli
+```bash
+curl -sS https://webi.sh/sqlpkg | sh
+sqlpkg install sqlite/spellfix
+```

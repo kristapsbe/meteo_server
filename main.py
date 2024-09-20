@@ -22,6 +22,9 @@ if warning_mode:
 
 # TODO: don't keep a global db con open - open it up when necessary
 con = sqlite3.connect(db_f)
+con.enable_load_extension(True)
+con.load_extension('/Users/kristaps/.sqlpkg/sqlite/spellfix/spellfix.dylib')   
+
 cur = con.cursor()
 # https://semver.org/
 # Given a version number MAJOR.MINOR.PATCH, increment the:
@@ -290,12 +293,13 @@ def get_closest_city(cur, lat, lon, distance=15, max_distance=100):
                     WHEN 'citas pilsētas' THEN 2
                     WHEN 'rajona centrs' THEN 3
                     WHEN 'pagasta centrs' THEN 4
+                    WHEN 'ciems' THEN 5
                 END as ctype,
                 ACOS((SIN(RADIANS(lat))*SIN(RADIANS({lat})))+(COS(RADIANS(lat))*COS(RADIANS({lat})))*(COS(RADIANS({lon})-RADIANS(lon))))*6371 as distance
             FROM
                 cities
             WHERE
-                type in ('republikas pilseta', 'citas pilsētas', 'rajona centrs', 'pagasta centrs')
+                type in ('republikas pilseta', 'citas pilsētas', 'rajona centrs', 'pagasta centrs', 'ciems')
         )
         SELECT
             id, name, ctype, distance
@@ -305,12 +309,49 @@ def get_closest_city(cur, lat, lon, distance=15, max_distance=100):
             distance <= {distance}
         ORDER BY
             ctype ASC, distance ASC
+        LIMIT 1
     """).fetchall()
     if len(cities) == 0:
         if distance < max_distance:
             return get_closest_city(cur, lat, lon, distance+5)
         else:
             return ()
+    else:
+        return cities[0]
+    
+    
+def get_city_by_name(city_name):
+    cities = cur.execute(f"""
+        WITH edit_distances AS (
+            SELECT
+                id,
+                name,
+                lat,
+                lon,
+                CASE type
+                    WHEN 'republikas pilseta' THEN 1
+                    WHEN 'citas pilsētas' THEN 2
+                    WHEN 'rajona centrs' THEN 3
+                    WHEN 'pagasta centrs' THEN 4
+                    WHEN 'ciems' THEN 5
+                END as ctype,
+                editdist3(name, '{city_name}') AS distance
+            FROM
+                cities
+            WHERE
+                type in ('republikas pilseta', 'citas pilsētas', 'rajona centrs', 'pagasta centrs', 'ciems')
+        )
+        SELECT
+            id, name, lat, lon, ctype, distance
+        FROM
+            edit_distances
+        ORDER BY
+            distance ASC, ctype ASC
+        LIMIT 1
+    """).fetchall()
+    print(cities[:10])
+    if len(cities) == 0:
+        return ()
     else:
         return cities[0]
     
@@ -376,12 +417,9 @@ def get_warnings(cur, lat, lon):
     return warnings
 
 
-# http://localhost:8000/api/v1/forecast/cities?lat=56.9730&lon=24.1327
-@app.get("/api/v1/forecast/cities")
-async def get_city_forecasts(lat: float, lon: float):
+def get_city_reponse(city, lat, lon):
     h_params = get_params(cur, hourly_params_q)
     d_params = get_params(cur, daily_params_q)
-    city = get_closest_city(cur, lat, lon)
     c_date = datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
     if warning_mode:
         c_date = "202407270000"
@@ -414,6 +452,20 @@ async def get_city_forecasts(lat: float, lon: float):
         # TODO: get local timezone instead
         "last_downloaded": datetime.datetime.fromtimestamp(os.path.getmtime(metadata_f)).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"),
     }
+
+
+# http://localhost:8000/api/v1/forecast/cities?lat=56.9730&lon=24.1327
+@app.get("/api/v1/forecast/cities")
+async def get_city_forecasts(lat: float, lon: float):
+    city = get_closest_city(cur, lat, lon)
+    return get_city_reponse(city, lat, lon)
+
+
+# http://localhost:8000/api/v1/forecast/cities/name?city_name=vamier
+@app.get("/api/v1/forecast/cities/name")
+async def get_city_forecasts(city_name: str):
+    city = get_city_by_name(city_name)
+    return get_city_reponse(city, city[2] if len(city) > 0 else None, city[3] if len(city) > 0 else None)
 
 
 # http://localhost:8000/api/v1/version
