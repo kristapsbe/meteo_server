@@ -128,4 +128,5 @@ https://github.com/nalgeon/sqlpkg-cli
 ```bash
 curl -sS https://webi.sh/sqlpkg | sh
 sqlpkg install sqlite/spellfix
+sqlpkg which sqlite/spellfix
 ```
