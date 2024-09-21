@@ -11,8 +11,7 @@ import datetime
 import requests
 import threading
 
-from typing import Annotated
-from fastapi import FastAPI, Query
+from fastapi import FastAPI
 
 
 # TODO: when set to True this depends on responses containing weather warnings being present on the computer
@@ -23,11 +22,12 @@ if warning_mode:
 
 regex = re.compile('[^a-zA-Z ēūīļķģšāčņĒŪĪĀŠĢĶĻŽČŅ]')
 
-# TODO: don't keep a global db con open - open it up when necessary
 con = sqlite3.connect(db_f)
 con.enable_load_extension(True)
 con.load_extension('/Users/kristaps/.sqlpkg/sqlite/spellfix/spellfix.dylib')   
 
+# the cursor doesn't actually do anything in sqlite3, just reusing it
+# https://stackoverflow.com/questions/54395773/what-are-the-side-effects-of-reusing-a-sqlite3-cursor
 cur = con.cursor()
 # https://semver.org/
 # Given a version number MAJOR.MINOR.PATCH, increment the:
