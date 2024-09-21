@@ -286,6 +286,9 @@ def get_params(cur, param_q):
 
 
 def get_closest_city(cur, lat, lon, distance=15, max_distance=100):
+    # no point in even looking if we're outside of this box
+    if lat < 55.6 or lat > 58.2 or lon < 20.8 or lon > 28.3:
+        return ()
     cities = cur.execute(f"""
         WITH city_distances AS (
             SELECT
@@ -324,6 +327,13 @@ def get_closest_city(cur, lat, lon, distance=15, max_distance=100):
     
     
 def get_city_by_name(city_name):
+    print(cur.execute(f"""
+        SELECT
+            min(lat), max(lat), min(lon), max(lon)
+        FROM
+            cities
+    """).fetchall())
+
     cities = cur.execute(f"""
         WITH edit_distances AS (
             SELECT
