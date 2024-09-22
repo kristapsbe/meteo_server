@@ -327,13 +327,6 @@ def get_closest_city(cur, lat, lon, distance=15, max_distance=100):
     
     
 def get_city_by_name(city_name):
-    print(cur.execute(f"""
-        SELECT
-            min(lat), max(lat), min(lon), max(lon)
-        FROM
-            cities
-    """).fetchall())
-
     cities = cur.execute(f"""
         WITH edit_distances AS (
             SELECT
@@ -362,7 +355,6 @@ def get_city_by_name(city_name):
             distance ASC, ctype ASC
         LIMIT 1
     """).fetchall()
-    print(cities[:10])
     if len(cities) == 0:
         return ()
     else:
