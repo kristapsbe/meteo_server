@@ -12,6 +12,7 @@ import requests
 import threading
 
 from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 
 
 # TODO: when set to True this depends on responses containing weather warnings being present on the computer
@@ -480,6 +481,12 @@ async def get_version():
         "version": app.version,
         "commit": git_commit
     }
+
+
+# http://localhost:8000/privacy-policy
+@app.get("/privacy-policy", response_class=HTMLResponse)
+async def get_version():
+    return open("privacy-policy.html").read()
 
 
 # http://localhost:8000/api/v1/forecast/test_ctemp?temp=13.2
