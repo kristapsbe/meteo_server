@@ -423,7 +423,7 @@ def get_warnings(cur, lat, lon):
     return warnings
 
 
-def get_city_reponse(city, lat, lon):
+def get_city_reponse(city, lat, lon, add_params):
     h_params = get_params(cur, hourly_params_q)
     d_params = get_params(cur, daily_params_q)
     c_date = datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
@@ -434,9 +434,8 @@ def get_city_reponse(city, lat, lon):
     warnings = get_warnings(cur, lat, lon)
     metadata_f = f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam.json"
     metadata = json.loads(open(metadata_f, "r").read())
-    return {
-        "hourly_params": [p[1:] for p in h_params],
-        "daily_params": [p[1:] for p in d_params],
+
+    ret_val = {
         "city": str(city[1]) if len(city) > 0 else "",
         "hourly_forecast": [{
             "time": f[1],
@@ -458,20 +457,24 @@ def get_city_reponse(city, lat, lon):
         # TODO: get local timezone instead
         "last_downloaded": datetime.datetime.fromtimestamp(os.path.getmtime(metadata_f)).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"),
     }
+    if add_params:
+        ret_val["hourly_params"] = [p[1:] for p in h_params]
+        ret_val["daily_params"] = [p[1:] for p in d_params]
+    return ret_val
 
 
 # http://localhost:8000/api/v1/forecast/cities?lat=56.9730&lon=24.1327
 @app.get("/api/v1/forecast/cities")
-async def get_city_forecasts(lat: float, lon: float):
+async def get_city_forecasts(lat: float, lon: float, add_params: bool = True):
     city = get_closest_city(cur, lat, lon)
-    return get_city_reponse(city, lat, lon)
+    return get_city_reponse(city, lat, lon, add_params)
 
 
 # http://localhost:8000/api/v1/forecast/cities/name?city_name=vamier
 @app.get("/api/v1/forecast/cities/name")
-async def get_city_forecasts(city_name: str):
+async def get_city_forecasts(city_name: str, add_params: bool = True):
     city = get_city_by_name(regex.sub('', city_name))
-    return get_city_reponse(city, city[2] if len(city) > 0 else None, city[3] if len(city) > 0 else None)
+    return get_city_reponse(city, city[2] if len(city) > 0 else None, city[3] if len(city) > 0 else None, add_params)
 
 
 # http://localhost:8000/api/v1/version
