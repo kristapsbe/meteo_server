@@ -130,3 +130,5 @@ curl -sS https://webi.sh/sqlpkg | sh
 sqlpkg install sqlite/spellfix
 sqlpkg which sqlite/spellfix
 ```
+
+aurora forecast https://services.swpc.noaa.gov/json/ovation_aurora_latest.json
