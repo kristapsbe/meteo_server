@@ -131,4 +131,4 @@ sqlpkg install sqlite/spellfix
 sqlpkg which sqlite/spellfix
 ```
 
-aurora forecast https://services.swpc.noaa.gov/json/ovation_aurora_latest.json
+aurora forecast https://services.swpc.noaa.gov/json/ovation_aurora_latest.json, take a look at https://github.com/djtimca/aurora-api?tab=readme-ov-file for inspiration
