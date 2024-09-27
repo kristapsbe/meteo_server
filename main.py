@@ -229,6 +229,48 @@ def update_db():
         upd_con.close()
     
 
+def update_aurora_forecast(reload=900): # TODO: cleanup
+    upd_con = sqlite3.connect(db_f)
+    try:
+        upd_cur = upd_con.cursor()
+
+        url = "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"
+        fpath = "data/ovation_aurora_latest.json"
+        times_fpath = "data/ovation_aurora_times.json"
+
+        if not os.path.exists(fpath) or time.time()-os.path.getmtime(fpath) > reload:
+            r = requests.get(url)
+            if r.status_code == 200:
+                with open(fpath, "wb") as f:
+                    f.write(r.content)       
+                aurora_data = json.loads(r.content)     
+                with open(times_fpath, "w") as f:
+                    f.write(json.dumps({
+                        "Observation Time": aurora_data["Observation Time"], 
+                        "Forecast Time": aurora_data["Forecast Time"],
+                    }))
+                upd_cur.execute(f"DROP TABLE IF EXISTS aurora_prob") # no point in storing old data
+                upd_cur.execute(f"""
+                    CREATE TABLE aurora_prob (
+                        lat INTEGER, 
+                        lon INTEGER, 
+                        aurora INTEGER
+                    )        
+                """)
+                upd_cur.executemany(f"""
+                INSERT INTO aurora_prob (lat, lon, aurora) 
+                VALUES (?, ?, ?)
+                """, aurora_data["coordinates"])
+        else:
+            logging.info(f"A recent version of {fpath} exists - not downloading ({int(time.time()-os.path.getmtime(fpath))})")
+        upd_con.commit() # TODO: last updared should come from here
+        logging.info("aurora table update finished")
+    except BaseException as e:
+        logging.info(f"aurora table update FAILED - {e}")
+    finally:
+        upd_con.close()
+
+
 def run_downloads(datasets, refresh_timer=30.0):
     try:
         logging.info(f"Triggering refresh")
@@ -237,6 +279,7 @@ def run_downloads(datasets, refresh_timer=30.0):
             valid_new = download_resources(ds, reload) or valid_new
         if valid_new:
             update_db()
+        update_aurora_forecast()
     except BaseException as e: # https://docs.python.org/3/library/exceptions.html#exception-hierarchy
         logging.info(f"Refresh failed - {e}")
     finally:
@@ -423,7 +466,32 @@ def get_warnings(cur, lat, lon):
     return warnings
 
 
-def get_city_reponse(city, lat, lon, add_params):
+def get_aurora_probability(cur, lat, lon):
+    aurora_probs = cur.execute(f"""
+        WITH aurora_prob_dists AS (
+            SELECT
+                aurora,
+                ACOS((SIN(RADIANS(lat))*SIN(RADIANS({lat})))+(COS(RADIANS(lat))*COS(RADIANS({lat})))*(COS(RADIANS({lon})-RADIANS(lon))))*6371 as distance
+            FROM
+                aurora_prob
+        )
+        SELECT
+            aurora, distance
+        FROM
+            aurora_prob_dists
+        ORDER BY
+            distance ASC
+        LIMIT 1
+    """).fetchall()[0]
+    aurora_probs_time = json.loads(open("data/ovation_aurora_times.json", "r").read())
+
+    return {
+        "prob": aurora_probs[0],
+        "time": datetime.datetime.strptime(aurora_probs_time["Forecast Time"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
+    }
+
+
+def get_city_reponse(city, lat, lon, add_params, add_aurora):
     h_params = get_params(cur, hourly_params_q)
     d_params = get_params(cur, daily_params_q)
     c_date = datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
@@ -460,21 +528,24 @@ def get_city_reponse(city, lat, lon, add_params):
     if add_params:
         ret_val["hourly_params"] = [p[1:] for p in h_params]
         ret_val["daily_params"] = [p[1:] for p in d_params]
+
+    if add_aurora:
+        ret_val["aurora_probs"] = get_aurora_probability(cur, lat, lon)
     return ret_val
 
 
 # http://localhost:8000/api/v1/forecast/cities?lat=56.9730&lon=24.1327
 @app.get("/api/v1/forecast/cities")
-async def get_city_forecasts(lat: float, lon: float, add_params: bool = True):
+async def get_city_forecasts(lat: float, lon: float, add_params: bool = True, add_aurora: bool = False):
     city = get_closest_city(cur, lat, lon)
-    return get_city_reponse(city, lat, lon, add_params)
+    return get_city_reponse(city, lat, lon, add_params, add_aurora)
 
 
 # http://localhost:8000/api/v1/forecast/cities/name?city_name=vamier
 @app.get("/api/v1/forecast/cities/name")
-async def get_city_forecasts(city_name: str, add_params: bool = True):
+async def get_city_forecasts(city_name: str, add_params: bool = True, add_aurora: bool = False):
     city = get_city_by_name(regex.sub('', city_name))
-    return get_city_reponse(city, city[2] if len(city) > 0 else None, city[3] if len(city) > 0 else None, add_params)
+    return get_city_reponse(city, city[2] if len(city) > 0 else None, city[3] if len(city) > 0 else None, add_params, add_aurora)
 
 
 # http://localhost:8000/api/v1/version
@@ -490,29 +561,6 @@ async def get_version():
 @app.get("/privacy-policy", response_class=HTMLResponse)
 async def get_version():
     return open("privacy-policy.html").read()
-
-
-# http://localhost:8000/api/v1/forecast/test_ctemp?temp=13.2
-@app.get("/api/v1/forecast/test_ctemp")
-async def get_test_ctemp(temp: float):
-    metadata_f = f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam.json"
-    metadata = json.loads(open(metadata_f, "r").read())
-    return {
-        "hourly_params": [], 
-        "daily_params": [], 
-        "city": {
-            "name": "Piņķi"
-        },
-        "hourly_forecast": [{
-            "time": 202407292100,
-            "vals": [2103.0, temp, 13.7, 9.5, 320.0, 19.2, 0.0, 0.0, 0.0]
-        }],
-        "daily_forecast": [],
-        "warnings": [],
-        "last_updated": metadata["result"]["metadata_modified"].replace("-", "").replace("T", "").replace(":", "")[:12],
-        # TODO: get local timezone instead
-        "last_downloaded": datetime.datetime.fromtimestamp(os.path.getmtime(metadata_f)).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"),
-    }
 
 
 if __name__ == "__main__":
