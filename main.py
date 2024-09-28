@@ -356,14 +356,14 @@ def get_closest_city(cur, lat, lon, distance=15, max_distance=100):
         FROM
             city_distances
         WHERE
-            distance <= {distance}
+            distance <= ({distance}/5)
         ORDER BY
             ctype ASC, distance ASC
         LIMIT 1
     """).fetchall()
     if len(cities) == 0:
         if distance < max_distance:
-            return get_closest_city(cur, lat, lon, distance+5, max_distance)
+            return get_closest_city(cur, lat, lon, distance+1, max_distance)
         else:
             return ()
     else:
@@ -537,7 +537,7 @@ def get_city_reponse(city, lat, lon, add_params, add_aurora):
 # http://localhost:8000/api/v1/forecast/cities?lat=56.9730&lon=24.1327
 @app.get("/api/v1/forecast/cities")
 async def get_city_forecasts(lat: float, lon: float, add_params: bool = True, add_aurora: bool = False):
-    city = get_closest_city(cur, lat, lon, 4, 80)
+    city = get_closest_city(cur, lat, lon, 1, 8)
     return get_city_reponse(city, lat, lon, add_params, add_aurora)
 
 
