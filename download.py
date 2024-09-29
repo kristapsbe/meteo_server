@@ -195,46 +195,39 @@ def update_db():
         upd_con.close()
     
 
-def update_aurora_forecast(reload=900): # TODO: cleanup
+def update_aurora_forecast(): # TODO: cleanup
     upd_con = sqlite3.connect(db_f)
-    try:
-        upd_cur = upd_con.cursor()
+    upd_cur = upd_con.cursor()
 
-        url = "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"
-        fpath = "data/ovation_aurora_latest.json"
-        times_fpath = "data/ovation_aurora_times.json"
+    url = "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"
+    fpath = "data/ovation_aurora_latest.json"
+    times_fpath = "data/ovation_aurora_times.json"
 
-        if not os.path.exists(fpath) or time.time()-os.path.getmtime(fpath) > reload:
-            r = requests.get(url)
-            if r.status_code == 200:
-                with open(fpath, "wb") as f:
-                    f.write(r.content)       
-                aurora_data = json.loads(r.content)     
-                with open(times_fpath, "w") as f:
-                    f.write(json.dumps({
-                        "Observation Time": aurora_data["Observation Time"], 
-                        "Forecast Time": aurora_data["Forecast Time"],
-                    }))
-                upd_cur.execute(f"DROP TABLE IF EXISTS aurora_prob") # no point in storing old data
-                upd_cur.execute(f"""
-                    CREATE TABLE aurora_prob (
-                        lat INTEGER, 
-                        lon INTEGER, 
-                        aurora INTEGER
-                    )        
-                """)
-                upd_cur.executemany(f"""
-                INSERT INTO aurora_prob (lat, lon, aurora) 
-                VALUES (?, ?, ?)
-                """, aurora_data["coordinates"])
-        else:
-            logging.info(f"A recent version of {fpath} exists - not downloading ({int(time.time()-os.path.getmtime(fpath))})")
-        upd_con.commit() # TODO: last updared should come from here
-        logging.info("aurora table update finished")
-    except BaseException as e:
-        logging.info(f"aurora table update FAILED - {e}")
-    finally:
-        upd_con.close()
+    r = requests.get(url)
+    if r.status_code == 200:
+        with open(fpath, "wb") as f:
+            f.write(r.content)       
+        aurora_data = json.loads(r.content)     
+        with open(times_fpath, "w") as f:
+            f.write(json.dumps({
+                "Observation Time": aurora_data["Observation Time"], 
+                "Forecast Time": aurora_data["Forecast Time"],
+            }))
+        upd_cur.execute(f"DROP TABLE IF EXISTS aurora_prob") # no point in storing old data
+        upd_cur.execute(f"""
+            CREATE TABLE aurora_prob (
+                lat INTEGER, 
+                lon INTEGER, 
+                aurora INTEGER
+            )        
+        """)
+        upd_cur.executemany(f"""
+        INSERT INTO aurora_prob (lat, lon, aurora) 
+        VALUES (?, ?, ?)
+        """, aurora_data["coordinates"])
+            
+    upd_con.commit()
+    upd_con.close()
 
 
 def run_downloads(datasets):
