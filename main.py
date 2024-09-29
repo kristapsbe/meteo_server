@@ -538,7 +538,7 @@ def get_city_reponse(city, lat, lon, add_params, add_aurora):
 # http://localhost:8000/api/v1/forecast/cities?lat=56.9730&lon=24.1327
 @app.get("/api/v1/forecast/cities")
 async def get_city_forecasts(lat: float, lon: float, add_params: bool = True, add_aurora: bool = False):
-    city = get_closest_city(cur, lat, lon, 8, 80)
+    city = get_closest_city(cur, lat, lon, 13, 80) # TODO revisit starting dist
     return get_city_reponse(city, lat, lon, add_params, add_aurora)
 
 
