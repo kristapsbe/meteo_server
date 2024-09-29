@@ -133,5 +133,9 @@ sqlpkg which sqlite/spellfix
 
 crontab https://crontab.guru/
 ```
+crontab -e
+```
+
+```
 */5 * * * * /root/meteo_server/download.sh
 ```
