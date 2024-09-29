@@ -130,3 +130,8 @@ curl -sS https://webi.sh/sqlpkg | sh
 sqlpkg install sqlite/spellfix
 sqlpkg which sqlite/spellfix
 ```
+
+crontab https://crontab.guru/
+```
+*/5 * * * * /root/meteo_server/download.sh
+```
