@@ -27,6 +27,10 @@ con.load_extension(editdist_extension)
 # the cursor doesn't actually do anything in sqlite3, just reusing it
 # https://stackoverflow.com/questions/54395773/what-are-the-side-effects-of-reusing-a-sqlite3-cursor
 cur = con.cursor()
+data_f = "data/"
+if warning_mode:
+    data_f = "data_warnings/"
+
 # https://semver.org/
 # Given a version number MAJOR.MINOR.PATCH, increment the:
 #    MAJOR version when you make incompatible API changes
