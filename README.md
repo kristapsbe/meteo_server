@@ -141,5 +141,5 @@ chmod +x download.sh
 ```
 
 ```
-*/15 * * * * /root/meteo_server/download.sh
+*/20 * * * * /root/meteo_server/download.sh
 ```
