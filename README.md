@@ -137,5 +137,9 @@ crontab -e
 ```
 
 ```
+chmod +x download.sh
+```
+
+```
 */5 * * * * /root/meteo_server/download.sh
 ```
