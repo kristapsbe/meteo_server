@@ -13,6 +13,7 @@ import threading
 
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
+from settings import editdist_extension
 
 
 # TODO: when set to True this depends on responses containing weather warnings being present on the computer
@@ -25,7 +26,7 @@ regex = re.compile('[^a-zA-Z ēūīļķģšāčņĒŪĪĀŠĢĶĻŽČŅ]')
 
 con = sqlite3.connect(db_f)
 con.enable_load_extension(True)
-con.load_extension('/Users/kristaps/.sqlpkg/sqlite/spellfix/spellfix.dylib')   
+con.load_extension(editdist_extension)   
 
 # the cursor doesn't actually do anything in sqlite3, just reusing it
 # https://stackoverflow.com/questions/54395773/what-are-the-side-effects-of-reusing-a-sqlite3-cursor
@@ -537,7 +538,7 @@ def get_city_reponse(city, lat, lon, add_params, add_aurora):
 # http://localhost:8000/api/v1/forecast/cities?lat=56.9730&lon=24.1327
 @app.get("/api/v1/forecast/cities")
 async def get_city_forecasts(lat: float, lon: float, add_params: bool = True, add_aurora: bool = False):
-    city = get_closest_city(cur, lat, lon, 5, 80)
+    city = get_closest_city(cur, lat, lon, 8, 80)
     return get_city_reponse(city, lat, lon, add_params, add_aurora)
 
 
