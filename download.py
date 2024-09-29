@@ -26,20 +26,13 @@ if warning_mode:
     data_f = "data_warnings/"
 
 
-def refresh_file(url, fpath, reload, verify_download):
-    valid_new = False
-    if not os.path.exists(fpath) or time.time()-os.path.getmtime(fpath) > reload:
-        logging.info(f"Downloading {fpath}")
-        r = requests.get(url)
-        # TODO: there's a damaged .csv - may want to deal with this in a more generic fashion (?)
-        r_text = r.content.replace(b'Pressure, (hPa)', b'Pressure (hPa)') if fpath == f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forcity_param.csv" else r.content
-        if r.status_code == 200 and verify_download(r_text):
-            with open(fpath, "wb") as f: # this can be eiher a json or csv
-                f.write(r_text)
-            valid_new = True
-    else:
-        logging.info(f"A recent version of {fpath} exists - not downloading ({int(time.time()-os.path.getmtime(fpath))})")
-    return valid_new
+def refresh_file(url, fpath, verify_download):
+    r = requests.get(url)
+    # TODO: there's a damaged .csv - may want to deal with this in a more generic fashion (?)
+    r_text = r.content.replace(b'Pressure, (hPa)', b'Pressure (hPa)') if fpath == f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forcity_param.csv" else r.content
+    if r.status_code == 200 and verify_download(r_text):
+        with open(fpath, "wb") as f: # this can be eiher a json or csv
+            f.write(r_text)
 
 
 def verif_json(s):
@@ -55,21 +48,18 @@ verif_funcs = {
 }
 
 
-def download_resources(ds_name, reload):
+def download_resources(ds_name):
     ds_path = f"{data_f}{ds_name}.json"
-    valid_new = refresh_file(f"{base_url}action/package_show?id={ds_name}", ds_path, reload, verif_funcs['json'])
-    ds_data = {}
-    if valid_new: # don't want to download new data csv's unless I get a new datasource json first
-        ds_data = json.loads(open(ds_path, "r").read())
-        for r in ds_data['result']['resources']:
-            refresh_file(r['url'], f"{data_f}{ds_name}/{r['url'].split('/')[-1]}", reload, verif_funcs['csv'])
-    return valid_new
+    refresh_file(f"{base_url}action/package_show?id={ds_name}", ds_path, verif_funcs['json'])
+    ds_data = json.loads(open(ds_path, "r").read())
+    for r in ds_data['result']['resources']:
+        refresh_file(r['url'], f"{data_f}{ds_name}/{r['url'].split('/')[-1]}", verif_funcs['csv'])
 
 
-target_ds = {
-    "hidrometeorologiskie-bridinajumi": 900,
-    "meteorologiskas-prognozes-apdzivotam-vietam": 900
-}
+target_ds = [
+    "hidrometeorologiskie-bridinajumi",
+    "meteorologiskas-prognozes-apdzivotam-vietam"
+]
 
 for ds in target_ds:
     os.makedirs(f"{data_f}{ds}/", exist_ok=True)
@@ -249,11 +239,9 @@ def update_aurora_forecast(reload=900): # TODO: cleanup
 
 def run_downloads(datasets):
     logging.info(f"Triggering refresh")
-    valid_new = False
-    for ds, reload in datasets.items():
-        valid_new = download_resources(ds, reload) or valid_new
-    if valid_new:
-        update_db()
+    for ds in datasets:
+        download_resources(ds)
+    update_db()
     update_aurora_forecast()
 
 
