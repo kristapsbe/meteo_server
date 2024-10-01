@@ -7,6 +7,7 @@ import logging
 import uvicorn
 import datetime
 
+from utils import simlpify_string
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from settings import editdist_extension
@@ -18,7 +19,7 @@ db_f = "meteo.db"
 if warning_mode:
     db_f = "meteo_warning_test.db"
 
-regex = re.compile('[^a-zA-Z ēūīļķģšāčņĒŪĪĀŠĢĶĻŽČŅ]')
+regex = re.compile('[^a-zA-Z āčēģīķļņšūžĀČĒĢĪĶĻŅŠŪŽ]')
 
 con = sqlite3.connect(db_f)
 con.enable_load_extension(True)
@@ -138,7 +139,7 @@ def get_city_by_name(city_name):
                     WHEN 'pagasta centrs' THEN 4
                     WHEN 'ciems' THEN 5
                 END as ctype,
-                editdist3(name, '{city_name}') AS distance
+                editdist3(search_name, '{city_name}') AS distance
             FROM
                 cities
             WHERE
@@ -297,7 +298,7 @@ async def get_city_forecasts(lat: float, lon: float, add_params: bool = True, ad
 # http://localhost:8000/api/v1/forecast/cities/name?city_name=vamier
 @app.get("/api/v1/forecast/cities/name")
 async def get_city_forecasts(city_name: str, add_params: bool = True, add_aurora: bool = False):
-    city = get_city_by_name(regex.sub('', city_name))
+    city = get_city_by_name(simlpify_string(regex.sub('', city_name).strip().lower()))
     return get_city_reponse(city, city[2] if len(city) > 0 else None, city[3] if len(city) > 0 else None, add_params, add_aurora)
 
 

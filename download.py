@@ -1,12 +1,14 @@
 import os
-import re
 import json
-import time
 import pandas as pd
 import sqlite3
 import logging
 import requests
 
+from utils import simlpify_string
+
+
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s')
 
 # TODO: when set to True this depends on responses containing weather warnings being present on the computer
 warning_mode = False
@@ -67,6 +69,7 @@ for ds in target_ds:
 col_parsers = {
     "TEXT": lambda r: str(r).strip(),
     "TITLE_TEXT": lambda r: str(r).strip().title(),
+    "CLEANED_TEXT": lambda r: simlpify_string(str(r).strip().lower()),
     "INTEGER": lambda r: int(str(r).strip()),
     "REAL": lambda r: float(str(r).strip()),
     # TODO: do I really need minutes? - would mean that I consistently work with datetime strings that are YYYYMMDDHHMM
@@ -81,19 +84,19 @@ table_conf = [{
     "files": [f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/cities.csv"],
     "table_name": "cities",
     "cols": [
-        {"name": "id", "type": "TEXT", "pk": True},
-        {"name": "name", "type": "TITLE_TEXT"},
-        {"name": "lat", "type": "REAL"},
-        {"name": "lon", "type": "REAL"},
-        {"name": "type", "type": "TEXT"},
-    ]
+        [{"name": "id", "type": "TEXT", "pk": True}],
+        [{"name": "name", "type": "TITLE_TEXT"}, {"name": "search_name", "type": "CLEANED_TEXT"}],
+        [{"name": "lat", "type": "REAL"}],
+        [{"name": "lon", "type": "REAL"}],
+        [{"name": "type", "type": "TEXT"}],
+    ],
 },{
     "files": [f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forcity_param.csv"],
     "table_name": "forecast_cities_params",
     "cols": [
-        {"name": "id", "type": "INTEGER", "pk": True},
-        {"name": "title_lv", "type": "TEXT"},
-        {"name": "title_en", "type": "TEXT"},
+        [{"name": "id", "type": "INTEGER", "pk": True}],
+        [{"name": "title_lv", "type": "TEXT"}],
+        [{"name": "title_en", "type": "TEXT"}],
     ]
 },{
     "files": [
@@ -102,52 +105,52 @@ table_conf = [{
     ],
     "table_name": "forecast_cities",
     "cols": [
-        {"name": "city_id", "type": "TEXT", "pk": True},
-        {"name": "param_id", "type": "INTEGER", "pk": True},
-        {"name": "date", "type": "DATEH", "pk": True},
-        {"name": "value", "type": "REAL"},
+        [{"name": "city_id", "type": "TEXT", "pk": True}],
+        [{"name": "param_id", "type": "INTEGER", "pk": True}],
+        [{"name": "date", "type": "DATEH", "pk": True}],
+        [{"name": "value", "type": "REAL"}],
     ]
 },{
     "files": [f"{data_f}hidrometeorologiskie-bridinajumi/novadi.csv"],
     "table_name": "municipalities",
     "cols": [
-        {"name": "id", "type": "INTEGER", "pk": True},
-        {"name": "name_lv", "type": "TEXT"},
-        {"name": "name_en", "type": "TEXT"},
+        [{"name": "id", "type": "INTEGER", "pk": True}],
+        [{"name": "name_lv", "type": "TEXT"}],
+        [{"name": "name_en", "type": "TEXT"}],
     ]
 },{
     "files": [f"{data_f}hidrometeorologiskie-bridinajumi/bridinajumu_novadi.csv"],
     "table_name": "warnings_municipalities",
     "cols": [
-        {"name": "warning_id", "type": "INTEGER"},
-        {"name": "municipality_id", "type": "INTEGER"},
+        [{"name": "warning_id", "type": "INTEGER"}],
+        [{"name": "municipality_id", "type": "INTEGER"}],
     ]
 },{
     "files": [f"{data_f}hidrometeorologiskie-bridinajumi/bridinajumu_poligoni.csv"],
     "table_name": "warnings_polygons",
     "cols": [
-        {"name": "warning_id", "type": "INTEGER", "pk": True},
-        {"name": "polygon_id", "type": "INTEGER", "pk": True},
-        {"name": "lat", "type": "REAL"},
-        {"name": "lon", "type": "REAL"},
-        {"name": "order_id", "type": "INTEGER", "pk": True},
+        [{"name": "warning_id", "type": "INTEGER", "pk": True}],
+        [{"name": "polygon_id", "type": "INTEGER", "pk": True}],
+        [{"name": "lat", "type": "REAL"}],
+        [{"name": "lon", "type": "REAL"}],
+        [{"name": "order_id", "type": "INTEGER", "pk": True}],
     ]
 },{ # TODO: partial at the moment - finish this
     "files": [f"{data_f}hidrometeorologiskie-bridinajumi/bridinajumu_metadata.csv"],
     "table_name": "warnings",
     "cols": [
-        {"name": "number", "type": "TEXT", "pk": True},
-        {"name": "id", "type": "INTEGER", "pk": True},
-        {"name": "intensity_lv", "type": "TEXT"},
-        {"name": "intensity_en", "type": "TEXT"},
-        {"name": "regions_lv", "type": "TEXT"},
-        {"name": "regions_en", "type": "TEXT"},
-        {"name": "type_lv", "type": "TEXT"},
-        {"name": "type_en", "type": "TEXT"},
-        {"name": "time_from", "type": "DATEH"},
-        {"name": "time_to", "type": "DATEH"},
-        {"name": "description_lv", "type": "TEXT"},
-        {"name": "description_en", "type": "TEXT"},
+        [{"name": "number", "type": "TEXT", "pk": True}],
+        [{"name": "id", "type": "INTEGER", "pk": True}],
+        [{"name": "intensity_lv", "type": "TEXT"}],
+        [{"name": "intensity_en", "type": "TEXT"}],
+        [{"name": "regions_lv", "type": "TEXT"}],
+        [{"name": "regions_en", "type": "TEXT"}],
+        [{"name": "type_lv", "type": "TEXT"}],
+        [{"name": "type_en", "type": "TEXT"}],
+        [{"name": "time_from", "type": "DATEH"}],
+        [{"name": "time_to", "type": "DATEH"}],
+        [{"name": "description_lv", "type": "TEXT"}],
+        [{"name": "description_en", "type": "TEXT"}],
     ]
 }]
 
@@ -158,24 +161,25 @@ def update_table(t_conf, db_cur):
     for data_file in t_conf["files"]:
         tmp_df = pd.read_csv(data_file).dropna()
         for ct in range(len(t_conf["cols"])):
-            tmp_df[f"_new_{t_conf["cols"][ct]["name"]}"] = tmp_df[tmp_df.columns[ct]].apply(col_parsers[t_conf["cols"][ct]["type"]])
-        tmp_df = tmp_df[[f"_new_{c["name"]}" for c in t_conf["cols"]]]
+            for col in t_conf["cols"][ct]:
+                tmp_df[f"_new_{col["name"]}"] = tmp_df[tmp_df.columns[ct]].apply(col_parsers[col["type"]])
+        tmp_df = tmp_df[[f"_new_{c["name"]}" for cols in t_conf["cols"] for c in cols]]
         if df is None:
             df = pd.DataFrame(tmp_df)
         else:
             df = pd.concat([df, tmp_df])
     db_cur.execute(f"DROP TABLE IF EXISTS {t_conf["table_name"]}") # no point in storing old data
-    pks = [c["name"] for c in t_conf["cols"] if c.get("pk", False)]
+    pks = [c["name"] for cols in t_conf["cols"] for c in cols if c.get("pk", False)]
     primary_key_q = "" if len(pks) < 1 else f", PRIMARY KEY ({", ".join(pks)})"
     db_cur.execute(f"""
         CREATE TABLE {t_conf["table_name"]} (
-            {", ".join([f"{c["name"]} {col_types.get(c["name"], c["type"])}" for c in t_conf["cols"]])}
+            {", ".join([f"{c["name"]} {col_types.get(c["name"], c["type"])}" for cols in t_conf["cols"] for c in cols])}
             {primary_key_q}
         )        
     """)
     db_cur.executemany(f"""
-        INSERT INTO {t_conf["table_name"]} ({", ".join([c["name"] for c in t_conf["cols"]])}) 
-        VALUES ({", ".join(["?"]*len(t_conf["cols"]))})
+        INSERT INTO {t_conf["table_name"]} ({", ".join([c["name"] for cols in t_conf["cols"] for c in cols])}) 
+        VALUES ({", ".join(["?"]*len([0 for cols in t_conf["cols"] for _ in cols]))})
     """, df.values.tolist())
     logging.info(f"TABLE '{t_conf["table_name"]}' updated")
 
