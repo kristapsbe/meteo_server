@@ -4,6 +4,7 @@ import json
 import pytz
 import sqlite3
 import logging
+import pathlib
 import uvicorn
 import datetime
 
@@ -318,4 +319,5 @@ async def get_version():
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    cwd = pathlib.Path(__file__).parent.resolve()
+    uvicorn.run(app, host="127.0.0.1", port=8000, log_config=f"{cwd}/log.ini")
