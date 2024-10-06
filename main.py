@@ -237,11 +237,11 @@ def get_aurora_probability(cur, lat, lon):
         ORDER BY
             distance ASC
         LIMIT 1
-    """).fetchall()[0]
+    """).fetchall()
     aurora_probs_time = json.loads(open("data/ovation_aurora_times.json", "r").read())
 
     return {
-        "prob": aurora_probs[0],
+        "prob": aurora_probs[0] if len(aurora_probs) > 0 else 0, # just default to 0 if there's no data
         "time": datetime.datetime.strptime(aurora_probs_time["Forecast Time"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
     }
 
