@@ -1,6 +1,6 @@
 # Meteo
 
-A small webserver for caching, filtering, transforming, and serving weather forecast data published by the [Latvian meteorological institute](meteo.lv).
+A small webserver for caching, filtering, transforming, and serving weather forecast data published by the [Latvian meteorological institute](https://videscentrs.lvgmc.lv/) to the [Latvian open data portal](https://data.gov.lv/lv).
 
 ## Installation
 
