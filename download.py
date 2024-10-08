@@ -16,12 +16,6 @@ db_f = "meteo.db"
 if warning_mode:
     db_f = "meteo_warning_test.db"
 
-con = sqlite3.connect(db_f)
-
-# the cursor doesn't actually do anything in sqlite3, just reusing it
-# https://stackoverflow.com/questions/54395773/what-are-the-side-effects-of-reusing-a-sqlite3-cursor
-cur = con.cursor()
-
 base_url = "https://data.gov.lv/dati/api/3/"
 data_f = "data/"
 if warning_mode:
@@ -200,9 +194,6 @@ def update_db():
     
 
 def update_aurora_forecast(): # TODO: cleanup
-    upd_con = sqlite3.connect(db_f)
-    upd_cur = upd_con.cursor()
-
     url = "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"
     fpath = "data/ovation_aurora_latest.json"
     times_fpath = "data/ovation_aurora_times.json"
@@ -217,21 +208,25 @@ def update_aurora_forecast(): # TODO: cleanup
                 "Observation Time": aurora_data["Observation Time"], 
                 "Forecast Time": aurora_data["Forecast Time"],
             }))
-        upd_cur.execute(f"DROP TABLE IF EXISTS aurora_prob") # no point in storing old data
-        upd_cur.execute(f"""
-            CREATE TABLE aurora_prob (
-                lat INTEGER, 
-                lon INTEGER, 
-                aurora INTEGER
-            )        
-        """)
-        upd_cur.executemany(f"""
-        INSERT INTO aurora_prob (lat, lon, aurora) 
-        VALUES (?, ?, ?)
-        """, aurora_data["coordinates"])
-            
-    upd_con.commit()
-    upd_con.close()
+
+        upd_con = sqlite3.connect(db_f)
+        upd_cur = upd_con.cursor()
+        try:
+            upd_cur.execute(f"DROP TABLE IF EXISTS aurora_prob") # no point in storing old data
+            upd_cur.execute(f"""
+                CREATE TABLE aurora_prob (
+                    lat INTEGER, 
+                    lon INTEGER, 
+                    aurora INTEGER
+                )        
+            """)
+            upd_cur.executemany(f"""
+                INSERT INTO aurora_prob (lat, lon, aurora) 
+                VALUES (?, ?, ?)
+            """, aurora_data["coordinates"])
+            upd_con.commit()
+        finally:
+            upd_con.close()
 
 
 def run_downloads(datasets):
