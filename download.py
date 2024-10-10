@@ -215,13 +215,13 @@ def update_aurora_forecast(): # TODO: cleanup
             upd_cur.execute(f"DROP TABLE IF EXISTS aurora_prob") # no point in storing old data
             upd_cur.execute(f"""
                 CREATE TABLE aurora_prob (
-                    lat INTEGER, 
                     lon INTEGER, 
+                    lat INTEGER, 
                     aurora INTEGER
                 )        
             """)
             upd_cur.executemany(f"""
-                INSERT INTO aurora_prob (lat, lon, aurora) 
+                INSERT INTO aurora_prob (lon, lat, aurora) 
                 VALUES (?, ?, ?)
             """, aurora_data["coordinates"])
             upd_con.commit()
