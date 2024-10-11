@@ -111,7 +111,7 @@ def get_closest_city(cur, lat, lon, distance=15, max_distance=100):
         FROM
             city_distances
         WHERE
-            distance <= ({distance}/5)
+            distance <= ({distance}/ctype)
         ORDER BY
             ctype ASC, distance ASC
         LIMIT 1
