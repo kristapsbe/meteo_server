@@ -223,19 +223,12 @@ def get_warnings(cur, lat, lon):
 
 def get_aurora_probability(cur, lat, lon):
     aurora_probs = cur.execute(f"""
-        WITH aurora_prob_dists AS (
-            SELECT
-                aurora,
-                SQRT(POW(lat-{lat}, 2)+POW(lon-{lon}, 2)) as distance
-            FROM
-                aurora_prob
-        )
         SELECT
-            aurora, distance
+            aurora
         FROM
-            aurora_prob_dists
-        ORDER BY
-            distance ASC
+            aurora_prob
+        WHERE
+            lat={lat} AND lon={lon}
         LIMIT 1
     """).fetchall()
     aurora_probs_time = json.loads(open("data/ovation_aurora_times.json", "r").read())
@@ -285,7 +278,7 @@ def get_city_reponse(city, lat, lon, add_params, add_aurora):
         ret_val["daily_params"] = [p[1:] for p in d_params]
 
     if add_aurora:
-        ret_val["aurora_probs"] = get_aurora_probability(cur, lat, lon)
+        ret_val["aurora_probs"] = get_aurora_probability(cur, round(lat), round(lon))
     return ret_val
 
 
