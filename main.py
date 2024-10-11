@@ -303,15 +303,6 @@ async def get_city_forecasts(city_name: str, add_params: bool = True, add_aurora
     return get_city_reponse(city, city[2] if len(city) > 0 else None, city[3] if len(city) > 0 else None, add_params, add_aurora)
 
 
-# http://localhost:8000/api/v1/version
-@app.get("/api/v1/version")
-async def get_version():
-    return {
-        "version": app.version,
-        "commit": git_commit
-    }
-
-
 # http://localhost:8000/privacy-policy
 @app.get("/privacy-policy", response_class=HTMLResponse)
 async def get_version():
