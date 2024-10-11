@@ -226,7 +226,7 @@ def get_aurora_probability(cur, lat, lon):
         WITH aurora_prob_dists AS (
             SELECT
                 aurora,
-                ACOS((SIN(RADIANS(lat))*SIN(RADIANS({lat})))+(COS(RADIANS(lat))*COS(RADIANS({lat})))*(COS(RADIANS({lon})-RADIANS(lon))))*6371 as distance
+                SQRT(POW(lat-{lat}, 2)+POW(lon-{lon}, 2)) as distance
             FROM
                 aurora_prob
         )
