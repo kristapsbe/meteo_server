@@ -239,5 +239,6 @@ def run_downloads(datasets):
 
 if warning_mode:
     update_db()
+    update_aurora_forecast()
 else:
     run_downloads(target_ds)
