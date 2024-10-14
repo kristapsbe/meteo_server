@@ -298,8 +298,12 @@ async def get_city_forecasts(city_name: str, add_params: bool = True, add_aurora
 
 # http://localhost:8000/privacy-policy
 @app.get("/privacy-policy", response_class=HTMLResponse)
-async def get_version():
-    return open("privacy-policy.html").read()
+async def get_version(lang: str = "en"):
+    match lang:
+        case "lv":
+            return open("privatuma-politika.html").read()
+        case _:
+            return open("privacy-policy.html").read()
 
 
 if __name__ == "__main__":
