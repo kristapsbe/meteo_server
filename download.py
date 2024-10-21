@@ -162,15 +162,15 @@ def update_table(t_conf, db_cur):
             df = pd.DataFrame(tmp_df)
         else:
             df = pd.concat([df, tmp_df])
-    db_cur.execute(f"DROP TABLE IF EXISTS {t_conf["table_name"]}") # no point in storing old data
     pks = [c["name"] for cols in t_conf["cols"] for c in cols if c.get("pk", False)]
     primary_key_q = "" if len(pks) < 1 else f", PRIMARY KEY ({", ".join(pks)})"
     db_cur.execute(f"""
-        CREATE TABLE {t_conf["table_name"]} (
+        CREATE TABLE IF NOT EXISTS {t_conf["table_name"]} (
             {", ".join([f"{c["name"]} {col_types.get(c["name"], c["type"])}" for cols in t_conf["cols"] for c in cols])}
             {primary_key_q}
         )        
     """)
+    db_cur.execute(f"DELETE FROM {t_conf["table_name"]}") # no point in storing old data
     db_cur.executemany(f"""
         INSERT INTO {t_conf["table_name"]} ({", ".join([c["name"] for cols in t_conf["cols"] for c in cols])}) 
         VALUES ({", ".join(["?"]*len([0 for cols in t_conf["cols"] for _ in cols]))})
