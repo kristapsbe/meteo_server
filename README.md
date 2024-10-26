@@ -139,5 +139,5 @@ chmod +x crawl_site.sh
 
 ```
 */20 * * * * /root/meteo_server/download.sh
-0 */4 * * * /root/meteo_server/crawl_site.sh
+10 */4 * * * /root/meteo_server/crawl_site.sh
 ```
