@@ -1,8 +1,8 @@
+# ONLY IN CASE OF EMERGENCIES
 # looks like the upload to the open data portal can blow up 
 # manually trigger this to fetch hourly forecasts from the LVĢMC website instead
-#
-# I'm interested in Rīga (P28), Jelgava (P52), Sigulda (P24) and Berģi (P4058) + whatever other republic cities exist
 import json
+import time
 import pandas as pd
 import sqlite3
 import logging
@@ -11,10 +11,25 @@ import requests
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s')
 
+# TODO cleanup - copied from download script atm
+db_f = "meteo.db"
+data_f = "data/"
 url = 'https://videscentrs.lvgmc.lv/data/weather_forecast_for_location_hourly?punkts='
 
+con = sqlite3.connect(db_f)
+cur = con.cursor()
+
+ids = [e[0] for e in cur.execute("""
+    SELECT
+        id
+    FROM
+        cities
+    WHERE
+        type in ('republikas pilseta', 'citas pilsētas', 'rajona centrs', 'pagasta centrs', 'ciems')
+""").fetchall()]
+
 csv = ['CITY_ID,PARA_ID,DATUMS,VERTIBA']
-for id in ['P28', 'P24', 'P52', 'P1524', 'P11', 'P13', 'P32', 'P63', 'P62', 'P75', 'P77']:
+for id in ids:
     print(f"pulling {id}")
     rs = requests.get(f"{url}{id}")
     data = json.loads(rs.content)
@@ -30,14 +45,11 @@ for id in ['P28', 'P24', 'P52', 'P1524', 'P11', 'P13', 'P32', 'P63', 'P62', 'P75
         csv.append(f'"{id}","7","{datestring}","{e["nokrisni_1h"]}"')
         csv.append(f'"{id}","10","{datestring}","{e["uvi_indekss"] if e["uvi_indekss"] is not None else 0}"')
         csv.append(f'"{id}","11","{datestring}","{e["perkons"]}"')
+    time.sleep(0.2) # don't want to spam the site too much - this should mean that I can get all 2000 requests through in around 7 minutes
 
 with open('data/meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv', 'w') as f:
     f.write('\n'.join(csv))
 
-
-# TODO cleanup - copied from download script atm
-db_f = "meteo.db"
-data_f = "data/"
 
 col_parsers = {
     "TEXT": lambda r: str(r).strip(),
