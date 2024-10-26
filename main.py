@@ -20,6 +20,10 @@ db_f = "meteo.db"
 if warning_mode:
     db_f = "meteo_warning_test.db"
 
+last_updated = 'last_updated'
+if not os.path.isfile(last_updated):
+    open(last_updated, 'w').write("197001010000")
+
 regex = re.compile('[^a-zA-Z āčēģīķļņšūžĀČĒĢĪĶĻŅŠŪŽ]')
 
 con = sqlite3.connect(db_f)
@@ -238,7 +242,7 @@ def get_aurora_probability(cur, lat, lon):
     }
 
 
-def get_city_reponse(city, lat, lon, add_params, add_aurora):
+def get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip):
     h_params = get_params(cur, hourly_params_q)
     d_params = get_params(cur, daily_params_q)
     c_date = datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
@@ -278,21 +282,24 @@ def get_city_reponse(city, lat, lon, add_params, add_aurora):
 
     if add_aurora:
         ret_val["aurora_probs"] = get_aurora_probability(cur, round(lat), round(lon))
+
+    if add_last_no_skip:
+        ret_val["last_downloaded_no_skip"] = open(last_updated, 'r').readline().strip()
     return ret_val
 
 
 # http://localhost:8000/api/v1/forecast/cities?lat=56.9730&lon=24.1327
 @app.get("/api/v1/forecast/cities")
-async def get_city_forecasts(lat: float, lon: float, add_params: bool = True, add_aurora: bool = False):
+async def get_city_forecasts(lat: float, lon: float, add_params: bool = True, add_aurora: bool = False, add_last_no_skip: bool = False):
     city = get_closest_city(cur, lat, lon, 10, 80) # TODO revisit starting dist
-    return get_city_reponse(city, lat, lon, add_params, add_aurora)
+    return get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip)
 
 
 # http://localhost:8000/api/v1/forecast/cities/name?city_name=vamier
 @app.get("/api/v1/forecast/cities/name")
-async def get_city_forecasts(city_name: str, add_params: bool = True, add_aurora: bool = False):
+async def get_city_forecasts(city_name: str, add_params: bool = True, add_aurora: bool = False, add_last_no_skip: bool = False):
     city = get_city_by_name(simlpify_string(regex.sub('', city_name).strip().lower()))
-    return get_city_reponse(city, city[2] if len(city) > 0 else None, city[3] if len(city) > 0 else None, add_params, add_aurora)
+    return get_city_reponse(city, city[2] if len(city) > 0 else None, city[3] if len(city) > 0 else None, add_params, add_aurora, add_last_no_skip)
 
 
 # http://localhost:8000/privacy-policy

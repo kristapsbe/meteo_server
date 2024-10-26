@@ -11,3 +11,4 @@ git.version
 data_warnings/*
 meteo_warning_test.db
 server.log
+last_updated

@@ -1,8 +1,10 @@
 import os
 import json
+import pytz
 import pandas as pd
 import sqlite3
 import logging
+import datetime
 import requests
 
 from utils import simlpify_string
@@ -77,6 +79,7 @@ col_types = {
 table_conf = [{
     "files": [f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/cities.csv"],
     "table_name": "cities",
+    "skip_if_empty": True,
     "cols": [
         [{"name": "id", "type": "TEXT", "pk": True}],
         [{"name": "name", "type": "TITLE_TEXT"}, {"name": "search_name", "type": "CLEANED_TEXT"}],
@@ -87,6 +90,7 @@ table_conf = [{
 },{
     "files": [f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forcity_param.csv"],
     "table_name": "forecast_cities_params",
+    "skip_if_empty": True,
     "cols": [
         [{"name": "id", "type": "INTEGER", "pk": True}],
         [{"name": "title_lv", "type": "TEXT"}],
@@ -98,6 +102,7 @@ table_conf = [{
         f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv"
     ],
     "table_name": "forecast_cities",
+    "skip_if_empty": True,
     "cols": [
         [{"name": "city_id", "type": "TEXT", "pk": True}],
         [{"name": "param_id", "type": "INTEGER", "pk": True}],
@@ -152,39 +157,52 @@ table_conf = [{
 def update_table(t_conf, db_cur):
     logging.info(f"UPDATING '{t_conf["table_name"]}'")
     df = None
+    is_empty = False 
     for data_file in t_conf["files"]:
         tmp_df = pd.read_csv(data_file).dropna()
         for ct in range(len(t_conf["cols"])):
             for col in t_conf["cols"][ct]:
                 tmp_df[f"_new_{col["name"]}"] = tmp_df[tmp_df.columns[ct]].apply(col_parsers[col["type"]])
         tmp_df = tmp_df[[f"_new_{c["name"]}" for cols in t_conf["cols"] for c in cols]]
+        is_empty = is_empty or tmp_df.empty
         if df is None:
             df = pd.DataFrame(tmp_df)
         else:
             df = pd.concat([df, tmp_df])
-    pks = [c["name"] for cols in t_conf["cols"] for c in cols if c.get("pk", False)]
-    primary_key_q = "" if len(pks) < 1 else f", PRIMARY KEY ({", ".join(pks)})"
-    db_cur.execute(f"""
-        CREATE TABLE IF NOT EXISTS {t_conf["table_name"]} (
-            {", ".join([f"{c["name"]} {col_types.get(c["name"], c["type"])}" for cols in t_conf["cols"] for c in cols])}
-            {primary_key_q}
-        )        
-    """)
-    db_cur.execute(f"DELETE FROM {t_conf["table_name"]}") # no point in storing old data
-    db_cur.executemany(f"""
-        INSERT INTO {t_conf["table_name"]} ({", ".join([c["name"] for cols in t_conf["cols"] for c in cols])}) 
-        VALUES ({", ".join(["?"]*len([0 for cols in t_conf["cols"] for _ in cols]))})
-    """, df.values.tolist())
-    logging.info(f"TABLE '{t_conf["table_name"]}' updated")
+
+    skip_update = t_conf.get('skip_if_empty', False) and is_empty
+    if skip_update:
+        logging.info(f"TABLE '{t_conf["table_name"]}' skipped")
+    else:
+        pks = [c["name"] for cols in t_conf["cols"] for c in cols if c.get("pk", False)]
+        primary_key_q = "" if len(pks) < 1 else f", PRIMARY KEY ({", ".join(pks)})"
+        db_cur.execute(f"""
+            CREATE TABLE IF NOT EXISTS {t_conf["table_name"]} (
+                {", ".join([f"{c["name"]} {col_types.get(c["name"], c["type"])}" for cols in t_conf["cols"] for c in cols])}
+                {primary_key_q}
+            )        
+        """)
+        db_cur.execute(f"DELETE FROM {t_conf["table_name"]}") # no point in storing old data
+        db_cur.executemany(f"""
+            INSERT INTO {t_conf["table_name"]} ({", ".join([c["name"] for cols in t_conf["cols"] for c in cols])}) 
+            VALUES ({", ".join(["?"]*len([0 for cols in t_conf["cols"] for _ in cols]))})
+        """, df.values.tolist())
+        logging.info(f"TABLE '{t_conf["table_name"]}' updated")
+    return skip_update
 
 
 def update_db():
     upd_con = sqlite3.connect(db_f)
     try:
+        update_skipped = False
         upd_cur = upd_con.cursor()
         for t_conf in table_conf:
             # TODO: check if I should make a cursor and commit once, or once per function call
-            update_table(t_conf, upd_cur)
+            update_skipped = update_table(t_conf, upd_cur) or update_skipped
+        if not update_skipped:
+            open('last_updated', 'w').write(
+                datetime.datetime.fromtimestamp(os.path.getmtime(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam.json")).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
+            )
         upd_con.commit() # TODO: last updared should come from here
         logging.info("DB update finished")
     except BaseException as e:
