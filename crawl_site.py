@@ -1,6 +1,7 @@
 # ONLY IN CASE OF EMERGENCIES
 # looks like the upload to the open data portal can blow up 
 # manually trigger this to fetch hourly forecasts from the LVĢMC website instead
+import os
 import json
 import time
 import pandas as pd
@@ -10,6 +11,10 @@ import requests
 
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s')
+
+if not os.path.isfile('run_emergency'):
+    logging.info(f"No emergency - exiting")
+    exit()
 
 # TODO cleanup - copied from download script atm
 db_f = "meteo.db"
@@ -27,7 +32,7 @@ ids = [e[0] for e in cur.execute("""
     FROM
         cities
     WHERE
-        type in ('republikas pilseta', 'citas pilsētas', 'rajona centrs', 'pagasta centrs', 'ciems')
+        type in ('republikas pilseta', 'citas pilsētas')
 """).fetchall()]
 
 ids = sorted(ids, key=lambda i: int(i[1:])) # start with lower ids in case we blow up
