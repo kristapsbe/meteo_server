@@ -257,7 +257,8 @@ def run_downloads(datasets):
         skipped_empty = download_resources(ds) or skipped_empty
 
     if skipped_empty:
-        open('run_emergency', 'w').write("")
+        if not os.path.isfile('run_emergency'):
+            open('run_emergency', 'w').write("")
     elif os.path.isfile('run_emergency'):
         open('last_updated', 'w').write(
             datetime.datetime.fromtimestamp(os.path.getmtime(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam.json")).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
