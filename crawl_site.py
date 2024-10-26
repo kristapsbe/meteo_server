@@ -64,8 +64,11 @@ for id in ids:
 
 
 crawl_file = f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv"
-with open(crawl_file, 'w') as f:
-    f.write('\n'.join(csv))
+if len(csv) > 1:
+    with open(crawl_file, 'w') as f:
+        f.write('\n'.join(csv))
+else:
+    exit()
 
 
 col_parsers = {

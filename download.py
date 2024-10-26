@@ -96,12 +96,12 @@ table_conf = [{
 },{
     "files": [f"{data_f}hidrometeorologiskie-bridinajumi/bridinajumu_poligoni.csv"],
     "table_name": "warnings_polygons",
-    "cols": [
-        [{"name": "warning_id", "type": "INTEGER", "pk": True}],
-        [{"name": "polygon_id", "type": "INTEGER", "pk": True}],
+    "cols": [ # TODO: figure out why the pks failed
+        [{"name": "warning_id", "type": "INTEGER"}], # "pk": True}],
+        [{"name": "polygon_id", "type": "INTEGER"}], # "pk": True}],
         [{"name": "lat", "type": "REAL"}],
         [{"name": "lon", "type": "REAL"}],
-        [{"name": "order_id", "type": "INTEGER", "pk": True}],
+        [{"name": "order_id", "type": "INTEGER"}], # "pk": True}],
     ]
 },{ # TODO: partial at the moment - finish this
     "files": [f"{data_f}hidrometeorologiskie-bridinajumi/bridinajumu_metadata.csv"],
@@ -176,6 +176,11 @@ def update_table(t_conf, db_cur):
             df = pd.DataFrame(tmp_df)
         else:
             df = pd.concat([df, tmp_df])
+
+    # TODO: FIX
+    group_keys = [f"_new_{c["name"]}" for cols in t_conf["cols"] for c in cols if c.get("pk", False)]
+    if len(group_keys) > 0:
+        df = df.groupby(group_keys).max().reset_index() # getting rid of duplicates
 
     pks = [c["name"] for cols in t_conf["cols"] for c in cols if c.get("pk", False)]
     primary_key_q = "" if len(pks) < 1 else f", PRIMARY KEY ({", ".join(pks)})"
