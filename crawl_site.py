@@ -58,7 +58,7 @@ except:
     logging.info(f"Download blew up")
 
 
-with open('data/meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv', 'w') as f:
+with open('data/meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities_crawled.csv', 'w') as f:
     f.write('\n'.join(csv))
 
 
@@ -79,7 +79,7 @@ col_types = {
 table_conf = [{ # only updating the forecasts and assuming I have the dailies
     "files": [
         f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities_day.csv",
-        f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv"
+        f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities_crawled.csv"
     ],
     "table_name": "forecast_cities",
     "cols": [
