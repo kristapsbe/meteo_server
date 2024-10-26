@@ -200,7 +200,9 @@ def update_db():
             # TODO: check if I should make a cursor and commit once, or once per function call
             update_skipped = update_table(t_conf, upd_cur) or update_skipped
         if not update_skipped:
-            open('last_updated', 'w').write(datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"))
+            open('last_updated', 'w').write(
+                datetime.datetime.fromtimestamp(os.path.getmtime(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam.json")).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
+            )
         upd_con.commit() # TODO: last updared should come from here
         logging.info("DB update finished")
     except BaseException as e:
