@@ -54,7 +54,7 @@ try:
             csv.append(f'"{id}","7","{datestring}","{e["nokrisni_1h"]}"')
             csv.append(f'"{id}","10","{datestring}","{e["uvi_indekss"] if e["uvi_indekss"] is not None else 0}"')
             csv.append(f'"{id}","11","{datestring}","{e["perkons"]}"')
-        time.sleep(1) # don't want to spam the site too much - this should mean that I can get all 2000 requests through in around 34 minutes
+        time.sleep(2) # don't want to spam the site too much - this should mean that I can get all 2000 requests through in around an hour
 except:
     # don't want to lose work
     logging.info(f"Download blew up")
