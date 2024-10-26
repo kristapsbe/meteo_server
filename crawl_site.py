@@ -19,6 +19,8 @@ url = 'https://videscentrs.lvgmc.lv/data/weather_forecast_for_location_hourly?pu
 con = sqlite3.connect(db_f)
 cur = con.cursor()
 
+# TODO: should I make the server more aware of the fact that this script has been run?
+# that would mean that I could just pull the republic cities + some selected locations as previously planned
 ids = [e[0] for e in cur.execute("""
     SELECT
         id
