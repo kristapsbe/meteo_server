@@ -1,6 +1,10 @@
 # ONLY IN CASE OF EMERGENCIES
 # looks like the upload to the open data portal can blow up 
 # manually trigger this to fetch hourly forecasts from the LVĢMC website instead
+#
+# TODO: looks like more than just the hourly forecasts can go bad
+# set up rescue jobs for the rest of the tables
+# NOTE: I don't think I actually need this thing to update the table - I can just let the download script do it
 import os
 import json
 import pytz
