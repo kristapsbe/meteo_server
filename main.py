@@ -328,9 +328,12 @@ async def get_privacy_policy(lang: str = "en"):
 # http://localhost:8000/api/v1/meta
 @app.get("/api/v1/meta")
 async def get_meta():
-    return {
+    retval = {
         "is_emergency": is_emergency()
     }
+    if retval["is_emergency"]:
+        retval["emergency_dl"] = open('run_emergency', 'r').readline()
+    return retval
 
 
 if __name__ == "__main__":

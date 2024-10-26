@@ -3,10 +3,12 @@
 # manually trigger this to fetch hourly forecasts from the LVĢMC website instead
 import os
 import json
+import pytz
 import time
 import pandas as pd
 import sqlite3
 import logging
+import datetime
 import requests
 
 
@@ -145,3 +147,4 @@ def update_db():
 
 
 update_db()
+open('run_emergency', 'w').write(datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"))
