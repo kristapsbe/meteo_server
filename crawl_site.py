@@ -61,7 +61,10 @@ for id in ids:
     time.sleep(0.5) # don't want to spam the site too much
 
 
-with open('data/meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities_crawled.csv', 'w') as f:
+crawl_file = f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities_crawled.csv"
+if os.path.isfile(crawl_file):
+    os.remove(crawl_file)
+with open(crawl_file, 'w') as f:
     f.write('\n'.join(csv))
 
 
@@ -82,7 +85,7 @@ col_types = {
 table_conf = [{ # only updating the forecasts and assuming I have the dailies
     "files": [
         f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities_day.csv",
-        f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities_crawled.csv"
+        crawl_file
     ],
     "table_name": "forecast_cities",
     "cols": [
