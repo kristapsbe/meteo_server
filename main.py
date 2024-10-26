@@ -44,7 +44,6 @@ app = FastAPI(
     docs_url=None,
     redoc_url=None
 )
-git_commit = open("git.version", "r").read().strip()
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s')
 
 hourly_params = [
