@@ -87,14 +87,18 @@ def get_params(cur, param_q):
     """).fetchall()
 
 
-def get_location_range():
-    if os.path.isfile('run_emergency'):
-        return "('republikas pilseta', 'citas pilsētas', 'rajona centrs')"
-    else:
+def is_emergency():
+    return os.path.isfile('run_emergency')
+
+
+def get_location_range(force_all=False):
+    if force_all or not is_emergency():
         return "('republikas pilseta', 'citas pilsētas', 'rajona centrs', 'pagasta centrs', 'ciems')"
+    else:
+        return "('republikas pilseta', 'citas pilsētas', 'rajona centrs')"
 
 
-def get_closest_city(cur, lat, lon, distance=15, max_distance=100):
+def get_closest_city(cur, lat, lon, distance=15, max_distance=100, force_all=False):
     # no point in even looking if we're outside of this box
     if lat < 55.6 or lat > 58.2 or lon < 20.8 or lon > 28.3:
         return ()
@@ -114,7 +118,7 @@ def get_closest_city(cur, lat, lon, distance=15, max_distance=100):
             FROM
                 cities
             WHERE
-                type in {get_location_range()}
+                type in {get_location_range(force_all)}
         )
         SELECT
             id, name, ctype, distance
@@ -154,7 +158,7 @@ def get_city_by_name(city_name):
             FROM
                 cities
             WHERE
-                type in {get_location_range()}
+                type in {get_location_range(True)}
         )
         SELECT
             id, name, lat, lon, ctype, distance
@@ -306,7 +310,9 @@ async def get_city_forecasts(lat: float, lon: float, add_params: bool = True, ad
 @app.get("/api/v1/forecast/cities/name")
 async def get_city_forecasts(city_name: str, add_params: bool = True, add_aurora: bool = False, add_last_no_skip: bool = False):
     city = get_city_by_name(simlpify_string(regex.sub('', city_name).strip().lower()))
-    return get_city_reponse(city, city[2] if len(city) > 0 else None, city[3] if len(city) > 0 else None, add_params, add_aurora, add_last_no_skip)
+    if is_emergency():
+        city = get_closest_city(cur, city[2], city[3], 10, 80) # TODO revisit starting dist
+    return get_city_reponse(city, city[2], city[3], add_params, add_aurora, add_last_no_skip)
 
 
 # http://localhost:8000/privacy-policy
