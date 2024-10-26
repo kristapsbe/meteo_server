@@ -23,37 +23,6 @@ data_f = "data/"
 if warning_mode:
     data_f = "data_warnings/"
 
-
-def refresh_file(url, fpath, verify_download):
-    r = requests.get(url)
-    # TODO: there's a damaged .csv - may want to deal with this in a more generic fashion (?)
-    r_text = r.content.replace(b'Pressure, (hPa)', b'Pressure (hPa)') if fpath == f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forcity_param.csv" else r.content
-    if r.status_code == 200 and verify_download(r_text):
-        with open(fpath, "wb") as f: # this can be eiher a json or csv
-            f.write(r_text)
-
-
-def verif_json(s):
-    try:
-        return json.loads(s)['success'] == True
-    except:
-        return False
-
-
-verif_funcs = {
-    "json": verif_json,
-    "csv": lambda s: True
-}
-
-
-def download_resources(ds_name):
-    ds_path = f"{data_f}{ds_name}.json"
-    refresh_file(f"{base_url}action/package_show?id={ds_name}", ds_path, verif_funcs['json'])
-    ds_data = json.loads(open(ds_path, "r").read())
-    for r in ds_data['result']['resources']:
-        refresh_file(r['url'], f"{data_f}{ds_name}/{r['url'].split('/')[-1]}", verif_funcs['csv'])
-
-
 target_ds = [
     "hidrometeorologiskie-bridinajumi",
     "meteorologiskas-prognozes-apdzivotam-vietam"
@@ -154,60 +123,83 @@ table_conf = [{
 }]
 
 
+def refresh_file(url, fpath, verify_download):
+    r = requests.get(url)
+    # TODO: there's a damaged .csv - may want to deal with this in a more generic fashion (?)
+    r_text = r.content.replace(b'Pressure, (hPa)', b'Pressure (hPa)') if fpath == f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forcity_param.csv" else r.content
+
+    curr_conf = [e for e in table_conf if fpath in e["files"]]
+    skip_if_empty = len(curr_conf) == 0 or curr_conf[0].get("skip_if_empty", False)
+
+    if r.status_code == 200 and verify_download(r_text, skip_if_empty):
+        with open(fpath, "wb") as f: # this can be eiher a json or csv
+            f.write(r_text)
+        return False
+    else:
+        return True
+
+
+def verif_json(s, _):
+    try:
+        return json.loads(s)['success'] == True
+    except:
+        return False
+
+
+verif_funcs = {
+    "json": verif_json,
+    "csv": lambda s, skip_if_empty: (len(s.split(b'\n')) > 2 or not skip_if_empty)
+}
+
+
+def download_resources(ds_name):
+    ds_path = f"{data_f}{ds_name}.json"
+    refresh_file(f"{base_url}action/package_show?id={ds_name}", ds_path, verif_funcs['json'])
+    ds_data = json.loads(open(ds_path, "r").read())
+    
+    skipped_empty = False
+    for r in ds_data['result']['resources']:
+        skipped_empty = refresh_file(r['url'], f"{data_f}{ds_name}/{r['url'].split('/')[-1]}", verif_funcs['csv']) or skipped_empty
+    return skipped_empty
+
+
 def update_table(t_conf, db_cur):
     logging.info(f"UPDATING '{t_conf["table_name"]}'")
     df = None
-    is_empty = False 
     for data_file in t_conf["files"]:
         tmp_df = pd.read_csv(data_file).dropna()
         for ct in range(len(t_conf["cols"])):
             for col in t_conf["cols"][ct]:
                 tmp_df[f"_new_{col["name"]}"] = tmp_df[tmp_df.columns[ct]].apply(col_parsers[col["type"]])
         tmp_df = tmp_df[[f"_new_{c["name"]}" for cols in t_conf["cols"] for c in cols]]
-        is_empty = is_empty or tmp_df.empty
         if df is None:
             df = pd.DataFrame(tmp_df)
         else:
             df = pd.concat([df, tmp_df])
 
-    skip_update = t_conf.get('skip_if_empty', False) and is_empty
-    if skip_update:
-        logging.info(f"TABLE '{t_conf["table_name"]}' skipped")
-    else:
-        pks = [c["name"] for cols in t_conf["cols"] for c in cols if c.get("pk", False)]
-        primary_key_q = "" if len(pks) < 1 else f", PRIMARY KEY ({", ".join(pks)})"
-        db_cur.execute(f"DROP TABLE IF EXISTS {t_conf["table_name"]}") # no point in storing old data
-        db_cur.execute(f"""
-            CREATE TABLE IF NOT EXISTS {t_conf["table_name"]} (
-                {", ".join([f"{c["name"]} {col_types.get(c["name"], c["type"])}" for cols in t_conf["cols"] for c in cols])}
-                {primary_key_q}
-            )        
-        """)
-        db_cur.executemany(f"""
-            INSERT INTO {t_conf["table_name"]} ({", ".join([c["name"] for cols in t_conf["cols"] for c in cols])}) 
-            VALUES ({", ".join(["?"]*len([0 for cols in t_conf["cols"] for _ in cols]))})
-        """, df.values.tolist())
-        logging.info(f"TABLE '{t_conf["table_name"]}' updated")
-    return skip_update
+    pks = [c["name"] for cols in t_conf["cols"] for c in cols if c.get("pk", False)]
+    primary_key_q = "" if len(pks) < 1 else f", PRIMARY KEY ({", ".join(pks)})"
+    db_cur.execute(f"DROP TABLE IF EXISTS {t_conf["table_name"]}") # no point in storing old data
+    db_cur.execute(f"""
+        CREATE TABLE IF NOT EXISTS {t_conf["table_name"]} (
+            {", ".join([f"{c["name"]} {col_types.get(c["name"], c["type"])}" for cols in t_conf["cols"] for c in cols])}
+            {primary_key_q}
+        )        
+    """)
+    db_cur.executemany(f"""
+        INSERT INTO {t_conf["table_name"]} ({", ".join([c["name"] for cols in t_conf["cols"] for c in cols])}) 
+        VALUES ({", ".join(["?"]*len([0 for cols in t_conf["cols"] for _ in cols]))})
+    """, df.values.tolist())
+    logging.info(f"TABLE '{t_conf["table_name"]}' updated")
 
 
 def update_db():
     upd_con = sqlite3.connect(db_f)
     try:
-        update_skipped = False
         upd_cur = upd_con.cursor()
         for t_conf in table_conf:
             # TODO: check if I should make a cursor and commit once, or once per function call
-            update_skipped = update_table(t_conf, upd_cur) or update_skipped
-
-        if not update_skipped:
-            open('last_updated', 'w').write(
-                datetime.datetime.fromtimestamp(os.path.getmtime(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam.json")).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
-            )
-            if os.path.isfile('run_emergency'):
-                os.remove('run_emergency') 
-        else:
-            open('run_emergency', 'w').write("")
+            update_table(t_conf, upd_cur)
 
         upd_con.commit() # TODO: last updared should come from here
         logging.info("DB update finished")
@@ -255,8 +247,18 @@ def update_aurora_forecast(): # TODO: cleanup
 
 def run_downloads(datasets):
     logging.info(f"Triggering refresh")
+    skipped_empty = False
     for ds in datasets:
-        download_resources(ds)
+        skipped_empty = download_resources(ds) or skipped_empty
+
+    if skipped_empty:
+        open('run_emergency', 'w').write("")
+    elif os.path.isfile('run_emergency'):
+        open('last_updated', 'w').write(
+            datetime.datetime.fromtimestamp(os.path.getmtime(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam.json")).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
+        )
+        os.remove('run_emergency') 
+    
     update_db()
     update_aurora_forecast()
 

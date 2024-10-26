@@ -63,9 +63,7 @@ for id in ids:
     time.sleep(0.5) # don't want to spam the site too much
 
 
-crawl_file = f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities_crawled.csv"
-if os.path.isfile(crawl_file):
-    os.remove(crawl_file)
+crawl_file = f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv"
 with open(crawl_file, 'w') as f:
     f.write('\n'.join(csv))
 
