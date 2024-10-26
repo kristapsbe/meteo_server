@@ -40,29 +40,25 @@ ids = sorted(ids, key=lambda i: int(i[1:])) # start with lower ids in case we bl
 ct = 0
 total = len(ids)
 csv = ['CITY_ID,PARA_ID,DATUMS,VERTIBA']
-try:
-    for id in ids:
-        print(f"pulling {id} ({ct}/{total})")
-        ct += 1
+for id in ids:
+    print(f"pulling {id} ({ct}/{total})")
+    ct += 1
 
-        rs = requests.get(f"{url}{id}")
-        data = json.loads(rs.content)
-        for e in data:
-            l = e['laiks']
-            datestring = f"{l[:4]}-{l[4:6]}-{l[6:8]} {l[8:10]}:{l[10:12]}:00"
-            csv.append(f'"{id}","1","{datestring}","{e["laika_apstaklu_ikona"]}"')
-            csv.append(f'"{id}","2","{datestring}","{e["temperatura"]}"')
-            csv.append(f'"{id}","3","{datestring}","{e["sajutu_temperatura"]}"')
-            csv.append(f'"{id}","4","{datestring}","{e["veja_atrums"]}"')
-            csv.append(f'"{id}","5","{datestring}","{e["veja_virziens"]}"')
-            csv.append(f'"{id}","6","{datestring}","{e["brazmas"]}"')
-            csv.append(f'"{id}","7","{datestring}","{e["nokrisni_1h"]}"')
-            csv.append(f'"{id}","10","{datestring}","{e["uvi_indekss"] if e["uvi_indekss"] is not None else 0}"')
-            csv.append(f'"{id}","11","{datestring}","{e["perkons"]}"')
-        time.sleep(2) # don't want to spam the site too much - this should mean that I can get all 2000 requests through in around an hour
-except:
-    # don't want to lose work
-    logging.info(f"Download blew up")
+    rs = requests.get(f"{url}{id}")
+    data = json.loads(rs.content)
+    for e in data:
+        l = e['laiks']
+        datestring = f"{l[:4]}-{l[4:6]}-{l[6:8]} {l[8:10]}:{l[10:12]}:00"
+        csv.append(f'"{id}","1","{datestring}","{e["laika_apstaklu_ikona"]}"')
+        csv.append(f'"{id}","2","{datestring}","{e["temperatura"]}"')
+        csv.append(f'"{id}","3","{datestring}","{e["sajutu_temperatura"]}"')
+        csv.append(f'"{id}","4","{datestring}","{e["veja_atrums"]}"')
+        csv.append(f'"{id}","5","{datestring}","{e["veja_virziens"]}"')
+        csv.append(f'"{id}","6","{datestring}","{e["brazmas"]}"')
+        csv.append(f'"{id}","7","{datestring}","{e["nokrisni_1h"]}"')
+        csv.append(f'"{id}","10","{datestring}","{e["uvi_indekss"] if e["uvi_indekss"] is not None else 0}"')
+        csv.append(f'"{id}","11","{datestring}","{e["perkons"]}"')
+    time.sleep(0.5) # don't want to spam the site too much
 
 
 with open('data/meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities_crawled.csv', 'w') as f:
