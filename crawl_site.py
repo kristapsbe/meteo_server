@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(m
 url = 'https://videscentrs.lvgmc.lv/data/weather_forecast_for_location_hourly?punkts='
 
 csv = ['CITY_ID,PARA_ID,DATUMS,VERTIBA']
-for id in ['P28', 'P24', 'P52', 'P4058', 'P11', 'P13', 'P32', 'P63', 'P62', 'P75', 'P77']:
+for id in ['P28', 'P24', 'P52', 'P1524', 'P11', 'P13', 'P32', 'P63', 'P62', 'P75', 'P77']:
     print(f"pulling {id}")
     rs = requests.get(f"{url}{id}")
     data = json.loads(rs.content)
@@ -81,7 +81,6 @@ def update_table(t_conf, db_cur):
         else:
             df = pd.concat([df, tmp_df])
 
-    print(df)
     # TODO: FIX
     df = df.groupby(['_new_city_id', '_new_param_id', '_new_date']).max().reset_index() # getting rid of duplicates
 
