@@ -89,9 +89,9 @@ def get_params(cur, param_q):
 
 def get_location_range():
     if os.path.isfile('run_emergency'):
-        return "('republikas pilseta', 'citas pilsētas', 'rajona centrs', 'pagasta centrs', 'ciems')"
-    else:
         return "('republikas pilseta', 'citas pilsētas')"
+    else:
+        return "('republikas pilseta', 'citas pilsētas', 'rajona centrs', 'pagasta centrs', 'ciems')"
 
 
 def get_closest_city(cur, lat, lon, distance=15, max_distance=100):
