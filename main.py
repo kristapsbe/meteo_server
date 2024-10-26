@@ -87,6 +87,13 @@ def get_params(cur, param_q):
     """).fetchall()
 
 
+def get_location_range():
+    if os.path.isfile('run_emergency'):
+        return "('republikas pilseta', 'citas pilsētas', 'rajona centrs', 'pagasta centrs', 'ciems')"
+    else:
+        return "('republikas pilseta', 'citas pilsētas')"
+
+
 def get_closest_city(cur, lat, lon, distance=15, max_distance=100):
     # no point in even looking if we're outside of this box
     if lat < 55.6 or lat > 58.2 or lon < 20.8 or lon > 28.3:
@@ -107,7 +114,7 @@ def get_closest_city(cur, lat, lon, distance=15, max_distance=100):
             FROM
                 cities
             WHERE
-                type in ('republikas pilseta', 'citas pilsētas', 'rajona centrs', 'pagasta centrs', 'ciems')
+                type in {get_location_range()}
         )
         SELECT
             id, name, ctype, distance
@@ -147,7 +154,7 @@ def get_city_by_name(city_name):
             FROM
                 cities
             WHERE
-                type in ('republikas pilseta', 'citas pilsētas', 'rajona centrs', 'pagasta centrs', 'ciems')
+                type in {get_location_range()}
         )
         SELECT
             id, name, lat, lon, ctype, distance
