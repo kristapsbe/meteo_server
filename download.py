@@ -1,8 +1,10 @@
 import os
 import json
+import pytz
 import pandas as pd
 import sqlite3
 import logging
+import datetime
 import requests
 
 from utils import simlpify_string
@@ -155,20 +157,21 @@ table_conf = [{
 def update_table(t_conf, db_cur):
     logging.info(f"UPDATING '{t_conf["table_name"]}'")
     df = None
-    was_empty = False 
+    is_empty = False 
     for data_file in t_conf["files"]:
         tmp_df = pd.read_csv(data_file).dropna()
         for ct in range(len(t_conf["cols"])):
             for col in t_conf["cols"][ct]:
                 tmp_df[f"_new_{col["name"]}"] = tmp_df[tmp_df.columns[ct]].apply(col_parsers[col["type"]])
         tmp_df = tmp_df[[f"_new_{c["name"]}" for cols in t_conf["cols"] for c in cols]]
-        was_empty = was_empty or tmp_df.empty
+        is_empty = is_empty or tmp_df.empty
         if df is None:
             df = pd.DataFrame(tmp_df)
         else:
             df = pd.concat([df, tmp_df])
 
-    if t_conf.get('skip_if_empty', False) and was_empty:
+    skip_update = t_conf.get('skip_if_empty', False) and is_empty
+    if skip_update:
         logging.info(f"TABLE '{t_conf["table_name"]}' skipped")
     else:
         pks = [c["name"] for cols in t_conf["cols"] for c in cols if c.get("pk", False)]
@@ -185,15 +188,19 @@ def update_table(t_conf, db_cur):
             VALUES ({", ".join(["?"]*len([0 for cols in t_conf["cols"] for _ in cols]))})
         """, df.values.tolist())
         logging.info(f"TABLE '{t_conf["table_name"]}' updated")
+    return skip_update
 
 
 def update_db():
     upd_con = sqlite3.connect(db_f)
     try:
+        update_skipped = False
         upd_cur = upd_con.cursor()
         for t_conf in table_conf:
             # TODO: check if I should make a cursor and commit once, or once per function call
-            update_table(t_conf, upd_cur)
+            update_skipped = update_table(t_conf, upd_cur) or update_skipped
+        if not update_skipped:
+            open('last_updated', 'w').write(datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"))
         upd_con.commit() # TODO: last updared should come from here
         logging.info("DB update finished")
     except BaseException as e:
