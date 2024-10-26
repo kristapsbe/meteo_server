@@ -28,6 +28,8 @@ ids = [e[0] for e in cur.execute("""
         type in ('republikas pilseta', 'citas pilsētas', 'rajona centrs', 'pagasta centrs', 'ciems')
 """).fetchall()]
 
+ids = sorted(ids, key=lambda i: int(i[1:])) # start with lower ids in case we blow up
+
 ct = 0
 total = len(ids)
 csv = ['CITY_ID,PARA_ID,DATUMS,VERTIBA']
@@ -52,6 +54,7 @@ try:
             csv.append(f'"{id}","11","{datestring}","{e["perkons"]}"')
         time.sleep(1) # don't want to spam the site too much - this should mean that I can get all 2000 requests through in around 34 minutes
 except:
+    # don't want to lose work
     logging.info(f"Download blew up")
 
 
