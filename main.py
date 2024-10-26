@@ -20,6 +20,10 @@ db_f = "meteo.db"
 if warning_mode:
     db_f = "meteo_warning_test.db"
 
+last_updated = 'last_updated'
+if not os.path.isfile(last_updated):
+    open(last_updated, 'w').write("197001010000")
+
 regex = re.compile('[^a-zA-Z āčēģīķļņšūžĀČĒĢĪĶĻŅŠŪŽ]')
 
 con = sqlite3.connect(db_f)
@@ -281,7 +285,7 @@ def get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip):
         ret_val["aurora_probs"] = get_aurora_probability(cur, round(lat), round(lon))
 
     if add_last_no_skip:
-        ret_val["last_downloaded_no_skip"] = open('last_updated', 'r').readline().strip()
+        ret_val["last_downloaded_no_skip"] = open(last_updated, 'r').readline().strip()
     return ret_val
 
 
