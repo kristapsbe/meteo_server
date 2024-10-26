@@ -89,7 +89,7 @@ def get_params(cur, param_q):
 
 def get_location_range():
     if os.path.isfile('run_emergency'):
-        return "('republikas pilseta', 'citas pilsētas')"
+        return "('republikas pilseta', 'citas pilsētas', 'rajona centrs')"
     else:
         return "('republikas pilseta', 'citas pilsētas', 'rajona centrs', 'pagasta centrs', 'ciems')"
 
