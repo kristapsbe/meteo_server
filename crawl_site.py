@@ -5,6 +5,7 @@
 # TODO: looks like more than just the hourly forecasts can go bad
 # set up rescue jobs for the rest of the tables
 # NOTE: I don't think I actually need this thing to update the table - I can just let the download script do it
+# TODO: make individual rescue functions so that I don't overwrite good data
 import os
 import json
 import pytz
