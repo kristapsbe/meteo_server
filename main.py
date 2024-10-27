@@ -100,7 +100,7 @@ def get_location_range(force_all=False):
 
 def get_closest_city(cur, lat, lon, distance=15, max_distance=100, step_size=5, force_all=False):
     # no point in even looking if we're outside of this box
-    if lat < 55.6 or lat > 58.2 or lon < 20.8 or lon > 28.3:
+    if lat < 55.7 or lat > 58.05 or lon < 20.95 or lon > 28.25:
         return ()
     cities = cur.execute(f"""
         WITH city_distances AS (
@@ -302,7 +302,7 @@ def get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip):
 # http://localhost:8000/api/v1/forecast/cities?lat=56.9730&lon=24.1327
 @app.get("/api/v1/forecast/cities")
 async def get_city_forecasts(lat: float, lon: float, add_params: bool = True, add_aurora: bool = False, add_last_no_skip: bool = False):
-    city = get_closest_city(cur, max(min(lat, 58.2), 55.6), max(min(lon, 28.3), 20.8), 10, 200, 5) # TODO revisit starting dist
+    city = get_closest_city(cur, max(min(lat, 58.05), 55.7), max(min(lon, 28.25), 20.95), 10, 200, 5) # TODO revisit starting dist
     return get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip)
 
 
