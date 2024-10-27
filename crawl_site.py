@@ -10,7 +10,6 @@ import os
 import json
 import pytz
 import time
-import pandas as pd
 import sqlite3
 import logging
 import datetime
@@ -68,89 +67,11 @@ for id in ids:
     time.sleep(0.5) # don't want to spam the site too much
 
 
-crawl_file = f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv"
 if len(csv) > 1:
-    with open(crawl_file, 'w') as f:
+    with open(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv", 'w') as f:
         f.write('\n'.join(csv))
+    open('run_emergency', 'w').write(datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"))
+    logging.info("Successfully performed emergency download")
 else:
-    exit()
-
-
-col_parsers = {
-    "TEXT": lambda r: str(r).strip(),
-    "TITLE_TEXT": lambda r: str(r).strip().title(),
-    "CLEANED_TEXT": lambda r: simlpify_string(str(r).strip().lower()),
-    "INTEGER": lambda r: int(str(r).strip()),
-    "REAL": lambda r: float(str(r).strip()),
-    # TODO: do I really need minutes? - would mean that I consistently work with datetime strings that are YYYYMMDDHHMM
-    "DATEH": lambda r: str(r).strip().replace(".", "").replace("-", "").replace(" ", "").replace(":", "").ljust(12, "0")[:12] # YYYYMMDDHHMM
-}
-
-col_types = {
-    "DATEH": "TEXT"
-}
-
-table_conf = [{ # only updating the forecasts and assuming I have the dailies
-    "files": [
-        f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities_day.csv",
-        crawl_file
-    ],
-    "table_name": "forecast_cities",
-    "cols": [
-        [{"name": "city_id", "type": "TEXT", "pk": True}],
-        [{"name": "param_id", "type": "INTEGER", "pk": True}],
-        [{"name": "date", "type": "DATEH", "pk": True}],
-        [{"name": "value", "type": "REAL"}],
-    ]
-}]
-
-def update_table(t_conf, db_cur):
-    logging.info(f"UPDATING '{t_conf["table_name"]}'")
-    df = None
-    for data_file in t_conf["files"]:
-        tmp_df = pd.read_csv(data_file).dropna()
-        for ct in range(len(t_conf["cols"])):
-            for col in t_conf["cols"][ct]:
-                tmp_df[f"_new_{col["name"]}"] = tmp_df[tmp_df.columns[ct]].apply(col_parsers[col["type"]])
-        tmp_df = tmp_df[[f"_new_{c["name"]}" for cols in t_conf["cols"] for c in cols]]
-        if df is None:
-            df = pd.DataFrame(tmp_df)
-        else:
-            df = pd.concat([df, tmp_df])
-
-    # TODO: FIX
-    df = df.groupby(['_new_city_id', '_new_param_id', '_new_date']).max().reset_index() # getting rid of duplicates
-
-    pks = [c["name"] for cols in t_conf["cols"] for c in cols if c.get("pk", False)]
-    primary_key_q = "" if len(pks) < 1 else f", PRIMARY KEY ({", ".join(pks)})"
-    db_cur.execute(f"DROP TABLE IF EXISTS {t_conf["table_name"]}") # no point in storing old data
-    db_cur.execute(f"""
-        CREATE TABLE {t_conf["table_name"]} (
-            {", ".join([f"{c["name"]} {col_types.get(c["name"], c["type"])}" for cols in t_conf["cols"] for c in cols])}
-            {primary_key_q}
-        )        
-    """)
-    db_cur.executemany(f"""
-        INSERT INTO {t_conf["table_name"]} ({", ".join([c["name"] for cols in t_conf["cols"] for c in cols])}) 
-        VALUES ({", ".join(["?"]*len([0 for cols in t_conf["cols"] for _ in cols]))})
-    """, df.values.tolist())
-    logging.info(f"TABLE '{t_conf["table_name"]}' updated")
-
-
-def update_db():
-    upd_con = sqlite3.connect(db_f)
-    try:
-        upd_cur = upd_con.cursor()
-        for t_conf in table_conf:
-            # TODO: check if I should make a cursor and commit once, or once per function call
-            update_table(t_conf, upd_cur)
-        upd_con.commit() # TODO: last updared should come from here
-        logging.info("DB update finished")
-    except BaseException as e:
-        logging.info(f"DB update FAILED - {e}")
-    finally:
-        upd_con.close()
-
-
-update_db()
-open('run_emergency', 'w').write(datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"))
+    os.remove('run_emergency') 
+    logging.info("Failed to perform emergency download")
