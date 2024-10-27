@@ -278,18 +278,18 @@ def run_downloads(datasets):
     for ds in datasets:
         skipped_empty = download_resources(ds) or skipped_empty
 
-    if skipped_empty:
-        if not os.path.isfile('run_emergency'):
-            open('run_emergency', 'w').write("")
-    else:
+    if skipped_empty and not os.path.isfile('run_emergency'):
+        open('run_emergency', 'w').write("")
+    
+    update_db()
+    update_aurora_forecast()
+
+    if not skipped_empty: # moving here in case the db updates blow up
         open('last_updated', 'w').write(
             datetime.datetime.fromtimestamp(os.path.getmtime(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam.json")).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
         )
         if os.path.isfile('run_emergency'):
             os.remove('run_emergency') 
-    
-    update_db()
-    update_aurora_forecast()
 
 
 if warning_mode:
