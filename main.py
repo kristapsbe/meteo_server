@@ -98,7 +98,7 @@ def get_location_range(force_all=False):
         return "('republikas pilseta', 'citas pilsētas', 'rajona centrs')"
 
 
-def get_closest_city(cur, lat, lon, distance=15, max_distance=100, force_all=False):
+def get_closest_city(cur, lat, lon, distance=15, max_distance=100, step_size=5, force_all=False):
     # no point in even looking if we're outside of this box
     if lat < 55.6 or lat > 58.2 or lon < 20.8 or lon > 28.3:
         return ()
@@ -132,7 +132,7 @@ def get_closest_city(cur, lat, lon, distance=15, max_distance=100, force_all=Fal
     """).fetchall()
     if len(cities) == 0:
         if distance < max_distance:
-            return get_closest_city(cur, lat, lon, distance+5, max_distance)
+            return get_closest_city(cur, lat, lon, distance+step_size, max_distance, step_size+step_size, force_all)
         else:
             return ()
     else:
@@ -302,7 +302,7 @@ def get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip):
 # http://localhost:8000/api/v1/forecast/cities?lat=56.9730&lon=24.1327
 @app.get("/api/v1/forecast/cities")
 async def get_city_forecasts(lat: float, lon: float, add_params: bool = True, add_aurora: bool = False, add_last_no_skip: bool = False):
-    city = get_closest_city(cur, lat, lon, 10, 80) # TODO revisit starting dist
+    city = get_closest_city(cur, max(min(lat, 58.2), 55.6), max(min(lon, 28.3), 20.8), 10, 200, 5) # TODO revisit starting dist
     return get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip)
 
 
@@ -311,7 +311,7 @@ async def get_city_forecasts(lat: float, lon: float, add_params: bool = True, ad
 async def get_city_forecasts(city_name: str, add_params: bool = True, add_aurora: bool = False, add_last_no_skip: bool = False):
     city = get_city_by_name(simlpify_string(regex.sub('', city_name).strip().lower()))
     if is_emergency():
-        city = get_closest_city(cur, city[2], city[3], 10, 80) # TODO revisit starting dist
+        city = get_closest_city(cur, city[2], city[3], 10, 200, 5) # TODO revisit starting dist
     return get_city_reponse(city, city[2], city[3], add_params, add_aurora, add_last_no_skip)
 
 
