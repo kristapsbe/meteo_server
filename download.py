@@ -262,11 +262,12 @@ def run_downloads(datasets):
     if skipped_empty:
         if not os.path.isfile('run_emergency'):
             open('run_emergency', 'w').write("")
-    elif os.path.isfile('run_emergency'):
+    else:
         open('last_updated', 'w').write(
             datetime.datetime.fromtimestamp(os.path.getmtime(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam.json")).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
         )
-        os.remove('run_emergency') 
+        if os.path.isfile('run_emergency'):
+            os.remove('run_emergency') 
     
     update_db()
     update_aurora_forecast()
