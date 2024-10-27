@@ -246,6 +246,9 @@ def update_aurora_forecast(): # TODO: cleanup
                 VALUES (?, ?, ?)
             """, aurora_data["coordinates"])
             upd_con.commit()
+            logging.info("DB update finished")
+        except BaseException as e:
+            logging.info(f"DB update FAILED - {e}")
         finally:
             upd_con.close()
 
