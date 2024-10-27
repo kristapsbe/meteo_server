@@ -41,8 +41,6 @@ ids = [e[0] for e in cur.execute("""
         type in ('republikas pilseta', 'citas pilsētas', 'rajona centrs')
 """).fetchall()]
 
-ids = sorted(ids, key=lambda i: int(i[1:])) # start with lower ids in case we blow up
-
 ct = 1
 total = len(ids)
 csv = ['CITY_ID,PARA_ID,DATUMS,VERTIBA']
