@@ -253,13 +253,13 @@ def get_aurora_probability(cur, lat, lon):
     }
 
 
-def get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip):
+def get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip, h_city_override=None):
     h_params = get_params(cur, hourly_params_q)
     d_params = get_params(cur, daily_params_q)
     c_date = datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
     if warning_mode:
         c_date = "202407270000"
-    h_forecast = get_forecast(cur, city, c_date, h_params)
+    h_forecast = get_forecast(cur, city if h_city_override is None else h_city_override, c_date, h_params)
     d_forecast = get_forecast(cur, city, c_date, d_params)
     warnings = get_warnings(cur, lat, lon)
     metadata_f = f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam.json"
@@ -302,18 +302,23 @@ def get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip):
 # http://localhost:8000/api/v1/forecast/cities?lat=56.9730&lon=24.1327
 @app.get("/api/v1/forecast/cities")
 async def get_city_forecasts(lat: float, lon: float, add_params: bool = True, add_aurora: bool = False, add_last_no_skip: bool = False):
-    # TODO: I could, alternatively just force the coords to Riga if they're outside of the box, but that could feel weird when, for example, driving to Estonia or Lithuania
-    city = get_closest_city(cur, max(min(lat, 58.05), 55.7), max(min(lon, 28.25), 20.95), 10, 200, 5) # TODO revisit starting dist
-    return get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip)
+    city = get_closest_city(cur, max(min(lat, 58.05), 55.7), max(min(lon, 28.25), 20.95), 10, 200, 5, True)
+    # TODO: test more carefully
+    h_city_override = None
+    if is_emergency():
+        h_city_override = get_closest_city(cur, city[2], city[3], 10, 200, 5)
+    return get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip, h_city_override)
 
 
 # http://localhost:8000/api/v1/forecast/cities/name?city_name=vamier
 @app.get("/api/v1/forecast/cities/name")
 async def get_city_forecasts(city_name: str, add_params: bool = True, add_aurora: bool = False, add_last_no_skip: bool = False):
     city = get_city_by_name(simlpify_string(regex.sub('', city_name).strip().lower()))
+    # TODO: test more carefully
+    h_city_override = None
     if is_emergency():
-        city = get_closest_city(cur, city[2], city[3], 10, 200, 5) # TODO revisit starting dist
-    return get_city_reponse(city, city[2], city[3], add_params, add_aurora, add_last_no_skip)
+        h_city_override = get_closest_city(cur, city[2], city[3], 10, 200, 5)
+    return get_city_reponse(city, city[2], city[3], add_params, add_aurora, add_last_no_skip, h_city_override)
 
 
 # http://localhost:8000/privacy-policy

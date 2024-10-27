@@ -186,7 +186,7 @@ def update_table(t_conf, db_cur):
     logging.info(f"UPDATING '{t_conf["table_name"]}'")
     df = None
     for data_file in t_conf["files"]:
-        tmp_df = pd.read_csv(data_file).dropna()
+        tmp_df = pd.read_csv(data_file["name"]).dropna()
         for ct in range(len(t_conf["cols"])):
             for col in t_conf["cols"][ct]:
                 tmp_df[f"_new_{col["name"]}"] = tmp_df[tmp_df.columns[ct]].apply(col_parsers[col["type"]])
