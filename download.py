@@ -46,9 +46,11 @@ col_types = {
 }
 
 table_conf = [{
-    "files": [f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/cities.csv"],
+    "files": [{
+        "name": f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/cities.csv", 
+        "skip_if_empty": True
+    }],
     "table_name": "cities",
-    "skip_if_empty": True,
     "cols": [
         [{"name": "id", "type": "TEXT", "pk": True}],
         [{"name": "name", "type": "TITLE_TEXT"}, {"name": "search_name", "type": "CLEANED_TEXT"}],
@@ -57,21 +59,26 @@ table_conf = [{
         [{"name": "type", "type": "TEXT"}],
     ],
 },{
-    "files": [f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forcity_param.csv"],
+    "files": [{
+        "name": f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forcity_param.csv", 
+        "skip_if_empty": True
+    }],
     "table_name": "forecast_cities_params",
-    "skip_if_empty": True,
     "cols": [
         [{"name": "id", "type": "INTEGER", "pk": True}],
         [{"name": "title_lv", "type": "TEXT"}],
         [{"name": "title_en", "type": "TEXT"}],
     ]
 },{
-    "files": [
-        f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities_day.csv",
-        f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv"
-    ],
+    "files": [{
+        "name": f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities_day.csv",
+        "skip_if_empty": True
+    }, {
+        "name": f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv",
+        "skip_if_empty": True,
+        "do_emergency_dl": True
+    }],
     "table_name": "forecast_cities",
-    "skip_if_empty": True,
     "cols": [
         [{"name": "city_id", "type": "TEXT", "pk": True}],
         [{"name": "param_id", "type": "INTEGER", "pk": True}],
@@ -79,7 +86,9 @@ table_conf = [{
         [{"name": "value", "type": "REAL"}],
     ]
 },{
-    "files": [f"{data_f}hidrometeorologiskie-bridinajumi/novadi.csv"],
+    "files": [{
+        "name": f"{data_f}hidrometeorologiskie-bridinajumi/novadi.csv"
+    }],
     "table_name": "municipalities",
     "cols": [
         [{"name": "id", "type": "INTEGER", "pk": True}],
@@ -87,14 +96,18 @@ table_conf = [{
         [{"name": "name_en", "type": "TEXT"}],
     ]
 },{
-    "files": [f"{data_f}hidrometeorologiskie-bridinajumi/bridinajumu_novadi.csv"],
+    "files": [{
+        "name": f"{data_f}hidrometeorologiskie-bridinajumi/bridinajumu_novadi.csv"
+    }],
     "table_name": "warnings_municipalities",
     "cols": [
         [{"name": "warning_id", "type": "INTEGER"}],
         [{"name": "municipality_id", "type": "INTEGER"}],
     ]
 },{
-    "files": [f"{data_f}hidrometeorologiskie-bridinajumi/bridinajumu_poligoni.csv"],
+    "files": [{
+        "name": f"{data_f}hidrometeorologiskie-bridinajumi/bridinajumu_poligoni.csv"
+    }],
     "table_name": "warnings_polygons",
     "cols": [ # TODO: figure out why the pks failed
         [{"name": "warning_id", "type": "INTEGER"}], # "pk": True}],
@@ -104,7 +117,9 @@ table_conf = [{
         [{"name": "order_id", "type": "INTEGER"}], # "pk": True}],
     ]
 },{ # TODO: partial at the moment - finish this
-    "files": [f"{data_f}hidrometeorologiskie-bridinajumi/bridinajumu_metadata.csv"],
+    "files": [{
+        "name": f"{data_f}hidrometeorologiskie-bridinajumi/bridinajumu_metadata.csv"
+    }],
     "table_name": "warnings",
     "cols": [
         [{"name": "number", "type": "TEXT", "pk": True}],
@@ -128,15 +143,19 @@ def refresh_file(url, fpath, verify_download):
     # TODO: there's a damaged .csv - may want to deal with this in a more generic fashion (?)
     r_text = r.content.replace(b'Pressure, (hPa)', b'Pressure (hPa)') if fpath == f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forcity_param.csv" else r.content
 
-    curr_conf = [e for e in table_conf if fpath in e["files"]]
-    skip_if_empty = len(curr_conf) == 0 or curr_conf[0].get("skip_if_empty", False)
+    curr_conf = [f_conf for conf in table_conf for f_conf in conf["files"] if fpath in f_conf["name"]]
+    skip_if_empty = False
+    do_emergency_dl = False
+    if len(curr_conf) > 0:
+        skip_if_empty = curr_conf[0].get("skip_if_empty", False)
+        do_emergency_dl = curr_conf[0].get("do_emergency_dl", False)
 
     if r.status_code == 200 and verify_download(r_text, skip_if_empty):
         with open(fpath, "wb") as f: # this can be eiher a json or csv
             f.write(r_text)
         return False
     else:
-        return True
+        return do_emergency_dl
 
 
 def verif_json(s, _):
