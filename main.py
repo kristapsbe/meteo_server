@@ -302,6 +302,7 @@ def get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip):
 # http://localhost:8000/api/v1/forecast/cities?lat=56.9730&lon=24.1327
 @app.get("/api/v1/forecast/cities")
 async def get_city_forecasts(lat: float, lon: float, add_params: bool = True, add_aurora: bool = False, add_last_no_skip: bool = False):
+    # TODO: I could, alternatively just force the coords to Riga if they're outside of the box, but that could feel weird when, for example, driving to Estonia or Lithuania
     city = get_closest_city(cur, max(min(lat, 58.05), 55.7), max(min(lon, 28.25), 20.95), 10, 200, 5) # TODO revisit starting dist
     return get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip)
 
