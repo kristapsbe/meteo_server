@@ -1,11 +1,10 @@
 # ONLY IN CASE OF EMERGENCIES
 # looks like the upload to the open data portal can blow up 
 # manually trigger this to fetch hourly forecasts from the LVĢMC website instead
-#
-# TODO: looks like more than just the hourly forecasts can go bad
-# set up rescue jobs for the rest of the tables
-# NOTE: I don't think I actually need this thing to update the table - I can just let the download script do it
-# TODO: make individual rescue functions so that I don't overwrite good data
+# 
+# I'll just keep reusing city and param data, and the LVĢMC site appears to use he same data
+# as they upload to the open data porta when it comes to daily forecasts -
+# meaning that I can't use the site as a fallback there
 import os
 import json
 import pytz
@@ -30,8 +29,6 @@ url = 'https://videscentrs.lvgmc.lv/data/weather_forecast_for_location_hourly?pu
 con = sqlite3.connect(db_f)
 cur = con.cursor()
 
-# TODO: should I make the server more aware of the fact that this script has been run?
-# that would mean that I could just pull the republic cities + some selected locations as previously planned
 ids = [e[0] for e in cur.execute("""
     SELECT
         id
