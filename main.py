@@ -215,15 +215,50 @@ def get_warnings(cur, lat, lon):
     warnings = []
     if len(relevant_warnings) > 0:
         warnings = cur.execute(f"""
-            WITH warnings_raw AS (
+            WITH warning_levels AS (
+                SELECT DISTINCT
+                    id,
+                    CASE intensity_en
+                        WHEN 'Red' THEN 3
+                        WHEN 'Orange' THEN 2
+                        WHEN 'Yellow' THEN 1
+                    END as intensity_level,
+                    type_lv,
+                    description_lv
+                FROM
+                    warnings
+                WHERE
+                    id in ({", ".join([str(w[0]) for w in relevant_warnings])})
+            ),
+            warnings_unique_texts AS (
+                SELECT DISTINCT
+                    max(intensity_level) AS max_intensity,
+                    type_lv,
+                    description_lv 
+                FROM 
+                    warning_levels
+                GROUP BY
+                    type_lv,
+                    description_lv
+            ),
+            warning_filtered_ids AS (
+                SELECT DISTINCT
+                    id
+                FROM
+                    warning_levels AS wl INNER JOIN warnings_unique_texts AS wt ON 
+                        wl.intensity_level = wt.max_intensity
+                        AND wl.type_lv = wt.type_lv
+                        AND wl.description_lv = wt.description_lv
+            ),
+            warnings_raw AS (
                 SELECT DISTINCT
                     id,
                     intensity_lv,
                     intensity_en,
                     CASE intensity_en
-                        WHEN 'Red' THEN 1
+                        WHEN 'Red' THEN 3
                         WHEN 'Orange' THEN 2
-                        WHEN 'Yellow' THEN 3
+                        WHEN 'Yellow' THEN 1
                     END as intensity_val,
                     regions_lv,
                     regions_en,
@@ -236,7 +271,7 @@ def get_warnings(cur, lat, lon):
                 FROM
                     warnings
                 WHERE
-                    id in ({", ".join([str(w[0]) for w in relevant_warnings])})
+                    id in warning_filtered_ids
             )
             SELECT
                 id,
@@ -253,7 +288,7 @@ def get_warnings(cur, lat, lon):
             FROM
                 warnings_raw
             ORDER BY
-                intensity_val ASC
+                intensity_val DESC
         """).fetchall()
     return warnings
 
