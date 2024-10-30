@@ -215,7 +215,30 @@ def get_warnings(cur, lat, lon):
     warnings = []
     if len(relevant_warnings) > 0:
         warnings = cur.execute(f"""
-            SELECT DISTINCT
+            WITH warnings_raw AS (
+                SELECT DISTINCT
+                    id,
+                    intensity_lv,
+                    intensity_en,
+                    CASE intensity_en
+                        WHEN 'Red' THEN 1
+                        WHEN 'Orange' THEN 2
+                        WHEN 'Yellow' THEN 3
+                    END as intensity_val,
+                    regions_lv,
+                    regions_en,
+                    type_lv,
+                    type_en,
+                    time_from,
+                    time_to,
+                    description_lv,
+                    description_en
+                FROM
+                    warnings
+                WHERE
+                    id in ({", ".join([str(w[0]) for w in relevant_warnings])})
+            )
+            SELECT
                 id,
                 intensity_lv,
                 intensity_en,
@@ -228,9 +251,9 @@ def get_warnings(cur, lat, lon):
                 description_lv,
                 description_en
             FROM
-                warnings
-            WHERE
-                id in ({", ".join([str(w[0]) for w in relevant_warnings])})
+                warnings_raw
+            ORDER BY
+                intensity_val ASC
         """).fetchall()
     return warnings
 
@@ -301,7 +324,7 @@ def get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip, h
 
 # http://localhost:8000/api/v1/forecast/cities?lat=56.9730&lon=24.1327
 @app.get("/api/v1/forecast/cities")
-async def get_city_forecasts(lat: float, lon: float, add_params: bool = True, add_aurora: bool = False, add_last_no_skip: bool = False):
+async def get_city_forecasts(lat: float, lon: float, add_params: bool = False, add_aurora: bool = True, add_last_no_skip: bool = False):
     city = get_closest_city(cur, max(min(lat, 58.05), 55.7), max(min(lon, 28.25), 20.95), 10, 200, 5, True)
     # TODO: test more carefully
     h_city_override = None
@@ -312,7 +335,7 @@ async def get_city_forecasts(lat: float, lon: float, add_params: bool = True, ad
 
 # http://localhost:8000/api/v1/forecast/cities/name?city_name=vamier
 @app.get("/api/v1/forecast/cities/name")
-async def get_city_forecasts(city_name: str, add_params: bool = True, add_aurora: bool = False, add_last_no_skip: bool = False):
+async def get_city_forecasts(city_name: str, add_params: bool = False, add_aurora: bool = True, add_last_no_skip: bool = False):
     city = get_city_by_name(simlpify_string(regex.sub('', city_name).strip().lower()))
     # TODO: test more carefully
     h_city_override = None
