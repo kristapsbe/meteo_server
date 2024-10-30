@@ -98,45 +98,70 @@ def get_location_range(force_all=False):
         return "('republikas pilseta', 'citas pilsētas', 'rajona centrs')"
 
 
-def get_closest_city(cur, lat, lon, distance=15, max_distance=100, step_size=5, force_all=False):
+def get_closest_city(cur, lat, lon, distance=10, force_all=False, only_closest=False):
+    cities = []
     # no point in even looking if we're outside of this box
-    if lat < 55.7 or lat > 58.05 or lon < 20.95 or lon > 28.25:
-        return ()
-    cities = cur.execute(f"""
-        WITH city_distances AS (
+    if lat < 55.7 or lat > 58.05 or lon < 20.95 or lon > 28.25 or only_closest:
+        cities = cur.execute(f"""
+            WITH city_distances AS (
+                SELECT
+                    id,
+                    name,
+                    CASE type
+                        WHEN 'republikas pilseta' THEN 1
+                        WHEN 'citas pilsētas' THEN 2
+                        WHEN 'rajona centrs' THEN 3
+                        WHEN 'pagasta centrs' THEN 4
+                        WHEN 'ciems' THEN 5
+                    END as ctype,
+                    ACOS((SIN(RADIANS(lat))*SIN(RADIANS({lat})))+(COS(RADIANS(lat))*COS(RADIANS({lat})))*(COS(RADIANS({lon})-RADIANS(lon))))*6371 as distance
+                FROM
+                    cities
+                WHERE
+                    type in {get_location_range(force_all)}
+            )
             SELECT
-                id,
-                name,
-                CASE type
-                    WHEN 'republikas pilseta' THEN 1
-                    WHEN 'citas pilsētas' THEN 2
-                    WHEN 'rajona centrs' THEN 3
-                    WHEN 'pagasta centrs' THEN 4
-                    WHEN 'ciems' THEN 5
-                END as ctype,
-                ACOS((SIN(RADIANS(lat))*SIN(RADIANS({lat})))+(COS(RADIANS(lat))*COS(RADIANS({lat})))*(COS(RADIANS({lon})-RADIANS(lon))))*6371 as distance
+                id, name, ctype, distance
             FROM
-                cities
-            WHERE
-                type in {get_location_range(force_all)}
-        )
-        SELECT
-            id, name, ctype, distance
-        FROM
-            city_distances
-        WHERE
-            distance <= ({distance}/ctype)
-        ORDER BY
-            ctype ASC, distance ASC
-        LIMIT 1
-    """).fetchall()
-    if len(cities) == 0:
-        if distance < max_distance:
-            return get_closest_city(cur, lat, lon, distance+step_size, max_distance, step_size+step_size, force_all)
-        else:
+                city_distances
+            ORDER BY
+                ctype ASC, distance ASC
+            LIMIT 1
+        """).fetchall()
+        if len(cities) == 0:
             return ()
     else:
-        return cities[0]
+        cities = cur.execute(f"""
+            WITH city_distances AS (
+                SELECT
+                    id,
+                    name,
+                    CASE type
+                        WHEN 'republikas pilseta' THEN 1
+                        WHEN 'citas pilsētas' THEN 2
+                        WHEN 'rajona centrs' THEN 3
+                        WHEN 'pagasta centrs' THEN 4
+                        WHEN 'ciems' THEN 5
+                    END as ctype,
+                    ACOS((SIN(RADIANS(lat))*SIN(RADIANS({lat})))+(COS(RADIANS(lat))*COS(RADIANS({lat})))*(COS(RADIANS({lon})-RADIANS(lon))))*6371 as distance
+                FROM
+                    cities
+                WHERE
+                    type in {get_location_range(force_all)}
+            )
+            SELECT
+                id, name, ctype, distance
+            FROM
+                city_distances
+            WHERE
+                distance <= ({distance}/ctype)
+            ORDER BY
+                ctype ASC, distance ASC
+            LIMIT 1
+        """).fetchall()
+        if len(cities) == 0:
+            return get_closest_city(cur, lat, lon, distance, force_all, only_closest=True)
+    return cities[0]
     
     
 def get_city_by_name(city_name):
@@ -357,11 +382,11 @@ def get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip, h
 # http://localhost:8000/api/v1/forecast/cities?lat=56.9730&lon=24.1327
 @app.get("/api/v1/forecast/cities")
 async def get_city_forecasts(lat: float, lon: float, add_params: bool = False, add_aurora: bool = True, add_last_no_skip: bool = False):
-    city = get_closest_city(cur, max(min(lat, 58.05), 55.7), max(min(lon, 28.25), 20.95), 10, 200, 5, True)
+    city = get_closest_city(cur=cur, lat=lat, lon=lon, force_all=True)
     # TODO: test more carefully
     h_city_override = None
     if is_emergency():
-        h_city_override = get_closest_city(cur, city[2], city[3], 10, 200, 5)
+        h_city_override = get_closest_city(cur=cur, lat=city[2], lon=city[3])
     return get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip, h_city_override)
 
 
@@ -372,7 +397,7 @@ async def get_city_forecasts(city_name: str, add_params: bool = False, add_auror
     # TODO: test more carefully
     h_city_override = None
     if is_emergency():
-        h_city_override = get_closest_city(cur, city[2], city[3], 10, 200, 5)
+        h_city_override = get_closest_city(cur=cur, lat=city[2], lon=city[3])
     return get_city_reponse(city, city[2], city[3], add_params, add_aurora, add_last_no_skip, h_city_override)
 
 
