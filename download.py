@@ -217,6 +217,35 @@ def update_table(t_conf, db_cur):
     logging.info(f"TABLE '{t_conf["table_name"]}' updated")
 
 
+def update_warning_bounds_table(db_cur):
+    logging.info(f"UPDATING 'warning_bounds'")
+    db_cur.execute(f"DROP TABLE IF EXISTS warning_bounds") # no point in storing old data
+    db_cur.execute(f"""
+        CREATE TABLE IF NOT EXISTS warning_bounds (
+            warning_id,
+            min_lat,
+            max_lat,
+            min_lon,
+            max_lon,
+            PRIMARY KEY (warning_id)
+        )        
+    """)
+    db_cur.execute(f"""
+        INSERT INTO warning_bounds (warning_id, min_lat, max_lat, min_lon, max_lon) 
+        SELECT
+            warning_id,
+            MIN(lat) as min_lat,
+            MAX(lat) as max_lat,
+            MIN(lon) as min_lon,
+            MAX(lon) as max_lon
+        FROM
+            warnings_polygons
+        GROUP BY
+            warning_id
+    """)
+    logging.info(f"TABLE 'warning_bounds' updated")
+
+
 def update_db():
     upd_con = sqlite3.connect(db_f)
     try:
@@ -224,7 +253,7 @@ def update_db():
         for t_conf in table_conf:
             # TODO: check if I should make a cursor and commit once, or once per function call
             update_table(t_conf, upd_cur)
-
+        update_warning_bounds_table(upd_cur)
         upd_con.commit() # TODO: last updared should come from here
         logging.info("DB update finished")
     except BaseException as e:

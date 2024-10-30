@@ -197,20 +197,14 @@ def get_forecast(cur, city, c_date, params):
 
 def get_warnings(cur, lat, lon):
     # TODO: turning the warning polygons into big squares - this should at least work - should use the actual poly bounds at some point
+    # since I'm using squares anyhow precomputing them to save time
     relevant_warnings = cur.execute(f"""
-        WITH warning_bounds AS (
-            SELECT
-                warning_id,
-                MIN(lat) as min_lat,
-                MAX(lat) as max_lat,
-                MIN(lon) as min_lon,
-                MAX(lon) as max_lon
-            FROM
-                warnings_polygons
-            GROUP BY
-                warning_id
-        )
-        SELECT warning_id FROM warning_bounds WHERE {lat} >= min_lat AND {lat} <= max_lat AND {lon} >= min_lon AND {lon} <= max_lon
+        SELECT 
+            warning_id 
+        FROM 
+            warning_bounds 
+        WHERE 
+            {lat} >= min_lat AND {lat} <= max_lat AND {lon} >= min_lon AND {lon} <= max_lon
     """).fetchall()
     warnings = []
     if len(relevant_warnings) > 0:
