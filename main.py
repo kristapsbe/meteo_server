@@ -100,66 +100,46 @@ def get_location_range(force_all=False):
 
 def get_closest_city(cur, lat, lon, distance=10, force_all=False, only_closest=False):
     cities = []
-    # no point in even looking if we're outside of this box
-    if lat < 55.7 or lat > 58.05 or lon < 20.95 or lon > 28.25 or only_closest:
-        cities = cur.execute(f"""
-            WITH city_distances AS (
-                SELECT
-                    id,
-                    name,
-                    CASE type
-                        WHEN 'republikas pilseta' THEN 1
-                        WHEN 'citas pilsētas' THEN 2
-                        WHEN 'rajona centrs' THEN 3
-                        WHEN 'pagasta centrs' THEN 4
-                        WHEN 'ciems' THEN 5
-                    END as ctype,
-                    ACOS((SIN(RADIANS(lat))*SIN(RADIANS({lat})))+(COS(RADIANS(lat))*COS(RADIANS({lat})))*(COS(RADIANS({lon})-RADIANS(lon))))*6371 as distance
-                FROM
-                    cities
-                WHERE
-                    type in {get_location_range(force_all)}
-            )
+    only_closest_active = lat < 55.7 or lat > 58.05 or lon < 20.95 or lon > 28.25 or only_closest
+    where_str = f"""
+        WHERE
+            distance <= ({distance}/ctype)
+    """
+    if only_closest_active:
+        where_str = ""
+
+    cities = cur.execute(f"""
+        WITH city_distances AS (
             SELECT
-                id, name, ctype, distance
+                id,
+                name,
+                CASE type
+                    WHEN 'republikas pilseta' THEN 1
+                    WHEN 'citas pilsētas' THEN 2
+                    WHEN 'rajona centrs' THEN 3
+                    WHEN 'pagasta centrs' THEN 4
+                    WHEN 'ciems' THEN 5
+                END as ctype,
+                ACOS((SIN(RADIANS(lat))*SIN(RADIANS({lat})))+(COS(RADIANS(lat))*COS(RADIANS({lat})))*(COS(RADIANS({lon})-RADIANS(lon))))*6371 as distance
             FROM
-                city_distances
-            ORDER BY
-                ctype ASC, distance ASC
-            LIMIT 1
-        """).fetchall()
-        if len(cities) == 0:
-            return ()
-    else:
-        cities = cur.execute(f"""
-            WITH city_distances AS (
-                SELECT
-                    id,
-                    name,
-                    CASE type
-                        WHEN 'republikas pilseta' THEN 1
-                        WHEN 'citas pilsētas' THEN 2
-                        WHEN 'rajona centrs' THEN 3
-                        WHEN 'pagasta centrs' THEN 4
-                        WHEN 'ciems' THEN 5
-                    END as ctype,
-                    ACOS((SIN(RADIANS(lat))*SIN(RADIANS({lat})))+(COS(RADIANS(lat))*COS(RADIANS({lat})))*(COS(RADIANS({lon})-RADIANS(lon))))*6371 as distance
-                FROM
-                    cities
-                WHERE
-                    type in {get_location_range(force_all)}
-            )
-            SELECT
-                id, name, ctype, distance
-            FROM
-                city_distances
+                cities
             WHERE
-                distance <= ({distance}/ctype)
-            ORDER BY
-                ctype ASC, distance ASC
-            LIMIT 1
-        """).fetchall()
-        if len(cities) == 0:
+                type in {get_location_range(force_all)}
+        )
+        SELECT
+            id, name, ctype, distance
+        FROM
+            city_distances
+        {where_str}
+        ORDER BY
+            ctype ASC, distance ASC
+        LIMIT 1
+    """).fetchall()
+
+    if len(cities) == 0:
+        if only_closest_active:
+            return ()
+        else:
             return get_closest_city(cur, lat, lon, distance, force_all, only_closest=True)
     return cities[0]
     
