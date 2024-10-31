@@ -223,17 +223,19 @@ def update_warning_bounds_table(db_cur):
     db_cur.execute(f"""
         CREATE TABLE IF NOT EXISTS warning_bounds (
             warning_id,
+            polygon_id,
             min_lat,
             max_lat,
             min_lon,
             max_lon,
-            PRIMARY KEY (warning_id)
+            PRIMARY KEY (warning_id, polygon_id)
         )        
     """)
     db_cur.execute(f"""
-        INSERT INTO warning_bounds (warning_id, min_lat, max_lat, min_lon, max_lon) 
+        INSERT INTO warning_bounds (warning_id, polygon_id, min_lat, max_lat, min_lon, max_lon) 
         SELECT
             warning_id,
+            polygon_id,
             MIN(lat) as min_lat,
             MAX(lat) as max_lat,
             MIN(lon) as min_lon,
@@ -241,7 +243,7 @@ def update_warning_bounds_table(db_cur):
         FROM
             warnings_polygons
         GROUP BY
-            warning_id
+            warning_id, polygon_id
     """)
     logging.info(f"TABLE 'warning_bounds' updated")
 
