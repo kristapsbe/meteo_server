@@ -295,6 +295,93 @@ def get_warnings(cur, lat, lon):
     return warnings
 
 
+def get_simple_warnings(cur, lat, lon):
+    # TODO: turning the warning polygons into big squares - this should at least work - should use the actual poly bounds at some point
+    # since I'm using squares anyhow precomputing them to save time
+    relevant_warnings = cur.execute(f"""
+        SELECT 
+            warning_id 
+        FROM 
+            warning_bounds 
+        WHERE 
+            {lat} >= min_lat AND {lat} <= max_lat AND {lon} >= min_lon AND {lon} <= max_lon
+    """).fetchall()
+    warnings = []
+    if len(relevant_warnings) > 0:
+        # the weather service occasionally serves the same warnings
+        # for the same are, and with the same text, but with two
+        # different intensity levels - getting only the highest intensity
+        warnings = cur.execute(f"""
+            WITH warning_levels AS (
+                SELECT DISTINCT
+                    id,
+                    CASE intensity_en
+                        WHEN 'Red' THEN 3
+                        WHEN 'Orange' THEN 2
+                        WHEN 'Yellow' THEN 1
+                    END as intensity_level,
+                    type_lv,
+                    description_lv
+                FROM
+                    warnings
+                WHERE
+                    id in ({", ".join([str(w[0]) for w in relevant_warnings])})
+            ),
+            warnings_unique_texts AS (
+                SELECT DISTINCT
+                    max(intensity_level) AS max_intensity,
+                    type_lv,
+                    description_lv 
+                FROM 
+                    warning_levels
+                GROUP BY
+                    type_lv,
+                    description_lv
+            ),
+            warning_filtered_ids AS (
+                SELECT DISTINCT
+                    id
+                FROM
+                    warning_levels AS wl INNER JOIN warnings_unique_texts AS wt ON 
+                        wl.intensity_level = wt.max_intensity
+                        AND wl.type_lv = wt.type_lv
+                        AND wl.description_lv = wt.description_lv
+            ),
+            warnings_raw AS (
+                SELECT DISTINCT
+                    id,
+                    type_lv,
+                    type_en,
+                    intensity_lv,
+                    intensity_en,
+                    CASE intensity_en
+                        WHEN 'Red' THEN 3
+                        WHEN 'Orange' THEN 2
+                        WHEN 'Yellow' THEN 1
+                    END as intensity_val,
+                    description_lv,
+                    description_en
+                FROM
+                    warnings
+                WHERE
+                    id in warning_filtered_ids
+            )
+            SELECT
+                id,
+                type_lv,
+                type_en,
+                intensity_lv,
+                intensity_en,
+                description_lv,
+                description_en
+            FROM
+                warnings_raw
+            ORDER BY
+                intensity_val DESC
+        """).fetchall()
+    return warnings
+
+
 def get_aurora_probability(cur, lat, lon):
     aurora_probs = cur.execute(f"""
         SELECT
@@ -313,7 +400,7 @@ def get_aurora_probability(cur, lat, lon):
     }
 
 
-def get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip, h_city_override=None):
+def get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip, h_city_override, use_simple_warnings):
     h_params = get_params(cur, hourly_params_q)
     d_params = get_params(cur, daily_params_q)
     c_date = datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
@@ -321,7 +408,6 @@ def get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip, h
         c_date = "202407270000"
     h_forecast = get_forecast(cur, city if h_city_override is None else h_city_override, c_date, h_params)
     d_forecast = get_forecast(cur, city, c_date, d_params)
-    warnings = get_warnings(cur, lat, lon)
     metadata_f = f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam.json"
     metadata = json.loads(open(metadata_f, "r").read())
 
@@ -335,18 +421,41 @@ def get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip, h
             "time": f[1],
             "vals": f[2:]
         } for f in d_forecast],
-        "warnings": [{
+        "last_updated": metadata["result"]["metadata_modified"].replace("-", "").replace("T", "").replace(":", "")[:12],
+        # TODO: get local timezone instead
+        "last_downloaded": datetime.datetime.fromtimestamp(os.path.getmtime(metadata_f)).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"),
+    }
+
+    if use_simple_warnings:
+        warnings = get_simple_warnings(cur, lat, lon)
+        tmp_warnings = {}
+        for w in warnings:
+            tmp_key = f"{w[1]}:{w[3]}" # type and intensity
+            if tmp_key not in tmp_warnings: 
+                tmp_warnings[tmp_key] = {
+                    "ids": [w[0]], 
+                    "type": w[1:3],
+                    "intensity": w[3:5],
+                    "description_lv": [w[5]], 
+                    "description_en": [w[6]],
+                }
+            else:
+                tmp_warnings[tmp_key]["ids"].append(w[0])
+                tmp_warnings[tmp_key]["description_lv"].append(w[5])
+                tmp_warnings[tmp_key]["description_en"].append(w[6])
+        ret_val["warnings"] = list(tmp_warnings.values())
+    else:
+        # TODO: get rid of this once noone's using it
+        warnings = get_warnings(cur, lat, lon)
+        ret_val["warnings"] = [{
             "id": w[0],
             "intensity": w[1:3],
             "regions": w[3:5],
             "type": w[5:7],
             "time": w[7:9],
             "description": w[9:]
-        } for w in warnings],
-        "last_updated": metadata["result"]["metadata_modified"].replace("-", "").replace("T", "").replace(":", "")[:12],
-        # TODO: get local timezone instead
-        "last_downloaded": datetime.datetime.fromtimestamp(os.path.getmtime(metadata_f)).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"),
-    }
+        } for w in warnings]
+
     if add_params:
         ret_val["hourly_params"] = [p[1:] for p in h_params]
         ret_val["daily_params"] = [p[1:] for p in d_params]
@@ -361,24 +470,24 @@ def get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip, h
 
 # http://localhost:8000/api/v1/forecast/cities?lat=56.9730&lon=24.1327
 @app.get("/api/v1/forecast/cities")
-async def get_city_forecasts(lat: float, lon: float, add_params: bool = False, add_aurora: bool = True, add_last_no_skip: bool = False):
+async def get_city_forecasts(lat: float, lon: float, add_params: bool = False, add_aurora: bool = True, add_last_no_skip: bool = False, use_simple_warnings: bool = False):
     city = get_closest_city(cur=cur, lat=lat, lon=lon, force_all=True)
     # TODO: test more carefully
     h_city_override = None
     if is_emergency():
         h_city_override = get_closest_city(cur=cur, lat=city[2], lon=city[3])
-    return get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip, h_city_override)
+    return get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip, h_city_override, use_simple_warnings)
 
 
 # http://localhost:8000/api/v1/forecast/cities/name?city_name=vamier
 @app.get("/api/v1/forecast/cities/name")
-async def get_city_forecasts(city_name: str, add_params: bool = False, add_aurora: bool = True, add_last_no_skip: bool = False):
+async def get_city_forecasts(city_name: str, add_params: bool = False, add_aurora: bool = True, add_last_no_skip: bool = False, use_simple_warnings: bool = False):
     city = get_city_by_name(simlpify_string(regex.sub('', city_name).strip().lower()))
     # TODO: test more carefully
     h_city_override = None
     if is_emergency():
         h_city_override = get_closest_city(cur=cur, lat=city[2], lon=city[3])
-    return get_city_reponse(city, city[2], city[3], add_params, add_aurora, add_last_no_skip, h_city_override)
+    return get_city_reponse(city, city[2], city[3], add_params, add_aurora, add_last_no_skip, h_city_override, use_simple_warnings)
 
 
 # http://localhost:8000/privacy-policy
