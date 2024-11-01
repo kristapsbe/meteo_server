@@ -47,7 +47,7 @@ col_types = {
 
 table_conf = [{
     "files": [{
-        "name": f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/cities.csv", 
+        "name": f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/cities.csv",
         "skip_if_empty": True
     }],
     "table_name": "cities",
@@ -60,7 +60,7 @@ table_conf = [{
     ],
 },{
     "files": [{
-        "name": f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forcity_param.csv", 
+        "name": f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forcity_param.csv",
         "skip_if_empty": True
     }],
     "table_name": "forecast_cities_params",
@@ -175,7 +175,7 @@ def download_resources(ds_name):
     ds_path = f"{data_f}{ds_name}.json"
     refresh_file(f"{base_url}action/package_show?id={ds_name}", ds_path, verif_funcs['json'])
     ds_data = json.loads(open(ds_path, "r").read())
-    
+
     skipped_empty = False
     for r in ds_data['result']['resources']:
         skipped_empty = refresh_file(r['url'], f"{data_f}{ds_name}/{r['url'].split('/')[-1]}", verif_funcs['csv']) or skipped_empty
@@ -208,10 +208,10 @@ def update_table(t_conf, db_cur):
         CREATE TABLE IF NOT EXISTS {t_conf["table_name"]} (
             {", ".join([f"{c["name"]} {col_types.get(c["name"], c["type"])}" for cols in t_conf["cols"] for c in cols])}
             {primary_key_q}
-        )        
+        )
     """)
     db_cur.executemany(f"""
-        INSERT INTO {t_conf["table_name"]} ({", ".join([c["name"] for cols in t_conf["cols"] for c in cols])}) 
+        INSERT INTO {t_conf["table_name"]} ({", ".join([c["name"] for cols in t_conf["cols"] for c in cols])})
         VALUES ({", ".join(["?"]*len([0 for cols in t_conf["cols"] for _ in cols]))})
     """, df.values.tolist())
     logging.info(f"TABLE '{t_conf["table_name"]}' updated")
@@ -229,10 +229,10 @@ def update_warning_bounds_table(db_cur):
             min_lon,
             max_lon,
             PRIMARY KEY (warning_id, polygon_id)
-        )        
+        )
     """)
     db_cur.execute(f"""
-        INSERT INTO warning_bounds (warning_id, polygon_id, min_lat, max_lat, min_lon, max_lon) 
+        INSERT INTO warning_bounds (warning_id, polygon_id, min_lat, max_lat, min_lon, max_lon)
         SELECT
             warning_id,
             polygon_id,
@@ -262,7 +262,7 @@ def update_db():
         logging.info(f"DB update FAILED - {e}")
     finally:
         upd_con.close()
-    
+
 
 def update_aurora_forecast(): # TODO: cleanup
     url = "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"
@@ -272,11 +272,11 @@ def update_aurora_forecast(): # TODO: cleanup
     r = requests.get(url)
     if r.status_code == 200:
         with open(fpath, "wb") as f:
-            f.write(r.content)       
-        aurora_data = json.loads(r.content)     
+            f.write(r.content)
+        aurora_data = json.loads(r.content)
         with open(times_fpath, "w") as f:
             f.write(json.dumps({
-                "Observation Time": aurora_data["Observation Time"], 
+                "Observation Time": aurora_data["Observation Time"],
                 "Forecast Time": aurora_data["Forecast Time"],
             }))
 
@@ -286,13 +286,13 @@ def update_aurora_forecast(): # TODO: cleanup
             upd_cur.execute(f"DROP TABLE IF EXISTS aurora_prob") # no point in storing old data
             upd_cur.execute(f"""
                 CREATE TABLE aurora_prob (
-                    lon INTEGER, 
-                    lat INTEGER, 
+                    lon INTEGER,
+                    lat INTEGER,
                     aurora INTEGER
-                )        
+                )
             """)
             upd_cur.executemany(f"""
-                INSERT INTO aurora_prob (lon, lat, aurora) 
+                INSERT INTO aurora_prob (lon, lat, aurora)
                 VALUES (?, ?, ?)
             """, aurora_data["coordinates"])
             upd_con.commit()
@@ -311,7 +311,7 @@ def run_downloads(datasets):
 
     if skipped_empty and not os.path.isfile('run_emergency'):
         open('run_emergency', 'w').write("")
-    
+
     update_db()
     update_aurora_forecast()
 
@@ -320,7 +320,7 @@ def run_downloads(datasets):
             datetime.datetime.fromtimestamp(os.path.getmtime(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam.json")).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
         )
         if os.path.isfile('run_emergency'):
-            os.remove('run_emergency') 
+            os.remove('run_emergency')
 
 
 if warning_mode:
