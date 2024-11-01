@@ -323,8 +323,9 @@ def run_downloads(datasets):
             os.remove('run_emergency') 
 
 
-if warning_mode:
-    update_db()
-    update_aurora_forecast()
-else:
-    run_downloads(target_ds)
+if __name__ == "__main__":
+    if warning_mode:
+        update_db()
+        update_aurora_forecast()
+    else:
+        run_downloads(target_ds)
