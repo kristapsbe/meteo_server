@@ -486,7 +486,7 @@ async def get_city_forecasts(lat: float, lon: float, add_params: bool = False, a
 
 # http://localhost:8000/api/v1/forecast/cities/name?city_name=vamier
 @app.get("/api/v1/forecast/cities/name")
-async def get_city_forecasts(city_name: str, add_params: bool = False, add_aurora: bool = True, add_last_no_skip: bool = False, use_simple_warnings: bool = False, add_city_coords=False):
+async def get_city_forecasts_name(city_name: str, add_params: bool = False, add_aurora: bool = True, add_last_no_skip: bool = False, use_simple_warnings: bool = False, add_city_coords=False):
     city = get_city_by_name(simlpify_string(regex.sub('', city_name).strip().lower()))
     # TODO: test more carefully
     h_city_override = None
