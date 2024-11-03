@@ -28,7 +28,7 @@ regex = re.compile('[^a-zA-Z āčēģīķļņšūžĀČĒĢĪĶĻŅŠŪŽ]')
 
 con = sqlite3.connect(db_f)
 con.enable_load_extension(True)
-con.load_extension(editdist_extension)   
+con.load_extension(editdist_extension)
 
 # the cursor doesn't actually do anything in sqlite3, just reusing it
 # https://stackoverflow.com/questions/54395773/what-are-the-side-effects-of-reusing-a-sqlite3-cursor
@@ -78,9 +78,9 @@ daily_params_q = "','".join(daily_params)
 
 def get_params(cur, param_q):
     return cur.execute(f"""
-        SELECT 
+        SELECT
             id, title_lv, title_en
-        FROM 
+        FROM
             forecast_cities_params
         WHERE
             title_lv in ('{param_q}')
@@ -142,8 +142,8 @@ def get_closest_city(cur, lat, lon, distance=10, force_all=False, only_closest=F
         else:
             return get_closest_city(cur, lat, lon, distance, force_all, only_closest=True)
     return cities[0]
-    
-    
+
+
 def get_city_by_name(city_name):
     cities = cur.execute(f"""
         WITH edit_distances AS (
@@ -177,7 +177,7 @@ def get_city_by_name(city_name):
         return ()
     else:
         return cities[0]
-    
+
 
 def get_forecast(cur, city, c_date, params):
     if len(city) == 0:
@@ -186,15 +186,15 @@ def get_forecast(cur, city, c_date, params):
     param_where = " OR ".join([f"val_{p[0]} IS NOT NULL" for p in params])
     return cur.execute(f"""
         WITH h_temp AS (
-            SELECT 
+            SELECT
                 city_id, date,
                 {param_queries}
-            FROM 
+            FROM
                 forecast_cities AS fc
             WHERE
                 city_id = '{city[0]}' AND date >= '{c_date}'
             GROUP BY
-                city_id, date                    
+                city_id, date
         )
         SELECT * FROM h_temp WHERE {param_where}
     """).fetchall()
@@ -204,11 +204,11 @@ def get_warnings(cur, lat, lon):
     # TODO: turning the warning polygons into big squares - this should at least work - should use the actual poly bounds at some point
     # since I'm using squares anyhow precomputing them to save time
     relevant_warnings = cur.execute(f"""
-        SELECT 
-            warning_id 
-        FROM 
-            warning_bounds 
-        WHERE 
+        SELECT
+            warning_id
+        FROM
+            warning_bounds
+        WHERE
             {lat} >= min_lat AND {lat} <= max_lat AND {lon} >= min_lon AND {lon} <= max_lon
     """).fetchall()
     warnings = []
@@ -236,8 +236,8 @@ def get_warnings(cur, lat, lon):
                 SELECT DISTINCT
                     max(intensity_level) AS max_intensity,
                     type_lv,
-                    description_lv 
-                FROM 
+                    description_lv
+                FROM
                     warning_levels
                 GROUP BY
                     type_lv,
@@ -247,7 +247,7 @@ def get_warnings(cur, lat, lon):
                 SELECT DISTINCT
                     id
                 FROM
-                    warning_levels AS wl INNER JOIN warnings_unique_texts AS wt ON 
+                    warning_levels AS wl INNER JOIN warnings_unique_texts AS wt ON
                         wl.intensity_level = wt.max_intensity
                         AND wl.type_lv = wt.type_lv
                         AND wl.description_lv = wt.description_lv
@@ -299,11 +299,11 @@ def get_simple_warnings(cur, lat, lon):
     # TODO: turning the warning polygons into big squares - this should at least work - should use the actual poly bounds at some point
     # since I'm using squares anyhow precomputing them to save time
     relevant_warnings = cur.execute(f"""
-        SELECT 
-            warning_id 
-        FROM 
-            warning_bounds 
-        WHERE 
+        SELECT
+            warning_id
+        FROM
+            warning_bounds
+        WHERE
             {lat} >= min_lat AND {lat} <= max_lat AND {lon} >= min_lon AND {lon} <= max_lon
     """).fetchall()
     warnings = []
@@ -331,8 +331,8 @@ def get_simple_warnings(cur, lat, lon):
                 SELECT DISTINCT
                     max(intensity_level) AS max_intensity,
                     type_lv,
-                    description_lv 
-                FROM 
+                    description_lv
+                FROM
                     warning_levels
                 GROUP BY
                     type_lv,
@@ -342,7 +342,7 @@ def get_simple_warnings(cur, lat, lon):
                 SELECT DISTINCT
                     id
                 FROM
-                    warning_levels AS wl INNER JOIN warnings_unique_texts AS wt ON 
+                    warning_levels AS wl INNER JOIN warnings_unique_texts AS wt ON
                         wl.intensity_level = wt.max_intensity
                         AND wl.type_lv = wt.type_lv
                         AND wl.description_lv = wt.description_lv
@@ -400,7 +400,8 @@ def get_aurora_probability(cur, lat, lon):
     }
 
 
-def get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip, h_city_override, use_simple_warnings):
+# TODO: rip out the params that are no longer needed
+def get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip, h_city_override, use_simple_warnings, add_city_coords):
     h_params = get_params(cur, hourly_params_q)
     d_params = get_params(cur, daily_params_q)
     c_date = datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
@@ -426,17 +427,21 @@ def get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip, h
         "last_downloaded": datetime.datetime.fromtimestamp(os.path.getmtime(metadata_f)).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"),
     }
 
+    if add_city_coords:
+        ret_val["lat"] = float(city[2]) if len(city) > 0 else 0.0
+        ret_val["lon"] = float(city[3]) if len(city) > 0 else 0.0
+
     if use_simple_warnings:
         warnings = get_simple_warnings(cur, lat, lon)
         tmp_warnings = {}
         for w in warnings:
             tmp_key = f"{w[1]}:{w[3]}" # type and intensity
-            if tmp_key not in tmp_warnings: 
+            if tmp_key not in tmp_warnings:
                 tmp_warnings[tmp_key] = {
-                    "ids": [w[0]], 
+                    "ids": [w[0]],
                     "type": w[1:3],
                     "intensity": w[3:5],
-                    "description_lv": [w[5]], 
+                    "description_lv": [w[5]],
                     "description_en": [w[6]],
                 }
             else:
@@ -470,24 +475,24 @@ def get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip, h
 
 # http://localhost:8000/api/v1/forecast/cities?lat=56.9730&lon=24.1327
 @app.get("/api/v1/forecast/cities")
-async def get_city_forecasts(lat: float, lon: float, add_params: bool = False, add_aurora: bool = True, add_last_no_skip: bool = False, use_simple_warnings: bool = False):
+async def get_city_forecasts(lat: float, lon: float, add_params: bool = False, add_aurora: bool = True, add_last_no_skip: bool = False, use_simple_warnings: bool = False, add_city_coords=False):
     city = get_closest_city(cur=cur, lat=lat, lon=lon, force_all=True)
     # TODO: test more carefully
     h_city_override = None
     if is_emergency():
         h_city_override = get_closest_city(cur=cur, lat=city[2], lon=city[3])
-    return get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip, h_city_override, use_simple_warnings)
+    return get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip, h_city_override, use_simple_warnings, add_city_coords)
 
 
 # http://localhost:8000/api/v1/forecast/cities/name?city_name=vamier
 @app.get("/api/v1/forecast/cities/name")
-async def get_city_forecasts(city_name: str, add_params: bool = False, add_aurora: bool = True, add_last_no_skip: bool = False, use_simple_warnings: bool = False):
+async def get_city_forecasts(city_name: str, add_params: bool = False, add_aurora: bool = True, add_last_no_skip: bool = False, use_simple_warnings: bool = False, add_city_coords=False):
     city = get_city_by_name(simlpify_string(regex.sub('', city_name).strip().lower()))
     # TODO: test more carefully
     h_city_override = None
     if is_emergency():
         h_city_override = get_closest_city(cur=cur, lat=city[2], lon=city[3])
-    return get_city_reponse(city, city[2], city[3], add_params, add_aurora, add_last_no_skip, h_city_override, use_simple_warnings)
+    return get_city_reponse(city, city[2], city[3], add_params, add_aurora, add_last_no_skip, h_city_override, use_simple_warnings, add_city_coords)
 
 
 # http://localhost:8000/privacy-policy
