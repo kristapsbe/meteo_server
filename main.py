@@ -401,7 +401,10 @@ def get_aurora_probability(cur, lat, lon):
 
 
 # TODO: rip out the params that are no longer needed
-def get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip, h_city_override, use_simple_warnings, add_city_coords):
+def get_city_reponse(city, add_params, add_aurora, add_last_no_skip, h_city_override, use_simple_warnings, add_city_coords):
+    lat = city[2]
+    lon = city[3]
+
     h_params = get_params(cur, hourly_params_q)
     d_params = get_params(cur, daily_params_q)
     c_date = datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
@@ -481,7 +484,7 @@ async def get_city_forecasts(lat: float, lon: float, add_params: bool = False, a
     h_city_override = None
     if is_emergency():
         h_city_override = get_closest_city(cur=cur, lat=city[2], lon=city[3])
-    return get_city_reponse(city, lat, lon, add_params, add_aurora, add_last_no_skip, h_city_override, use_simple_warnings, add_city_coords)
+    return get_city_reponse(city, add_params, add_aurora, add_last_no_skip, h_city_override, use_simple_warnings, add_city_coords)
 
 
 # http://localhost:8000/api/v1/forecast/cities/name?city_name=vamier
@@ -492,7 +495,7 @@ async def get_city_forecasts_name(city_name: str, add_params: bool = False, add_
     h_city_override = None
     if is_emergency():
         h_city_override = get_closest_city(cur=cur, lat=city[2], lon=city[3])
-    return get_city_reponse(city, city[2], city[3], add_params, add_aurora, add_last_no_skip, h_city_override, use_simple_warnings, add_city_coords)
+    return get_city_reponse(city, add_params, add_aurora, add_last_no_skip, h_city_override, use_simple_warnings, add_city_coords)
 
 
 # http://localhost:8000/privacy-policy
