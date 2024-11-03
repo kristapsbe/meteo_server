@@ -113,6 +113,8 @@ def get_closest_city(cur, lat, lon, distance=10, force_all=False, only_closest=F
             SELECT
                 id,
                 name,
+                lat,
+                lon,
                 CASE type
                     WHEN 'republikas pilseta' THEN 1
                     WHEN 'citas pilsētas' THEN 2
@@ -127,7 +129,7 @@ def get_closest_city(cur, lat, lon, distance=10, force_all=False, only_closest=F
                 type in {get_location_range(force_all)}
         )
         SELECT
-            id, name, ctype, distance
+            id, name, lat, lon, ctype, distance
         FROM
             city_distances
         {where_str}
@@ -431,8 +433,8 @@ def get_city_reponse(city, add_params, add_aurora, add_last_no_skip, h_city_over
     }
 
     if add_city_coords:
-        ret_val["lat"] = float(city[2]) if len(city) > 0 else 0.0
-        ret_val["lon"] = float(city[3]) if len(city) > 0 else 0.0
+        ret_val["lat"] = float(lat) if len(city) > 0 else 0.0
+        ret_val["lon"] = float(lon) if len(city) > 0 else 0.0
 
     if use_simple_warnings:
         warnings = get_simple_warnings(cur, lat, lon)
