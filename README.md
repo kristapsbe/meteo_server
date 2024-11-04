@@ -133,8 +133,7 @@ crontab -e
 ```
 
 ```
-chmod +x download.sh
-chmod +x crawl_site.sh
+chmod +x python_run.sh
 ```
 
 ```
