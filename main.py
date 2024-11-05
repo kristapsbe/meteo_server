@@ -108,6 +108,8 @@ def get_closest_city(cur, lat, lon, distance=10, force_all=False, only_closest=F
     if only_closest_active:
         where_str = ""
 
+    # calculating dist in km since using Euclidean doesn't appear to yield big savings
+    # and this makes messing around with distance values a bit more intuitive
     cities = cur.execute(f"""
         WITH city_distances AS (
             SELECT
