@@ -405,7 +405,7 @@ def get_aurora_probability(cur, lat, lon):
 
 
 # TODO: rip out the params that are no longer needed
-def get_city_reponse(city, add_params, add_aurora, add_last_no_skip, h_city_override, use_simple_warnings, add_city_coords):
+def get_city_reponse(city, add_last_no_skip, h_city_override, use_simple_warnings, add_city_coords):
     lat = city[2]
     lon = city[3]
 
@@ -429,6 +429,7 @@ def get_city_reponse(city, add_params, add_aurora, add_last_no_skip, h_city_over
             "time": f[1],
             "vals": f[2:]
         } for f in d_forecast],
+        "aurora_probs": get_aurora_probability(cur, round(lat), round(lon)),
         "last_updated": metadata["result"]["metadata_modified"].replace("-", "").replace("T", "").replace(":", "")[:12],
         # TODO: get local timezone instead
         "last_downloaded": datetime.datetime.fromtimestamp(os.path.getmtime(metadata_f)).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"),
@@ -468,13 +469,6 @@ def get_city_reponse(city, add_params, add_aurora, add_last_no_skip, h_city_over
             "description": w[9:]
         } for w in warnings]
 
-    if add_params:
-        ret_val["hourly_params"] = [p[1:] for p in h_params]
-        ret_val["daily_params"] = [p[1:] for p in d_params]
-
-    if add_aurora:
-        ret_val["aurora_probs"] = get_aurora_probability(cur, round(lat), round(lon))
-
     if add_last_no_skip:
         ret_val["last_downloaded_no_skip"] = open(last_updated, 'r').readline().strip()
     return ret_val
@@ -482,24 +476,24 @@ def get_city_reponse(city, add_params, add_aurora, add_last_no_skip, h_city_over
 
 # http://localhost:8000/api/v1/forecast/cities?lat=56.9730&lon=24.1327
 @app.get("/api/v1/forecast/cities")
-async def get_city_forecasts(lat: float, lon: float, add_params: bool = False, add_aurora: bool = True, add_last_no_skip: bool = False, use_simple_warnings: bool = False, add_city_coords=False):
+async def get_city_forecasts(lat: float, lon: float, add_last_no_skip: bool = False, use_simple_warnings: bool = False, add_city_coords=False):
     city = get_closest_city(cur=cur, lat=lat, lon=lon, force_all=True)
     # TODO: test more carefully
     h_city_override = None
     if is_emergency():
         h_city_override = get_closest_city(cur=cur, lat=city[2], lon=city[3])
-    return get_city_reponse(city, add_params, add_aurora, add_last_no_skip, h_city_override, use_simple_warnings, add_city_coords)
+    return get_city_reponse(city, add_last_no_skip, h_city_override, use_simple_warnings, add_city_coords)
 
 
 # http://localhost:8000/api/v1/forecast/cities/name?city_name=vamier
 @app.get("/api/v1/forecast/cities/name")
-async def get_city_forecasts_name(city_name: str, add_params: bool = False, add_aurora: bool = True, add_last_no_skip: bool = False, use_simple_warnings: bool = False, add_city_coords=False):
+async def get_city_forecasts_name(city_name: str, add_last_no_skip: bool = False, use_simple_warnings: bool = False, add_city_coords=False):
     city = get_city_by_name(simlpify_string(regex.sub('', city_name).strip().lower()))
     # TODO: test more carefully
     h_city_override = None
     if is_emergency():
         h_city_override = get_closest_city(cur=cur, lat=city[2], lon=city[3])
-    return get_city_reponse(city, add_params, add_aurora, add_last_no_skip, h_city_override, use_simple_warnings, add_city_coords)
+    return get_city_reponse(city, add_last_no_skip, h_city_override, use_simple_warnings, add_city_coords)
 
 
 # http://localhost:8000/privacy-policy
