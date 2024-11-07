@@ -406,8 +406,10 @@ def get_aurora_probability(cur, lat, lon):
 
 # TODO: rip out the params that are no longer needed
 def get_city_reponse(city, add_last_no_skip, h_city_override, use_simple_warnings, add_city_coords):
-    lat = city[2]
-    lon = city[3]
+    lat = lon = 0.0
+    if len(city) > 0:
+        lat = float(city[2])
+        lon = float(city[3])
 
     h_params = get_params(cur, hourly_params_q)
     d_params = get_params(cur, daily_params_q)
@@ -436,8 +438,8 @@ def get_city_reponse(city, add_last_no_skip, h_city_override, use_simple_warning
     }
 
     if add_city_coords:
-        ret_val["lat"] = float(lat) if len(city) > 0 else 0.0
-        ret_val["lon"] = float(lon) if len(city) > 0 else 0.0
+        ret_val["lat"] = lat
+        ret_val["lon"] = lon
 
     if use_simple_warnings:
         warnings = get_simple_warnings(cur, lat, lon)
@@ -480,7 +482,7 @@ async def get_city_forecasts(lat: float, lon: float, add_last_no_skip: bool = Fa
     city = get_closest_city(cur=cur, lat=lat, lon=lon, force_all=True)
     # TODO: test more carefully
     h_city_override = None
-    if is_emergency():
+    if is_emergency() and len(city) > 0:
         h_city_override = get_closest_city(cur=cur, lat=city[2], lon=city[3])
     return get_city_reponse(city, add_last_no_skip, h_city_override, use_simple_warnings, add_city_coords)
 
@@ -491,7 +493,7 @@ async def get_city_forecasts_name(city_name: str, add_last_no_skip: bool = False
     city = get_city_by_name(simlpify_string(regex.sub('', city_name).strip().lower()))
     # TODO: test more carefully
     h_city_override = None
-    if is_emergency():
+    if is_emergency() and len(city) > 0:
         h_city_override = get_closest_city(cur=cur, lat=city[2], lon=city[3])
     return get_city_reponse(city, add_last_no_skip, h_city_override, use_simple_warnings, add_city_coords)
 
