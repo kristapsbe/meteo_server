@@ -503,9 +503,9 @@ async def get_city_forecasts_name(city_name: str, add_last_no_skip: bool = False
 async def get_privacy_policy(lang: str = "en"):
     match lang:
         case "lv":
-            return open("privatuma-politika.html").read()
+            return open("privacy_policy/privatuma-politika.html").read()
         case _:
-            return open("privacy-policy.html").read()
+            return open("privacy_policy/privacy-policy.html").read()
 
 
 # http://localhost:8000/api/v1/meta
