@@ -1,7 +1,7 @@
 # ONLY IN CASE OF EMERGENCIES
-# looks like the upload to the open data portal can blow up 
+# looks like the upload to the open data portal can blow up
 # manually trigger this to fetch hourly forecasts from the LVĢMC website instead
-# 
+#
 # I'll just keep reusing city and param data, and the LVĢMC site appears to use he same data
 # as they upload to the open data porta when it comes to daily forecasts -
 # meaning that I can't use the site as a fallback there
@@ -14,6 +14,8 @@ import logging
 import datetime
 import requests
 
+from settings import db_file, data_folder
+
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s')
 
@@ -22,11 +24,9 @@ if not os.path.isfile('run_emergency'):
     exit()
 
 # TODO cleanup - copied from download script atm
-db_f = "meteo.db"
-data_f = "data/"
 url = 'https://videscentrs.lvgmc.lv/data/weather_forecast_for_location_hourly?punkts='
 
-con = sqlite3.connect(db_f)
+con = sqlite3.connect(db_file)
 cur = con.cursor()
 
 ids = [e[0] for e in cur.execute("""
@@ -63,10 +63,10 @@ for id in ids:
 
 
 if len(csv) > 1:
-    with open(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv", 'w') as f:
+    with open(f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv", 'w') as f:
         f.write('\n'.join(csv))
     open('run_emergency', 'w').write(datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"))
     logging.info("Successfully performed emergency download")
 else:
-    os.remove('run_emergency') 
+    os.remove('run_emergency')
     logging.info("Failed to perform emergency download")

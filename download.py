@@ -8,20 +8,12 @@ import datetime
 import requests
 
 from utils import simlpify_string
+from settings import db_file, data_folder, warning_mode
 
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s')
 
-# TODO: when set to True this depends on responses containing weather warnings being present on the computer
-warning_mode = False
-db_f = "meteo.db"
-if warning_mode:
-    db_f = "meteo_warning_test.db"
-
 base_url = "https://data.gov.lv/dati/api/3/"
-data_f = "data/"
-if warning_mode:
-    data_f = "data_warnings/"
 
 target_ds = [
     "hidrometeorologiskie-bridinajumi",
@@ -29,7 +21,7 @@ target_ds = [
 ]
 
 for ds in target_ds:
-    os.makedirs(f"{data_f}{ds}/", exist_ok=True)
+    os.makedirs(f"{data_folder}{ds}/", exist_ok=True)
 
 col_parsers = {
     "TEXT": lambda r: str(r).strip(),
@@ -47,7 +39,7 @@ col_types = {
 
 table_conf = [{
     "files": [{
-        "name": f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/cities.csv",
+        "name": f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam/cities.csv",
         "skip_if_empty": True
     }],
     "table_name": "cities",
@@ -60,7 +52,7 @@ table_conf = [{
     ],
 },{
     "files": [{
-        "name": f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forcity_param.csv",
+        "name": f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam/forcity_param.csv",
         "skip_if_empty": True
     }],
     "table_name": "forecast_cities_params",
@@ -71,10 +63,10 @@ table_conf = [{
     ]
 },{
     "files": [{
-        "name": f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities_day.csv",
+        "name": f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities_day.csv",
         "skip_if_empty": True
     }, {
-        "name": f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv",
+        "name": f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv",
         "skip_if_empty": True,
         "do_emergency_dl": True
     }],
@@ -87,7 +79,7 @@ table_conf = [{
     ]
 },{
     "files": [{
-        "name": f"{data_f}hidrometeorologiskie-bridinajumi/novadi.csv"
+        "name": f"{data_folder}hidrometeorologiskie-bridinajumi/novadi.csv"
     }],
     "table_name": "municipalities",
     "cols": [
@@ -97,7 +89,7 @@ table_conf = [{
     ]
 },{
     "files": [{
-        "name": f"{data_f}hidrometeorologiskie-bridinajumi/bridinajumu_novadi.csv"
+        "name": f"{data_folder}hidrometeorologiskie-bridinajumi/bridinajumu_novadi.csv"
     }],
     "table_name": "warnings_municipalities",
     "cols": [
@@ -106,7 +98,7 @@ table_conf = [{
     ]
 },{
     "files": [{
-        "name": f"{data_f}hidrometeorologiskie-bridinajumi/bridinajumu_poligoni.csv"
+        "name": f"{data_folder}hidrometeorologiskie-bridinajumi/bridinajumu_poligoni.csv"
     }],
     "table_name": "warnings_polygons",
     "cols": [ # TODO: figure out why the pks failed
@@ -118,7 +110,7 @@ table_conf = [{
     ]
 },{ # TODO: partial at the moment - finish this
     "files": [{
-        "name": f"{data_f}hidrometeorologiskie-bridinajumi/bridinajumu_metadata.csv"
+        "name": f"{data_folder}hidrometeorologiskie-bridinajumi/bridinajumu_metadata.csv"
     }],
     "table_name": "warnings",
     "cols": [
@@ -141,7 +133,7 @@ table_conf = [{
 def refresh_file(url, fpath, verify_download):
     r = requests.get(url)
     # TODO: there's a damaged .csv - may want to deal with this in a more generic fashion (?)
-    r_text = r.content.replace(b'Pressure, (hPa)', b'Pressure (hPa)') if fpath == f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam/forcity_param.csv" else r.content
+    r_text = r.content.replace(b'Pressure, (hPa)', b'Pressure (hPa)') if fpath == f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam/forcity_param.csv" else r.content
 
     curr_conf = [f_conf for conf in table_conf for f_conf in conf["files"] if fpath in f_conf["name"]]
     skip_if_empty = False
@@ -172,13 +164,13 @@ verif_funcs = {
 
 
 def download_resources(ds_name):
-    ds_path = f"{data_f}{ds_name}.json"
+    ds_path = f"{data_folder}{ds_name}.json"
     refresh_file(f"{base_url}action/package_show?id={ds_name}", ds_path, verif_funcs['json'])
     ds_data = json.loads(open(ds_path, "r").read())
 
     skipped_empty = False
     for r in ds_data['result']['resources']:
-        skipped_empty = refresh_file(r['url'], f"{data_f}{ds_name}/{r['url'].split('/')[-1]}", verif_funcs['csv']) or skipped_empty
+        skipped_empty = refresh_file(r['url'], f"{data_folder}{ds_name}/{r['url'].split('/')[-1]}", verif_funcs['csv']) or skipped_empty
     return skipped_empty
 
 
@@ -249,7 +241,7 @@ def update_warning_bounds_table(db_cur):
 
 
 def update_db():
-    upd_con = sqlite3.connect(db_f)
+    upd_con = sqlite3.connect(db_file)
     try:
         upd_cur = upd_con.cursor()
         for t_conf in table_conf:
@@ -280,7 +272,7 @@ def update_aurora_forecast(): # TODO: cleanup
                 "Forecast Time": aurora_data["Forecast Time"],
             }))
 
-        upd_con = sqlite3.connect(db_f)
+        upd_con = sqlite3.connect(db_file)
         upd_cur = upd_con.cursor()
         try:
             upd_cur.execute(f"DROP TABLE IF EXISTS aurora_prob") # no point in storing old data
@@ -317,7 +309,7 @@ def run_downloads(datasets):
 
     if not skipped_empty: # moving here in case the db updates blow up
         open('last_updated', 'w').write(
-            datetime.datetime.fromtimestamp(os.path.getmtime(f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam.json")).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
+            datetime.datetime.fromtimestamp(os.path.getmtime(f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam.json")).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
         )
         if os.path.isfile('run_emergency'):
             os.remove('run_emergency')
