@@ -42,7 +42,7 @@ app = FastAPI(
 )
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s')
 
-hourly_params = [
+hourly_params = "','".join([
     'Laika apstākļu piktogramma',
     'Temperatūra (°C)',
     'Sajūtu temperatūra (°C)',
@@ -52,10 +52,9 @@ hourly_params = [
     'Nokrišņi (mm)',
     'UV indekss (0-10)',
     'Pērkona negaisa varbūtība (%)',
-]
-hourly_params_q = "','".join(hourly_params)
+])
 
-daily_params = [
+daily_params = "','".join([
     'Diennakts vidējā vēja vērtība (m/s)',
     'Diennakts maksimālā vēja brāzma (m/s)',
     'Diennakts maksimālā temperatūra (°C)',
@@ -64,8 +63,7 @@ daily_params = [
     'Diennakts nokrišņu varbūtība (%)',
     'Laika apstākļu piktogramma nakti',
     'Laika apstākļu piktogramma diena',
-]
-daily_params_q = "','".join(daily_params)
+])
 
 
 def get_params(cur, param_q):
@@ -403,8 +401,8 @@ def get_city_reponse(city, add_last_no_skip, h_city_override, use_simple_warning
         lat = float(city[2])
         lon = float(city[3])
 
-    h_params = get_params(cur, hourly_params_q)
-    d_params = get_params(cur, daily_params_q)
+    h_params = get_params(cur, hourly_params)
+    d_params = get_params(cur, daily_params)
     c_date = datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
     if warning_mode:
         c_date = "202407270000"
