@@ -8,9 +8,10 @@ import pathlib
 import uvicorn
 import datetime
 
-from utils import simlpify_string
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
+
+from utils import simlpify_string
 from settings import editdist_extension, db_file, data_folder, warning_mode
 
 
