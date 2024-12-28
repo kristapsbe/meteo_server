@@ -176,29 +176,32 @@ func getAuroraProbability() {
 
 }
 
-func getCityResponse() {
-	//hourlyParams, err := getParams(HourlyParams)
-	//dailyParams, err := getParams(DailyParams)
+func getCityResponse(c fiber.Ctx, db *sql.DB, city City) string {
+	hourlyParams, err := getParams(db, HourlyParams)
+	dailyParams, err := getParams(db, DailyParams)
+
+	return ""
 }
 
-func getCityForecasts(c fiber.Ctx, db *sql.DB) string {
+func getCityForecasts(c fiber.Ctx, db *sql.DB) (City, error) {
 	log.Println(c.OriginalURL())
 
 	lat, err := strconv.ParseFloat(strings.TrimSpace(c.Query("lat")), 64)
+	city := City{}
 	if err != nil {
-		return err.Error()
+		return city, err
 	}
 
 	lon, err := strconv.ParseFloat(strings.TrimSpace(c.Query("lon")), 64)
 	if err != nil {
-		return err.Error()
+		return city, err
 	}
 
-	city, err := getClosestCity(db, lat, lon, 10, true, false)
+	city, err = getClosestCity(db, lat, lon, 10, true, false)
 	if err != nil {
-		return err.Error()
+		return city, err
 	}
-	return city.name
+	return city, nil
 }
 
 func getCityNameForecasts(c fiber.Ctx) string {
@@ -255,7 +258,9 @@ func main() {
 		db := checkout()
 		defer checkin(db)
 
-		return c.SendString(getCityForecasts(c, db))
+		city, _ := getCityForecasts(c, db)
+
+		return c.SendString(getCityResponse(c, db, city))
 	})
 
 	// http://localhost:3333/api/v1/forecast/cities/name?city_name=vamier
