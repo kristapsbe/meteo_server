@@ -177,8 +177,8 @@ func getAuroraProbability() {
 }
 
 func getCityResponse(c fiber.Ctx, db *sql.DB, city City) string {
-	hourlyParams, err := getParams(db, HourlyParams)
-	dailyParams, err := getParams(db, DailyParams)
+	_, _ = getParams(db, HourlyParams)
+	_, _ = getParams(db, DailyParams)
 
 	return ""
 }
