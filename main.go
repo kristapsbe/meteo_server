@@ -143,13 +143,13 @@ func getClosestCity(lat float64, lon float64, distance int, forceAll bool, ignor
 
 	city := City{}
 	if rows.Next() {
-		if err := rows.Scan(&city); err == nil {
+		if err := rows.Scan(&city.id, &city.name, &city.lat, &city.lon, &city.ctype, &city.distance); err == nil {
 			log.Print("city")
 			return city, nil
 		} else { // dealing with cases where you've got no cities near you
 			if ignoreDistance {
 				log.Print("ignore dist ")
-				return city, sql.ErrNoRows
+				return city, err
 			} else {
 				log.Print("go deeper")
 				return getClosestCity(lat, lon, distance, forceAll, true)
@@ -209,7 +209,11 @@ func getCityForecasts(w http.ResponseWriter, r *http.Request) {
 	log.Println(r.URL.RequestURI())
 
 	city, err := getClosestCity(lat, lon, 10, true, false)
-	io.WriteString(w, fmt.Sprint(city.name, err.Error()))
+	if err != nil {
+		io.WriteString(w, err.Error())
+		return
+	}
+	io.WriteString(w, city.name)
 }
 
 func getCityNameForecasts(w http.ResponseWriter, r *http.Request) {
