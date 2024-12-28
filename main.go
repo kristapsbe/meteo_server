@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 
+	// TODO https://turriate.com/articles/making-sqlite-faster-in-go
 	sqlite3 "github.com/mattn/go-sqlite3" // https://github.com/cvilsmeier/go-sqlite-bench - should probs switch
 )
 
