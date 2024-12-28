@@ -131,7 +131,7 @@ table_conf = [{
 
 
 def refresh_file(url, fpath, verify_download):
-    r = requests.get(url)
+    r = requests.get(url, timeout=10)
     # TODO: there's a damaged .csv - may want to deal with this in a more generic fashion (?)
     r_text = r.content.replace(b'Pressure, (hPa)', b'Pressure (hPa)') if fpath == f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam/forcity_param.csv" else r.content
 
@@ -261,7 +261,7 @@ def update_aurora_forecast(): # TODO: cleanup
     fpath = "data/ovation_aurora_latest.json"
     times_fpath = "data/ovation_aurora_times.json"
 
-    r = requests.get(url)
+    r = requests.get(url, timeout=10)
     if r.status_code == 200:
         with open(fpath, "wb") as f:
             f.write(r.content)
