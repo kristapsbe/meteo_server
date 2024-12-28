@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -202,19 +201,10 @@ func getCityForecasts(c fiber.Ctx, db *sql.DB) string {
 	return city.name
 }
 
-func getCityNameForecasts(w http.ResponseWriter, r *http.Request) {
-	log.Println(r.URL.RequestURI())
+func getCityNameForecasts(c fiber.Ctx) string {
+	log.Println(c.OriginalURL())
 
-}
-
-func getPrivacyPolicy(w http.ResponseWriter, r *http.Request) {
-	log.Println(r.URL.RequestURI())
-
-	p := "./privacy_policy/privacy-policy.html"
-	if r.URL.Query().Get("lang") == "lv" {
-		p = "./privacy_policy/privatuma-politika.html"
-	}
-	http.ServeFile(w, r, p)
+	return ""
 }
 
 func main() {
@@ -270,7 +260,7 @@ func main() {
 
 	// http://localhost:3333/api/v1/forecast/cities/name?city_name=vamier
 	app.Get("/api/v1/forecast/cities/name", func(c fiber.Ctx) error {
-		return c.SendString("Hello, World 👋!")
+		return c.SendString(getCityNameForecasts(c))
 	})
 
 	log.Fatal(app.Listen(":3333"))
