@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"strings"
 
-	_ "modernc.org/sqlite"
+	_ "modernc.org/sqlite" // https://github.com/cvilsmeier/go-sqlite-bench - should probs switch
 )
 
 const HourlyParams = `
