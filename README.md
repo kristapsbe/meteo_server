@@ -125,6 +125,9 @@ https://github.com/nalgeon/sqlpkg-cli
 curl -sS https://webi.sh/sqlpkg | sh
 sqlpkg install sqlite/spellfix
 sqlpkg which sqlite/spellfix
+
+sqlpkg install nalgeon/math
+sqlpkg which nalgeon/math
 ```
 
 crontab https://crontab.guru/

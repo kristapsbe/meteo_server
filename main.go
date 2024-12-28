@@ -13,8 +13,7 @@ import (
 	"strconv"
 	"strings"
 
-	_ "github.com/mattn/go-sqlite3"
-	// https://github.com/cvilsmeier/go-sqlite-bench - should probs switch
+	sqlite3 "github.com/mattn/go-sqlite3" // https://github.com/cvilsmeier/go-sqlite-bench - should probs switch
 )
 
 const HourlyParams = `
@@ -53,7 +52,7 @@ type CityForecast struct {
 }
 
 func getRows(query string) (*sql.Rows, error) {
-	db, err := sql.Open("sqlite3", "meteo.db") // not dealing with "warning mode" for the time being
+	db, err := sql.Open("sqlite3_extended", "meteo.db") // not dealing with "warning mode" for the time being
 	if err != nil {
 		return nil, err
 	}
@@ -229,6 +228,15 @@ func getPrivacyPolicy(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	sql.Register("sqlite3_extended",
+		&sqlite3.SQLiteDriver{
+			Extensions: []string{
+				"/Users/kristaps/.sqlpkg/sqlite/spellfix/spellfix.dylib",
+				"/Users/kristaps/.sqlpkg/nalgeon/math/math.dylib",
+			},
+		},
+	)
+
 	mux := http.NewServeMux()                                            // https://pkg.go.dev/net/http#ServeMux
 	mux.HandleFunc("/privacy-policy", getPrivacyPolicy)                  // http://localhost:3333/privacy-policy?lang=en
 	mux.HandleFunc("/api/v1/forecast/cities", getCityForecasts)          // http://localhost:3333/api/v1/forecast/cities?lat=56.9730&lon=24.1327
