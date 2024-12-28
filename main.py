@@ -8,17 +8,12 @@ import pathlib
 import uvicorn
 import datetime
 
-from utils import simlpify_string
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
-from settings import editdist_extension
 
+from utils import simlpify_string
+from settings import editdist_extension, db_file, data_folder, warning_mode
 
-# TODO: when set to True this depends on responses containing weather warnings being present on the computer
-warning_mode = False
-db_f = "meteo.db"
-if warning_mode:
-    db_f = "meteo_warning_test.db"
 
 last_updated = 'last_updated'
 if not os.path.isfile(last_updated):
@@ -26,16 +21,13 @@ if not os.path.isfile(last_updated):
 
 regex = re.compile('[^a-zA-Z āčēģīķļņšūžĀČĒĢĪĶĻŅŠŪŽ]')
 
-con = sqlite3.connect(db_f)
+con = sqlite3.connect(db_file)
 con.enable_load_extension(True)
 con.load_extension(editdist_extension)
 
 # the cursor doesn't actually do anything in sqlite3, just reusing it
 # https://stackoverflow.com/questions/54395773/what-are-the-side-effects-of-reusing-a-sqlite3-cursor
 cur = con.cursor()
-data_f = "data/"
-if warning_mode:
-    data_f = "data_warnings/"
 
 # https://semver.org/
 # Given a version number MAJOR.MINOR.PATCH, increment the:
@@ -50,7 +42,7 @@ app = FastAPI(
 )
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s')
 
-hourly_params = [
+hourly_params = "','".join([
     'Laika apstākļu piktogramma',
     'Temperatūra (°C)',
     'Sajūtu temperatūra (°C)',
@@ -60,10 +52,9 @@ hourly_params = [
     'Nokrišņi (mm)',
     'UV indekss (0-10)',
     'Pērkona negaisa varbūtība (%)',
-]
-hourly_params_q = "','".join(hourly_params)
+])
 
-daily_params = [
+daily_params = "','".join([
     'Diennakts vidējā vēja vērtība (m/s)',
     'Diennakts maksimālā vēja brāzma (m/s)',
     'Diennakts maksimālā temperatūra (°C)',
@@ -72,8 +63,7 @@ daily_params = [
     'Diennakts nokrišņu varbūtība (%)',
     'Laika apstākļu piktogramma nakti',
     'Laika apstākļu piktogramma diena',
-]
-daily_params_q = "','".join(daily_params)
+])
 
 
 def get_params(cur, param_q):
@@ -411,14 +401,14 @@ def get_city_reponse(city, add_last_no_skip, h_city_override, use_simple_warning
         lat = float(city[2])
         lon = float(city[3])
 
-    h_params = get_params(cur, hourly_params_q)
-    d_params = get_params(cur, daily_params_q)
+    h_params = get_params(cur, hourly_params)
+    d_params = get_params(cur, daily_params)
     c_date = datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
     if warning_mode:
         c_date = "202407270000"
     h_forecast = get_forecast(cur, city if h_city_override is None else h_city_override, c_date, h_params)
     d_forecast = get_forecast(cur, city, c_date, d_params)
-    metadata_f = f"{data_f}meteorologiskas-prognozes-apdzivotam-vietam.json"
+    metadata_f = f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam.json"
     metadata = json.loads(open(metadata_f, "r").read())
 
     ret_val = {
@@ -503,9 +493,9 @@ async def get_city_forecasts_name(city_name: str, add_last_no_skip: bool = False
 async def get_privacy_policy(lang: str = "en"):
     match lang:
         case "lv":
-            return open("privatuma-politika.html").read()
+            return open("privacy_policy/privatuma-politika.html").read()
         case _:
-            return open("privacy-policy.html").read()
+            return open("privacy_policy/privacy-policy.html").read()
 
 
 # http://localhost:8000/api/v1/meta
