@@ -51,12 +51,7 @@ type City struct {
 type CityForecast struct {
 }
 
-func getRows(query string) (*sql.Rows, error) {
-	db, err := sql.Open("sqlite3_extended", "meteo.db") // not dealing with "warning mode" for the time being
-	if err != nil {
-		return nil, err
-	}
-
+func getRows(db *sql.DB, query string) (*sql.Rows, error) {
 	rows, err := db.Query(query)
 
 	if err != nil {
@@ -67,15 +62,11 @@ func getRows(query string) (*sql.Rows, error) {
 		return nil, err
 	}
 
-	if err = db.Close(); err != nil {
-		return nil, err
-	}
-
 	return rows, nil
 }
 
-func getParams(paramQ string) (*sql.Rows, error) {
-	return getRows(fmt.Sprintf(`
+func getParams(db *sql.DB, paramQ string) (*sql.Rows, error) {
+	return getRows(db, fmt.Sprintf(`
   		SELECT
             id, title_lv, title_en
         FROM
@@ -98,7 +89,7 @@ func getLocationRange(forceAll bool) string {
 	}
 }
 
-func getClosestCity(lat float64, lon float64, distance int, forceAll bool, ignoreDistance bool) (City, error) {
+func getClosestCity(db *sql.DB, lat float64, lon float64, distance int, forceAll bool, ignoreDistance bool) (City, error) {
 	whereString := ""
 	if !ignoreDistance && lat > 55.7 && lat < 58.05 && lon > 20.95 && lon < 28.25 {
 		whereString = fmt.Sprintf(`
@@ -107,7 +98,7 @@ func getClosestCity(lat float64, lon float64, distance int, forceAll bool, ignor
 	    `, distance)
 	}
 
-	rows, err := getRows(fmt.Sprintf(`
+	rows, err := getRows(db, fmt.Sprintf(`
 		WITH city_distances AS (
             SELECT
                 id,
@@ -152,7 +143,7 @@ func getClosestCity(lat float64, lon float64, distance int, forceAll bool, ignor
 				return city, err
 			} else {
 				log.Print("go deeper")
-				return getClosestCity(lat, lon, distance, forceAll, true)
+				return getClosestCity(db, lat, lon, distance, forceAll, true)
 			}
 		}
 	} else {
@@ -161,7 +152,7 @@ func getClosestCity(lat float64, lon float64, distance int, forceAll bool, ignor
 			return city, sql.ErrNoRows
 		} else {
 			log.Print("go deeper no res")
-			return getClosestCity(lat, lon, distance, forceAll, true)
+			return getClosestCity(db, lat, lon, distance, forceAll, true)
 		}
 	}
 }
@@ -204,7 +195,7 @@ func getCityForecasts(c fiber.Ctx, db *sql.DB) string {
 		return err.Error()
 	}
 
-	city, err := getClosestCity(lat, lon, 10, true, false)
+	city, err := getClosestCity(db, lat, lon, 10, true, false)
 	if err != nil {
 		return err.Error()
 	}
@@ -238,7 +229,7 @@ func main() {
 		},
 	)
 
-	max_conns := 5
+	max_conns := 5 // TODO: conn pool may be pointless
 	conns := make(chan *sql.DB, max_conns)
 
 	for i := 0; i < max_conns; i++ {
