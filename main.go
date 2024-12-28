@@ -13,7 +13,8 @@ import (
 	"strconv"
 	"strings"
 
-	_ "modernc.org/sqlite" // https://github.com/cvilsmeier/go-sqlite-bench - should probs switch
+	_ "github.com/mattn/go-sqlite3"
+	// https://github.com/cvilsmeier/go-sqlite-bench - should probs switch
 )
 
 const HourlyParams = `
@@ -52,7 +53,7 @@ type CityForecast struct {
 }
 
 func getRows(query string) (*sql.Rows, error) {
-	db, err := sql.Open("sqlite", "meteo.db") // not dealing with "warning mode" for the time being
+	db, err := sql.Open("sqlite3", "meteo.db") // not dealing with "warning mode" for the time being
 	if err != nil {
 		return nil, err
 	}
@@ -102,12 +103,8 @@ func getClosestCity(lat float64, lon float64, distance int, forceAll bool, ignor
 	whereString := ""
 	if !ignoreDistance && lat > 55.7 && lat < 58.05 && lon > 20.95 && lon < 28.25 {
 		whereString = fmt.Sprintf(`
-	  		SELECT
-	            id, title_lv, title_en
-	        FROM
-	            forecast_cities_params
-	        WHERE
-	            title_lv in ('%d')
+			WHERE
+            	distance <= (%d/ctype)
 	    `, distance)
 	}
 
@@ -146,10 +143,27 @@ func getClosestCity(lat float64, lon float64, distance int, forceAll bool, ignor
 	}
 
 	city := City{}
-	if err := rows.Scan(&city); err == nil {
-		return city, nil
-	} else { // dealing with cases where you've got no cities near you
-		return getClosestCity(lat, lon, distance, forceAll, true)
+	if rows.Next() {
+		if err := rows.Scan(&city); err == nil {
+			log.Print("city")
+			return city, nil
+		} else { // dealing with cases where you've got no cities near you
+			if ignoreDistance {
+				log.Print("ignore dist ")
+				return city, sql.ErrNoRows
+			} else {
+				log.Print("go deeper")
+				return getClosestCity(lat, lon, distance, forceAll, true)
+			}
+		}
+	} else {
+		if ignoreDistance {
+			log.Print("ignore dist no res")
+			return city, sql.ErrNoRows
+		} else {
+			log.Print("go deeper no res")
+			return getClosestCity(lat, lon, distance, forceAll, true)
+		}
 	}
 }
 
@@ -174,8 +188,8 @@ func getAuroraProbability() {
 }
 
 func getCityResponse() {
-	hourlyParams, err := getParams(HourlyParams)
-	dailyParams, err := getParams(DailyParams)
+	//hourlyParams, err := getParams(HourlyParams)
+	//dailyParams, err := getParams(DailyParams)
 }
 
 func getCityForecasts(w http.ResponseWriter, r *http.Request) {
@@ -183,21 +197,20 @@ func getCityForecasts(w http.ResponseWriter, r *http.Request) {
 
 	lat, err := strconv.ParseFloat(strings.TrimSpace(r.URL.Query().Get("lat")), 64)
 	if err != nil {
-		io.WriteString(w, "")
+		io.WriteString(w, err.Error())
 		return
 	}
+	log.Println(r.URL.RequestURI())
 
 	lon, err := strconv.ParseFloat(strings.TrimSpace(r.URL.Query().Get("lon")), 64)
 	if err != nil {
-		io.WriteString(w, "")
+		io.WriteString(w, err.Error())
 		return
 	}
+	log.Println(r.URL.RequestURI())
 
 	city, err := getClosestCity(lat, lon, 10, true, false)
-	if err != nil {
-		io.WriteString(w, "")
-		return
-	}
+	io.WriteString(w, fmt.Sprint(city.name, err.Error()))
 }
 
 func getCityNameForecasts(w http.ResponseWriter, r *http.Request) {
@@ -218,7 +231,7 @@ func getPrivacyPolicy(w http.ResponseWriter, r *http.Request) {
 func main() {
 	mux := http.NewServeMux()                                            // https://pkg.go.dev/net/http#ServeMux
 	mux.HandleFunc("/privacy-policy", getPrivacyPolicy)                  // http://localhost:3333/privacy-policy?lang=en
-	mux.HandleFunc("/api/v1/forecast/cities", getCoordinateForecasts)    // http://localhost:3333/api/v1/forecast/cities?lat=56.9730&lon=24.1327
+	mux.HandleFunc("/api/v1/forecast/cities", getCityForecasts)          // http://localhost:3333/api/v1/forecast/cities?lat=56.9730&lon=24.1327
 	mux.HandleFunc("/api/v1/forecast/cities/name", getCityNameForecasts) // http://localhost:3333/api/v1/forecast/cities/name?city_name=vamier
 
 	err := http.ListenAndServe("localhost:3333", mux)
