@@ -242,6 +242,26 @@ func main() {
 		},
 	)
 
+	max_conns := 5
+	conns := make(chan *sql.Stmt, max_conns)
+
+	for i := 0; i < max_conns; i++ {
+		conn, _ := sql.Open("sqlite3_extended", "file:meteo.db?cache=shared&mode=ro")
+
+		defer func() {
+			conn.Close()
+		}()
+		conns <- conn
+	}
+
+	checkout := func() *sql.DB {
+		return <-conns
+	}
+
+	checkin := func(c *sql.DB) {
+		conns <- c
+	}
+
 	mux := http.NewServeMux()                                            // https://pkg.go.dev/net/http#ServeMux
 	mux.HandleFunc("/privacy-policy", getPrivacyPolicy)                  // http://localhost:3333/privacy-policy?lang=en
 	mux.HandleFunc("/api/v1/forecast/cities", getCityForecasts)          // http://localhost:3333/api/v1/forecast/cities?lat=56.9730&lon=24.1327
