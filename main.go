@@ -6,9 +6,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 
 	_ "modernc.org/sqlite"
 )
@@ -35,6 +38,18 @@ const DailyParams = `
 	'Laika apstākļu piktogramma nakti',
 	'Laika apstākļu piktogramma diena'
 `
+
+type City struct {
+	id       string
+	name     string
+	lat      float32
+	lon      float32
+	ctype    string
+	distance float32
+}
+
+type CityForecast struct {
+}
 
 func getRows(query string) (*sql.Rows, error) {
 	db, err := sql.Open("sqlite", "meteo.db") // not dealing with "warning mode" for the time being
@@ -83,8 +98,59 @@ func getLocationRange(forceAll bool) string {
 	}
 }
 
-func getClosestCity(lat float32, lon float32) {
+func getClosestCity(lat float64, lon float64, distance int, forceAll bool, ignoreDistance bool) (City, error) {
+	whereString := ""
+	if !ignoreDistance && lat > 55.7 && lat < 58.05 && lon > 20.95 && lon < 28.25 {
+		whereString = fmt.Sprintf(`
+	  		SELECT
+	            id, title_lv, title_en
+	        FROM
+	            forecast_cities_params
+	        WHERE
+	            title_lv in ('%d')
+	    `, distance)
+	}
 
+	rows, err := getRows(fmt.Sprintf(`
+		WITH city_distances AS (
+            SELECT
+                id,
+                name,
+                lat,
+                lon,
+                CASE type
+                    WHEN 'republikas pilseta' THEN 1
+                    WHEN 'citas pilsētas' THEN 2
+                    WHEN 'rajona centrs' THEN 3
+                    WHEN 'pagasta centrs' THEN 4
+                    WHEN 'ciems' THEN 5
+                END as ctype,
+                ACOS((SIN(RADIANS(lat))*SIN(RADIANS(%f)))+(COS(RADIANS(lat))*COS(RADIANS(%f)))*(COS(RADIANS(%f)-RADIANS(lon))))*6371 as distance
+            FROM
+                cities
+            WHERE
+                type in %s
+        )
+        SELECT
+            id, name, lat, lon, ctype, distance
+        FROM
+            city_distances
+        %s
+        ORDER BY
+            ctype ASC, distance ASC
+        LIMIT 1
+    `, lat, lat, lon, getLocationRange(forceAll), whereString))
+
+	if err != nil {
+		return City{}, err
+	}
+
+	city := City{}
+	if err := rows.Scan(&city); err == nil {
+		return city, nil
+	} else { // dealing with cases where you've got no cities near you
+		return getClosestCity(lat, lon, distance, forceAll, true)
+	}
 }
 
 func getClosestCityByName(name string) {
@@ -108,12 +174,30 @@ func getAuroraProbability() {
 }
 
 func getCityResponse() {
-
+	hourlyParams, err := getParams(HourlyParams)
+	dailyParams, err := getParams(DailyParams)
 }
 
-func getCoordinateForecasts(w http.ResponseWriter, r *http.Request) {
+func getCityForecasts(w http.ResponseWriter, r *http.Request) {
 	log.Println(r.URL.RequestURI())
 
+	lat, err := strconv.ParseFloat(strings.TrimSpace(r.URL.Query().Get("lat")), 64)
+	if err != nil {
+		io.WriteString(w, "")
+		return
+	}
+
+	lon, err := strconv.ParseFloat(strings.TrimSpace(r.URL.Query().Get("lon")), 64)
+	if err != nil {
+		io.WriteString(w, "")
+		return
+	}
+
+	city, err := getClosestCity(lat, lon, 10, true, false)
+	if err != nil {
+		io.WriteString(w, "")
+		return
+	}
 }
 
 func getCityNameForecasts(w http.ResponseWriter, r *http.Request) {
