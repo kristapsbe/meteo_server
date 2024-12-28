@@ -4,15 +4,14 @@ package main
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 
+	"github.com/gofiber/fiber/v3"
 	// TODO https://turriate.com/articles/making-sqlite-faster-in-go
 	sqlite3 "github.com/mattn/go-sqlite3" // https://github.com/cvilsmeier/go-sqlite-bench - should probs switch
 )
@@ -192,29 +191,24 @@ func getCityResponse() {
 	//dailyParams, err := getParams(DailyParams)
 }
 
-func getCityForecasts(w http.ResponseWriter, r *http.Request) {
-	log.Println(r.URL.RequestURI())
+func getCityForecasts(c fiber.Ctx, db *sql.DB) string {
+	log.Println(c.OriginalURL())
 
-	lat, err := strconv.ParseFloat(strings.TrimSpace(r.URL.Query().Get("lat")), 64)
+	lat, err := strconv.ParseFloat(strings.TrimSpace(c.Query("lat")), 64)
 	if err != nil {
-		io.WriteString(w, err.Error())
-		return
+		return err.Error()
 	}
-	log.Println(r.URL.RequestURI())
 
-	lon, err := strconv.ParseFloat(strings.TrimSpace(r.URL.Query().Get("lon")), 64)
+	lon, err := strconv.ParseFloat(strings.TrimSpace(c.Query("lon")), 64)
 	if err != nil {
-		io.WriteString(w, err.Error())
-		return
+		return err.Error()
 	}
-	log.Println(r.URL.RequestURI())
 
 	city, err := getClosestCity(lat, lon, 10, true, false)
 	if err != nil {
-		io.WriteString(w, err.Error())
-		return
+		return err.Error()
 	}
-	io.WriteString(w, city.name)
+	return city.name
 }
 
 func getCityNameForecasts(w http.ResponseWriter, r *http.Request) {
@@ -233,6 +227,8 @@ func getPrivacyPolicy(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	app := fiber.New()
+
 	sql.Register("sqlite3_extended",
 		&sqlite3.SQLiteDriver{
 			Extensions: []string{
@@ -243,7 +239,7 @@ func main() {
 	)
 
 	max_conns := 5
-	conns := make(chan *sql.Stmt, max_conns)
+	conns := make(chan *sql.DB, max_conns)
 
 	for i := 0; i < max_conns; i++ {
 		conn, _ := sql.Open("sqlite3_extended", "file:meteo.db?cache=shared&mode=ro")
@@ -262,16 +258,29 @@ func main() {
 		conns <- c
 	}
 
-	mux := http.NewServeMux()                                            // https://pkg.go.dev/net/http#ServeMux
-	mux.HandleFunc("/privacy-policy", getPrivacyPolicy)                  // http://localhost:3333/privacy-policy?lang=en
-	mux.HandleFunc("/api/v1/forecast/cities", getCityForecasts)          // http://localhost:3333/api/v1/forecast/cities?lat=56.9730&lon=24.1327
-	mux.HandleFunc("/api/v1/forecast/cities/name", getCityNameForecasts) // http://localhost:3333/api/v1/forecast/cities/name?city_name=vamier
+	// http://localhost:3333/privacy-policy?lang=en
+	app.Get("/privacy-policy", func(c fiber.Ctx) error {
+		log.Println(c.OriginalURL())
 
-	err := http.ListenAndServe("localhost:3333", mux)
-	if errors.Is(err, http.ErrServerClosed) {
-		fmt.Printf("server closed\n")
-	} else if err != nil {
-		fmt.Printf("error starting server: %s\n", err)
-		os.Exit(1)
-	}
+		p := "./privacy_policy/privacy-policy.html"
+		if c.Query("lang") == "lv" {
+			p = "./privacy_policy/privatuma-politika.html"
+		}
+		return c.SendFile(p)
+	})
+
+	// http://localhost:3333/api/v1/forecast/cities?lat=56.9730&lon=24.1327
+	app.Get("/api/v1/forecast/cities", func(c fiber.Ctx) error {
+		db := checkout()
+		defer checkin(db)
+
+		return c.SendString(getCityForecasts(c, db))
+	})
+
+	// http://localhost:3333/api/v1/forecast/cities/name?city_name=vamier
+	app.Get("/api/v1/forecast/cities/name", func(c fiber.Ctx) error {
+		return c.SendString("Hello, World 👋!")
+	})
+
+	log.Fatal(app.Listen(":3333"))
 }
