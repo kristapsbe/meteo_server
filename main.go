@@ -4,6 +4,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -48,6 +49,7 @@ type City struct {
 	Distance float64
 }
 
+// TODO: use map instead of struct?
 type CityForecast struct {
 	City                 string   `json:"city"`
 	Lat                  float64  `json:"lat"`
@@ -234,9 +236,16 @@ func getCityResponse(c fiber.Ctx, db *sql.DB, city City) string {
 	_, _ = getParams(db, DailyParams)
 
 	loc, _ := time.LoadLocation("Europe/Riga")
-	_ = time.Now().In(loc).Format("200601021504")
+	currTime := time.Now().In(loc).Format("200601021504")
 
-	return ""
+	cityForecast := CityForecast{
+		LastUpdated: currTime,
+	}
+	s, err := json.Marshal(cityForecast)
+	if err != nil {
+		return err.Error()
+	}
+	return string(s)
 }
 
 func getCityForecasts(c fiber.Ctx, db *sql.DB) (City, error) {
