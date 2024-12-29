@@ -238,10 +238,14 @@ func getCityResponse(c fiber.Ctx, db *sql.DB, city City) string {
 	loc, _ := time.LoadLocation("Europe/Riga")
 	currTime := time.Now().In(loc).Format("200601021504")
 
-	cityForecast := CityForecast{
+	tmpData := make(map[string]interface{})
+	tmpData["last_updated"] = currTime
+	tmpData["aaa"] = 123
+
+	_ = CityForecast{
 		LastUpdated: currTime,
 	}
-	s, err := json.Marshal(cityForecast)
+	s, err := json.Marshal(tmpData)
 	if err != nil {
 		return err.Error()
 	}
