@@ -49,20 +49,6 @@ type City struct {
 	Distance float64
 }
 
-// TODO: use map instead of struct?
-type CityForecast struct {
-	City                 string   `json:"city"`
-	Lat                  float64  `json:"lat"`
-	Lon                  float64  `json:"lon"`
-	HourlyForecast       []string `json:"hourly_forecast"`
-	DailyForecast        []string `json:"daily_forecast"`
-	Warnings             []string `json:"warnings"`
-	AuroraProbs          []string `json:"aurora_probs"`
-	LastUpdated          string   `json:"last_updated"`
-	LastDownloaded       string   `json:"last_downloaded"`
-	LastDownloadedNoSkip string   `json:"last_downloaded_no_skip"`
-}
-
 func getRows(db *sql.DB, query string) (*sql.Rows, error) {
 	rows, err := db.Query(query)
 
@@ -238,14 +224,30 @@ func getCityResponse(c fiber.Ctx, db *sql.DB, city City) string {
 	loc, _ := time.LoadLocation("Europe/Riga")
 	currTime := time.Now().In(loc).Format("200601021504")
 
-	tmpData := make(map[string]interface{})
-	tmpData["last_updated"] = currTime
-	tmpData["aaa"] = 123
+	cityForecast := make(map[string]interface{})
+	cityForecast["city"] = city.Name
+	cityForecast["hourly_forecast"] = []int{1, 2, 3}
+	cityForecast["daily_forecast"] = []int{1, 2, 3}
+	cityForecast["aurora_probs"] = []int{1, 2, 3}
+	cityForecast["last_updated"] = currTime
+	cityForecast["last_downloaded"] = currTime
 
-	_ = CityForecast{
-		LastUpdated: currTime,
+	if true {
+		cityForecast["lat"] = city.Lat
+		cityForecast["lon"] = city.Lon
 	}
-	s, err := json.Marshal(tmpData)
+
+	if true {
+		cityForecast["warnings"] = []int{1, 2, 3}
+	} else {
+		cityForecast["warnings"] = []int{1, 2, 3}
+	}
+
+	if true {
+		cityForecast["last_downloaded_no_skip"] = currTime
+	}
+
+	s, err := json.Marshal(cityForecast)
 	if err != nil {
 		return err.Error()
 	}
