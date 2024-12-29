@@ -144,23 +144,23 @@ func getClosestCity(db *sql.DB, lat float64, lon float64, distance int, forceAll
 	city := City{}
 	if rows.Next() {
 		if err := rows.Scan(&city.ID, &city.Name, &city.Lat, &city.Lon, &city.CType, &city.Distance); err == nil {
-			log.Print("city")
+			//log.Print("city")
 			return city, nil
 		} else { // dealing with cases where you've got no cities near you
 			if ignoreDistance {
-				log.Print("ignore dist ")
+				//log.Print("ignore dist ")
 				return city, err
 			} else {
-				log.Print("go deeper")
+				//log.Print("go deeper")
 				return getClosestCity(db, lat, lon, distance, forceAll, true)
 			}
 		}
 	} else {
 		if ignoreDistance {
-			log.Print("ignore dist no res")
+			//log.Print("ignore dist no res")
 			return city, sql.ErrNoRows
 		} else {
-			log.Print("go deeper no res")
+			//log.Print("go deeper no res")
 			return getClosestCity(db, lat, lon, distance, forceAll, true)
 		}
 	}
