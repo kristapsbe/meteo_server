@@ -63,8 +63,8 @@ func getRows(db *sql.DB, query string) (*sql.Rows, error) {
 	return rows, nil
 }
 
-func getParams(db *sql.DB, paramQ string) (*sql.Rows, error) {
-	return getRows(db, fmt.Sprintf(`
+func getParams(db *sql.DB, paramQ string) []string {
+	_, _ = getRows(db, fmt.Sprintf(`
   		SELECT
             id, title_lv, title_en
         FROM
@@ -72,6 +72,8 @@ func getParams(db *sql.DB, paramQ string) (*sql.Rows, error) {
         WHERE
             title_lv in ('%s')
     `, paramQ))
+
+	return []string{}
 }
 
 func isEmergency() bool {
@@ -186,7 +188,7 @@ func getClosestCityByName(db *sql.DB, name string) (*sql.Rows, error) {
     `, name, getLocationRange(true)))
 }
 
-func getForecast(db *sql.DB) (*sql.Rows, error) {
+func getForecast(db *sql.DB, city City, currDate string, params []string) (*sql.Rows, error) {
 	//param_queries = ",".join([f"(SELECT value FROM forecast_cities AS fci WHERE fc.city_id=fci.city_id AND fc.date=fci.date AND param_id={p[0]}) AS val_{p[0]}" for p in params])
 	//param_where = " OR ".join([f"val_{p[0]} IS NOT NULL" for p in params])
 	return getRows(db, fmt.Sprintf(`
@@ -218,8 +220,8 @@ func getAuroraProbability() {
 }
 
 func getCityResponse(c fiber.Ctx, db *sql.DB, city City) string {
-	_, _ = getParams(db, HourlyParams)
-	_, _ = getParams(db, DailyParams)
+	_ = getParams(db, HourlyParams)
+	_ = getParams(db, DailyParams)
 
 	loc, _ := time.LoadLocation("Europe/Riga")
 	currTime := time.Now().In(loc).Format("200601021504")
@@ -255,8 +257,6 @@ func getCityResponse(c fiber.Ctx, db *sql.DB, city City) string {
 }
 
 func getCityForecasts(c fiber.Ctx, db *sql.DB) (City, error) {
-	log.Println(c.OriginalURL())
-
 	lat, err := strconv.ParseFloat(strings.TrimSpace(c.Query("lat")), 64)
 	city := City{}
 	if err != nil {
@@ -276,8 +276,6 @@ func getCityForecasts(c fiber.Ctx, db *sql.DB) (City, error) {
 }
 
 func getCityNameForecasts(c fiber.Ctx) string {
-	log.Println(c.OriginalURL())
-
 	return ""
 }
 
@@ -326,16 +324,23 @@ func main() {
 
 	// http://localhost:3333/api/v1/forecast/cities?lat=56.9730&lon=24.1327
 	app.Get("/api/v1/forecast/cities", func(c fiber.Ctx) error {
+		log.Println(c.OriginalURL())
+
 		db := checkout()
 		defer checkin(db)
 
-		city, _ := getCityForecasts(c, db)
-
-		return c.SendString(getCityResponse(c, db, city))
+		city, err := getCityForecasts(c, db)
+		if err != nil {
+			return c.SendString(err.Error())
+		} else {
+			return c.SendString(getCityResponse(c, db, city))
+		}
 	})
 
 	// http://localhost:3333/api/v1/forecast/cities/name?city_name=vamier
 	app.Get("/api/v1/forecast/cities/name", func(c fiber.Ctx) error {
+		log.Println(c.OriginalURL())
+
 		return c.SendString(getCityNameForecasts(c))
 	})
 
