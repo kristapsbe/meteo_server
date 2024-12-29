@@ -64,7 +64,7 @@ func getRows(db *sql.DB, query string) (*sql.Rows, error) {
 }
 
 func getParams(db *sql.DB, paramQ string) []string {
-	_, _ = getRows(db, fmt.Sprintf(`
+	rows, _ := getRows(db, fmt.Sprintf(`
   		SELECT
             id, title_lv, title_en
         FROM
@@ -73,7 +73,16 @@ func getParams(db *sql.DB, paramQ string) []string {
             title_lv in ('%s')
     `, paramQ))
 
-	return []string{}
+	params := []string{}
+	for rows.Next() {
+		var s string
+		if err := rows.Scan(&s); err == nil {
+			params = append(params, s)
+		} else {
+			params = append(params, err.Error())
+		}
+	}
+	return params
 }
 
 func isEmergency() bool {
@@ -188,7 +197,7 @@ func getClosestCityByName(db *sql.DB, name string) (*sql.Rows, error) {
     `, name, getLocationRange(true)))
 }
 
-func getForecast(db *sql.DB, city City, currDate string, params []string) (*sql.Rows, error) {
+func getForecast(db *sql.DB, city City, currTime string, params []string) (*sql.Rows, error) {
 	//param_queries = ",".join([f"(SELECT value FROM forecast_cities AS fci WHERE fc.city_id=fci.city_id AND fc.date=fci.date AND param_id={p[0]}) AS val_{p[0]}" for p in params])
 	//param_where = " OR ".join([f"val_{p[0]} IS NOT NULL" for p in params])
 	return getRows(db, fmt.Sprintf(`
@@ -220,11 +229,14 @@ func getAuroraProbability() {
 }
 
 func getCityResponse(c fiber.Ctx, db *sql.DB, city City) string {
-	_ = getParams(db, HourlyParams)
-	_ = getParams(db, DailyParams)
+	hourlyParams := getParams(db, HourlyParams)
+	dailyParams := getParams(db, DailyParams)
 
 	loc, _ := time.LoadLocation("Europe/Riga")
 	currTime := time.Now().In(loc).Format("200601021504")
+
+	_, _ = getForecast(db, city, currTime, hourlyParams)
+	_, _ = getForecast(db, city, currTime, dailyParams)
 
 	cityForecast := make(map[string]interface{})
 	cityForecast["city"] = city.Name
