@@ -39,15 +39,25 @@ const DailyParams = `
 `
 
 type City struct {
-	id       string
-	name     string
-	lat      float32
-	lon      float32
-	ctype    string
-	distance float32
+	ID       string
+	Name     string
+	Lat      float64
+	Lon      float64
+	CType    string
+	Distance float64
 }
 
 type CityForecast struct {
+	City                 string   `json:"city"`
+	Lat                  float64  `json:"lat"`
+	Lon                  float64  `json:"lon"`
+	HourlyForecast       []string `json:"hourly_forecast"`
+	DailyForecast        []string `json:"daily_forecast"`
+	Warnings             []string `json:"warnings"`
+	AuroraProbs          []string `json:"aurora_probs"`
+	LastUpdated          string   `json:"last_updated"`
+	LastDownloaded       string   `json:"last_downloaded"`
+	LastDownloadedNoSkip string   `json:"last_downloaded_no_skip"`
 }
 
 func getRows(db *sql.DB, query string) (*sql.Rows, error) {
@@ -133,7 +143,7 @@ func getClosestCity(db *sql.DB, lat float64, lon float64, distance int, forceAll
 
 	city := City{}
 	if rows.Next() {
-		if err := rows.Scan(&city.id, &city.name, &city.lat, &city.lon, &city.ctype, &city.distance); err == nil {
+		if err := rows.Scan(&city.ID, &city.Name, &city.Lat, &city.Lon, &city.CType, &city.Distance); err == nil {
 			log.Print("city")
 			return city, nil
 		} else { // dealing with cases where you've got no cities near you
