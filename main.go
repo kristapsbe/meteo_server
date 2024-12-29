@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v3"
 	// TODO https://turriate.com/articles/making-sqlite-faster-in-go
@@ -197,8 +198,23 @@ func getClosestCityByName(db *sql.DB, name string) (*sql.Rows, error) {
     `, name, getLocationRange(true)))
 }
 
-func getForecast() {
-
+func getForecast(db *sql.DB) (*sql.Rows, error) {
+	//param_queries = ",".join([f"(SELECT value FROM forecast_cities AS fci WHERE fc.city_id=fci.city_id AND fc.date=fci.date AND param_id={p[0]}) AS val_{p[0]}" for p in params])
+	//param_where = " OR ".join([f"val_{p[0]} IS NOT NULL" for p in params])
+	return getRows(db, fmt.Sprintf(`
+		WITH h_temp AS (
+            SELECT
+                city_id, date,
+                {param_queries}
+            FROM
+                forecast_cities AS fc
+            WHERE
+                city_id = '{city[0]}' AND date >= '{c_date}'
+            GROUP BY
+                city_id, date
+        )
+        SELECT * FROM h_temp WHERE {param_where}
+    `, ""))
 }
 
 func getWarnings() {
@@ -216,6 +232,9 @@ func getAuroraProbability() {
 func getCityResponse(c fiber.Ctx, db *sql.DB, city City) string {
 	_, _ = getParams(db, HourlyParams)
 	_, _ = getParams(db, DailyParams)
+
+	loc, _ := time.LoadLocation("Europe/Riga")
+	_ = time.Now().In(loc).Format("200601021504")
 
 	return ""
 }
