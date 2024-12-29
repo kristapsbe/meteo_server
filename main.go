@@ -166,8 +166,35 @@ func getClosestCity(db *sql.DB, lat float64, lon float64, distance int, forceAll
 	}
 }
 
-func getClosestCityByName(name string) {
-
+func getClosestCityByName(db *sql.DB, name string) (*sql.Rows, error) {
+	return getRows(db, fmt.Sprintf(`
+		WITH edit_distances AS (
+            SELECT
+                id,
+                name,
+                lat,
+                lon,
+                CASE type
+                    WHEN 'republikas pilseta' THEN 1
+                    WHEN 'citas pilsētas' THEN 2
+                    WHEN 'rajona centrs' THEN 3
+                    WHEN 'pagasta centrs' THEN 4
+                    WHEN 'ciems' THEN 5
+                END as ctype,
+                editdist3(search_name, '%s') AS distance
+            FROM
+                cities
+            WHERE
+                type in %s
+        )
+        SELECT
+            id, name, lat, lon, ctype, distance
+        FROM
+            edit_distances
+        ORDER BY
+            distance ASC, ctype ASC
+        LIMIT 1
+    `, name, getLocationRange(true)))
 }
 
 func getForecast() {
