@@ -22,8 +22,8 @@ if not os.path.isfile(last_updated):
 regex = re.compile('[^a-zA-Z āčēģīķļņšūžĀČĒĢĪĶĻŅŠŪŽ]')
 
 con = sqlite3.connect(f"{db_file}")
-con.enable_load_extension(True)
-con.load_extension(editdist_extension)
+#con.enable_load_extension(True)
+#con.load_extension(editdist_extension)
 
 # the cursor doesn't actually do anything in sqlite3, just reusing it
 # https://stackoverflow.com/questions/54395773/what-are-the-side-effects-of-reusing-a-sqlite3-cursor
