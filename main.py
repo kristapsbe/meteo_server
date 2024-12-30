@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
 from utils import simlpify_string
-from settings import editdist_extension, db_file, data_folder, warning_mode
+from settings import editdist_extension, db_file, data_folder
 
 
 last_updated = 'last_updated'
@@ -404,8 +404,6 @@ def get_city_reponse(city, add_last_no_skip, h_city_override, use_simple_warning
     h_params = get_params(cur, hourly_params)
     d_params = get_params(cur, daily_params)
     c_date = datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
-    if warning_mode:
-        c_date = "202407270000"
     h_forecast = get_forecast(cur, city if h_city_override is None else h_city_override, c_date, h_params)
     d_forecast = get_forecast(cur, city, c_date, d_params)
     metadata_f = f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam.json"

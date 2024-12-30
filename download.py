@@ -7,8 +7,10 @@ import datetime
 import requests
 
 from utils import simlpify_string
-from settings import db_file, data_folder, warning_mode
+from settings import db_file, data_folder
 
+
+skip_download = False
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s')
 
@@ -316,7 +318,7 @@ def run_downloads(datasets):
 
 
 if __name__ == "__main__":
-    if warning_mode:
+    if skip_download:
         update_db()
         update_aurora_forecast()
     else:
