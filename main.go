@@ -66,7 +66,7 @@ func getRows(db *sql.DB, query string) (*sql.Rows, error) {
 func getParams(db *sql.DB, paramQ string) []string {
 	rows, err := getRows(db, fmt.Sprintf(`
   		SELECT
-            id, title_lv, title_en
+            id
         FROM
             forecast_cities_params
         WHERE
@@ -83,6 +83,7 @@ func getParams(db *sql.DB, paramQ string) []string {
 		if err := rows.Scan(&s); err == nil {
 			params = append(params, s)
 		} else {
+			log.Fatal(err.Error())
 			params = append(params, err.Error())
 		}
 	}
@@ -202,22 +203,26 @@ func getClosestCityByName(db *sql.DB, name string) (*sql.Rows, error) {
 }
 
 func getForecast(db *sql.DB, city City, currTime string, params []string) (*sql.Rows, error) {
-	//param_queries = ",".join([f"(SELECT value FROM forecast_cities AS fci WHERE fc.city_id=fci.city_id AND fc.date=fci.date AND param_id={p[0]}) AS val_{p[0]}" for p in params])
-	//param_where = " OR ".join([f"val_{p[0]} IS NOT NULL" for p in params])
+	paramQueries := []string{}
+	paramWhere := []string{}
+	for _, e := range params {
+		paramQueries = append(paramQueries, fmt.Sprintf("(SELECT value FROM forecast_cities AS fci WHERE fc.city_id=fci.city_id AND fc.date=fci.date AND param_id=%s) AS val_%s", e, e))
+		paramWhere = append(paramWhere, fmt.Sprintf("val_%s IS NOT NULL", e))
+	}
 	return getRows(db, fmt.Sprintf(`
 		WITH h_temp AS (
             SELECT
                 city_id, date,
-                {param_queries}
+                %s
             FROM
                 forecast_cities AS fc
             WHERE
-                city_id = '{city[0]}' AND date >= '{c_date}'
+                city_id = '%s' AND date >= '%s'
             GROUP BY
                 city_id, date
         )
-        SELECT * FROM h_temp WHERE {param_where}
-    `, ""))
+        SELECT * FROM h_temp WHERE %s
+    `, strings.Join(paramQueries[:], ","), city.ID, currTime, strings.Join(paramWhere[:], " OR ")))
 }
 
 func getWarnings() {
