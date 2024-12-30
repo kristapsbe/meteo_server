@@ -21,7 +21,7 @@ if not os.path.isfile(last_updated):
 
 regex = re.compile('[^a-zA-Z āčēģīķļņšūžĀČĒĢĪĶĻŅŠŪŽ]')
 
-con = sqlite3.connect(db_file)
+con = sqlite3.connect(f"file:{db_file}?mode=ro")
 con.enable_load_extension(True)
 con.load_extension(editdist_extension)
 
