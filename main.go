@@ -64,16 +64,20 @@ func getRows(db *sql.DB, query string) (*sql.Rows, error) {
 }
 
 func getParams(db *sql.DB, paramQ string) []string {
-	rows, _ := getRows(db, fmt.Sprintf(`
+	rows, err := getRows(db, fmt.Sprintf(`
   		SELECT
             id, title_lv, title_en
         FROM
             forecast_cities_params
         WHERE
-            title_lv in ('%s')
+            title_lv in (%s)
     `, paramQ))
 
 	params := []string{}
+	if err != nil {
+		log.Fatal(err.Error())
+		return params
+	}
 	for rows.Next() {
 		var s string
 		if err := rows.Scan(&s); err == nil {
@@ -238,13 +242,17 @@ func getCityResponse(c fiber.Ctx, db *sql.DB, city City) string {
 	_, _ = getForecast(db, city, currTime, hourlyParams)
 	_, _ = getForecast(db, city, currTime, dailyParams)
 
+	metadataFName := "./data/meteorologiskas-prognozes-apdzivotam-vietam.json"
+	fileInfo, _ := os.Stat(metadataFName)
+	modificationTime := fileInfo.ModTime()
+
 	cityForecast := make(map[string]interface{})
 	cityForecast["city"] = city.Name
 	cityForecast["hourly_forecast"] = []int{1, 2, 3}
 	cityForecast["daily_forecast"] = []int{1, 2, 3}
 	cityForecast["aurora_probs"] = []int{1, 2, 3}
 	cityForecast["last_updated"] = currTime
-	cityForecast["last_downloaded"] = currTime
+	cityForecast["last_downloaded"] = modificationTime.In(loc).Format("200601021504")
 
 	if true {
 		cityForecast["lat"] = city.Lat
