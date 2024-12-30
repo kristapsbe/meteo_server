@@ -39,7 +39,7 @@ which python
 
 install deps
 ```bash
-python -m pip install -r requirements.txt
+python -m pip install -r requirements/common.txt
 ```
 
 (optional) when done
@@ -142,4 +142,18 @@ chmod +x python_run.sh
 ```
 */20 * * * * /root/meteo_server/python_run.sh download
 10 */4 * * * /root/meteo_server/python_run.sh crawl_site
+```
+
+# TODO
+
+```bash
+docker build . -t meteo_server
+```
+
+```bash
+docker run -v "$(pwd)":/app --name meteo_server -dit meteo_server
+```
+
+```bash
+docker exec -it meteo_server sh
 ```
