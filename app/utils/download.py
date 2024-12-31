@@ -1,6 +1,7 @@
 import os
 import json
 import pytz
+import pandas as pd
 import sqlite3
 import logging
 import datetime
@@ -102,12 +103,12 @@ table_conf = [{
         "name": f"{data_folder}hidrometeorologiskie-bridinajumi/bridinajumu_poligoni.csv"
     }],
     "table_name": "warnings_polygons",
-    "cols": [
-        [{"name": "warning_id", "type": "INTEGER", "pk": True}],
-        [{"name": "polygon_id", "type": "INTEGER", "pk": True}],
+    "cols": [ # TODO: figure out why the pks failed
+        [{"name": "warning_id", "type": "INTEGER"}], # "pk": True}],
+        [{"name": "polygon_id", "type": "INTEGER"}], # "pk": True}],
         [{"name": "lat", "type": "REAL"}],
         [{"name": "lon", "type": "REAL"}],
-        [{"name": "order_id", "type": "INTEGER", "pk": True}],
+        [{"name": "order_id", "type": "INTEGER"}], # "pk": True}],
     ]
 },{ # TODO: partial at the moment - finish this
     "files": [{
@@ -181,19 +182,22 @@ def clean_and_part_line(l):
 
 def update_table(t_conf, db_cur):
     logging.info(f"UPDATING '{t_conf["table_name"]}'")
-    col_range = range(len(t_conf["cols"]))
-    col_idxs = [(i, j) for i in col_range for j in range(len(t_conf["cols"][i]))]
-    pk_idxs = [e for e in col_idxs if t_conf["cols"][e[0]][e[1]].get("pk", False)]
+    df = None
 
-    rows = {}
     for data_file in t_conf["files"]:
-        with open(data_file["name"], "r") as f:
-            for l in f.readlines()[1:]:
-                ls = l.strip()
-                if ls.replace(",", "") != "":
-                    parts = clean_and_part_line(ls)
-                    vals = {e: col_parsers[t_conf["cols"][e[0]][e[1]]["type"]](parts[e[0]]) for e in col_idxs}
-                    rows[(vals[i] for i in pk_idxs)] = [vals[i] for i in col_idxs]
+        tmp_df = pd.read_csv(data_file["name"]).dropna()
+        for ct in range(len(t_conf["cols"])):
+            for col in t_conf["cols"][ct]:
+                tmp_df[f"_new_{col["name"]}"] = tmp_df[tmp_df.columns[ct]].apply(col_parsers[col["type"]])
+        tmp_df = tmp_df[[f"_new_{c["name"]}" for cols in t_conf["cols"] for c in cols]]
+        if df is None:
+            df = pd.DataFrame(tmp_df)
+        else:
+            df = pd.concat([df, tmp_df])
+    # TODO: FIX
+    group_keys = [f"_new_{c["name"]}" for cols in t_conf["cols"] for c in cols if c.get("pk", False)]
+    if len(group_keys) > 0:
+        df = df.groupby(group_keys).max().reset_index() # getting rid of duplicates
 
     pks = [c["name"] for cols in t_conf["cols"] for c in cols if c.get("pk", False)]
     primary_key_q = "" if len(pks) < 1 else f", PRIMARY KEY ({", ".join(pks)})"
@@ -207,7 +211,7 @@ def update_table(t_conf, db_cur):
     db_cur.executemany(f"""
         INSERT INTO {t_conf["table_name"]} ({", ".join([c["name"] for cols in t_conf["cols"] for c in cols])})
         VALUES ({", ".join(["?"]*len([0 for cols in t_conf["cols"] for _ in cols]))})
-    """, rows.values())
+    """, df.values.tolist())
     logging.info(f"TABLE '{t_conf["table_name"]}' updated")
 
 
