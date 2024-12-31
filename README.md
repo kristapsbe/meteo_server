@@ -146,3 +146,7 @@ chmod +x python_run.sh
 ```bash
 docker-compose build && docker-compose up
 ```
+
+```bash
+docker exec -it meteo_server-app-1 sh
+```
