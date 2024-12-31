@@ -243,7 +243,7 @@ def update_warning_bounds_table(db_cur):
 
 
 def update_db():
-    upd_con = sqlite3.connect(db_file)
+    upd_con = sqlite3.connect(db_file, timeout=5)
     try:
         upd_cur = upd_con.cursor()
         for t_conf in table_conf:
