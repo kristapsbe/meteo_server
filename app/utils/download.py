@@ -7,7 +7,7 @@ import datetime
 import requests
 
 from utils import simlpify_string
-from settings import db_file, data_folder
+from settings import db_file, data_folder, last_updated, run_emergency
 
 
 skip_download = False
@@ -260,8 +260,8 @@ def update_db():
 
 def update_aurora_forecast(): # TODO: cleanup
     url = "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"
-    fpath = "data/ovation_aurora_latest.json"
-    times_fpath = "data/ovation_aurora_times.json"
+    fpath = f"{data_folder}ovation_aurora_latest.json"
+    times_fpath = f"{data_folder}ovation_aurora_times.json"
 
     r = requests.get(url, timeout=10)
     if r.status_code == 200:
@@ -303,18 +303,18 @@ def run_downloads(datasets):
     for ds in datasets:
         skipped_empty = download_resources(ds) or skipped_empty
 
-    if skipped_empty and not os.path.isfile('run_emergency'):
-        open('run_emergency', 'w').write("")
+    if skipped_empty and not os.path.isfile(run_emergency):
+        open(run_emergency, 'w').write("")
 
     update_db()
     update_aurora_forecast()
 
     if not skipped_empty: # moving here in case the db updates blow up
-        open('last_updated', 'w').write(
+        open(last_updated, 'w').write(
             datetime.datetime.fromtimestamp(os.path.getmtime(f"{data_folder}{target_ds[0]}.json")).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
         )
-        if os.path.isfile('run_emergency'):
-            os.remove('run_emergency')
+        if os.path.isfile(run_emergency):
+            os.remove(run_emergency)
 
 
 if __name__ == "__main__":

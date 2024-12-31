@@ -3,11 +3,21 @@ services:
     build: app
     ports:
       - "8000:8000"
+    volumes:
+      - data:/data
 
   haproxy:
     build: haproxy
     ports:
       - "80:80"
+
+volumes:
+  data:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ./data
 
 networks:
   frontend:

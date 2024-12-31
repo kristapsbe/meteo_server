@@ -12,10 +12,9 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
 from utils.utils import simlpify_string
-from settings import editdist_extension, db_file, data_folder
+from settings import editdist_extension, db_file, data_folder, last_updated, run_emergency
 
 
-last_updated = 'last_updated'
 if not os.path.isfile(last_updated):
     open(last_updated, 'w').write("197001010000")
 
@@ -78,7 +77,7 @@ def get_params(cur, param_q):
 
 
 def is_emergency():
-    return os.path.isfile('run_emergency')
+    return os.path.isfile(run_emergency)
 
 
 def get_location_range(force_all=False):
@@ -386,7 +385,7 @@ def get_aurora_probability(cur, lat, lon):
             lat={lat} AND lon={lon}
         LIMIT 1
     """).fetchall()
-    aurora_probs_time = json.loads(open("data/ovation_aurora_times.json", "r").read())
+    aurora_probs_time = json.loads(open(f"{data_folder}/ovation_aurora_times.json", "r").read())
 
     return {
         "prob": aurora_probs[0][0] if len(aurora_probs) > 0 else 0, # just default to 0 if there's no data
@@ -503,7 +502,7 @@ async def get_meta():
         "is_emergency": is_emergency()
     }
     if retval["is_emergency"]:
-        retval["emergency_dl"] = open('run_emergency', 'r').readline()
+        retval["emergency_dl"] = open(run_emergency, 'r').readline()
     return retval
 
 

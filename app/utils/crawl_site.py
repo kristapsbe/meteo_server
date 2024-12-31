@@ -14,12 +14,12 @@ import logging
 import datetime
 import requests
 
-from settings import db_file, data_folder
+from settings import db_file, data_folder, run_emergency
 
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s')
 
-if not os.path.isfile('run_emergency'):
+if not os.path.isfile(run_emergency):
     logging.info(f"No emergency - exiting")
     exit()
 
@@ -65,8 +65,8 @@ for id in ids:
 if len(csv) > 1:
     with open(f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv", 'w') as f:
         f.write('\n'.join(csv))
-    open('run_emergency', 'w').write(datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"))
+    open(run_emergency, 'w').write(datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"))
     logging.info("Successfully performed emergency download")
 else:
-    os.remove('run_emergency')
+    os.remove(run_emergency)
     logging.info("Failed to perform emergency download")

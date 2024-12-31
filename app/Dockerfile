@@ -10,7 +10,6 @@ RUN apk update && apk upgrade && apk add --no-cache curl=8.11.1-r0 python3=3.12.
 
 RUN curl -sS https://webi.sh/sqlpkg | sh
 RUN ~/.local/bin/sqlpkg install nalgeon/fuzzy # sqlite/spellfix isn't available for linux arm64
-
 RUN sed -i "s~{editdist_extension}~$(~/.local/bin/sqlpkg which nalgeon/fuzzy)~" settings.py
 
 CMD ["uv", "run", "main.py"]
