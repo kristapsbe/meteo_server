@@ -144,18 +144,5 @@ chmod +x python_run.sh
 # TODO
 
 ```bash
-docker build . -t meteo_server
-```
-
-```bash
-#docker run -v "$(pwd)":/app/meteo_server --name meteo_server -dit meteo_server
-docker run --name meteo_server -dit meteo_server
-```
-
-```bash
-docker logs meteo_server
-```
-
-```bash
-docker exec -it meteo_server sh
+docker-compose build && docker-compose up
 ```

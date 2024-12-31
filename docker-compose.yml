@@ -3,7 +3,15 @@ services:
     build: app
     ports:
       - "8000:8000"
+
   haproxy:
     build: haproxy
     ports:
-      - "443:443"
+      - "80:80"
+
+networks:
+  frontend:
+    # Specify driver options
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.host_binding_ipv4: "127.0.0.1"

@@ -12,6 +12,4 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = [
-    "locust>=2.32.5",
-]
+dev = []

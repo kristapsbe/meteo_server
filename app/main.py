@@ -11,7 +11,7 @@ import datetime
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
-from utils import simlpify_string
+from utils.utils import simlpify_string
 from settings import editdist_extension, db_file, data_folder
 
 
@@ -509,4 +509,4 @@ async def get_meta():
 
 if __name__ == "__main__":
     cwd = pathlib.Path(__file__).parent.resolve()
-    uvicorn.run(app, host="127.0.0.1", port=8000, log_config=f"{cwd}/log.ini")
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_config=f"{cwd}/log.ini")
