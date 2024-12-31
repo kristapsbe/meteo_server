@@ -1,0 +1,9 @@
+services:
+  app:
+    build: app
+    ports:
+      - "8000:8000"
+  haproxy:
+    build: haproxy
+    ports:
+      - "443:443"
