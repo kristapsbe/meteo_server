@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
 from utils.utils import simlpify_string
-from settings import editdist_extension, db_file, data_folder, last_updated, run_emergency
+from utils.settings import editdist_extension, db_file, data_folder, last_updated, run_emergency
 
 
 if not os.path.isfile(last_updated):
@@ -21,8 +21,8 @@ if not os.path.isfile(last_updated):
 regex = re.compile('[^a-zA-Z āčēģīķļņšūžĀČĒĢĪĶĻŅŠŪŽ]')
 
 con = sqlite3.connect(f"{db_file}", timeout=5)
-#con.enable_load_extension(True)
-#con.load_extension(editdist_extension)
+con.enable_load_extension(True)
+con.load_extension(".".join(editdist_extension.split(".")[:-1])) # getting rid of extension
 
 # the cursor doesn't actually do anything in sqlite3, just reusing it
 # https://stackoverflow.com/questions/54395773/what-are-the-side-effects-of-reusing-a-sqlite3-cursor
@@ -152,7 +152,7 @@ def get_city_by_name(city_name):
                     WHEN 'pagasta centrs' THEN 4
                     WHEN 'ciems' THEN 5
                 END as ctype,
-                editdist3(search_name, '{city_name}') AS distance
+                fuzzy_editdist(search_name, '{city_name}') AS distance
             FROM
                 cities
             WHERE
@@ -164,7 +164,7 @@ def get_city_by_name(city_name):
             edit_distances
         ORDER BY
             distance ASC, ctype ASC
-        LIMIT 1
+        LIMIT 10
     """).fetchall()
     if len(cities) == 0:
         return ()
