@@ -145,6 +145,9 @@ chmod +x python_run.sh
 
 ```bash
 dnf install docker
+dnf install docker-compose
+systemctl status docker
+systemctl start docker
 ```
 
 ```bash
