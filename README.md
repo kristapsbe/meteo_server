@@ -144,6 +144,10 @@ chmod +x python_run.sh
 # TODO
 
 ```bash
+dnf install docker
+```
+
+```bash
 docker-compose build && docker-compose up
 ```
 
