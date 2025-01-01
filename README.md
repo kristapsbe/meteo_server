@@ -12,9 +12,17 @@ docker compose down && docker compose build && docker compose up -d
 docker exec -it meteo_server-app-1 sh
 ```
 
-## Digital ocean setup
+## Setup
 
 ### Docker
+
+#### MacOS
+
+```bash
+brew install rancher
+```
+
+#### Fedora
 
 https://docs.docker.com/engine/install/fedora/
 ```bash
