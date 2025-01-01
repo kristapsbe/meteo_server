@@ -387,6 +387,7 @@ def get_aurora_probability(cur, lat, lon):
     """).fetchall()
     aurora_probs_time = datetime.datetime.strptime(json.loads(open(f"{data_folder}/ovation_aurora_times.json", "r").read())["Forecast Time"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga'))
     curr_date = datetime.datetime.now(pytz.timezone('Europe/Riga'))
+
     return {
         "prob": aurora_probs[0][0] if len(aurora_probs) > 0 and aurora_probs_time >= curr_date else 0, # just default to 0 if there's no data
         "time": aurora_probs_time.strftime("%Y%m%d%H%M")
