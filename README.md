@@ -46,19 +46,6 @@ systemctl enable --now docker
 
 ## Certs
 
-```bash
-dnf install git
-git clone https://github.com/kristapsbe/meteo_server.git
-#doesnt have make either
-git rev-parse HEAD > git.version
-dnf install pipx
-pipx ensurepath
-pipx install virtualenv
-python3 -m venv .venv
-dnf install screen
-screen -d -m python main.py
-```
-
 **TODO: figure out if the update is going to actually work - pretty sure I need to cat the cert files, should make a script for this and use that instead of hte example cron https://certbot.org/renewal-setup**
 
 cert setup
