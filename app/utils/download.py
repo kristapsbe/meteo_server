@@ -321,7 +321,7 @@ def run_downloads(datasets):
             os.remove(run_emergency)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__": # TODO: don't drop tables and upsert in batches to avoid not having data for a couple of secs https://www.sqlite.org/lang_upsert.html
     if skip_download:
         update_db()
         update_aurora_forecast()
