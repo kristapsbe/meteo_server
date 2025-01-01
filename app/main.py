@@ -11,19 +11,18 @@ import datetime
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
-from utils import simlpify_string
-from settings import editdist_extension, db_file, data_folder, warning_mode
+from utils.utils import simlpify_string
+from utils.settings import editdist_extension, db_file, data_folder, last_updated, run_emergency
 
 
-last_updated = 'last_updated'
 if not os.path.isfile(last_updated):
     open(last_updated, 'w').write("197001010000")
 
 regex = re.compile('[^a-zA-Z āčēģīķļņšūžĀČĒĢĪĶĻŅŠŪŽ]')
 
-con = sqlite3.connect(f"{db_file}")
+con = sqlite3.connect(f"{db_file}", timeout=5)
 con.enable_load_extension(True)
-con.load_extension(editdist_extension)
+con.load_extension(".".join(editdist_extension.split(".")[:-1])) # getting rid of extension
 
 # the cursor doesn't actually do anything in sqlite3, just reusing it
 # https://stackoverflow.com/questions/54395773/what-are-the-side-effects-of-reusing-a-sqlite3-cursor
@@ -78,7 +77,7 @@ def get_params(cur, param_q):
 
 
 def is_emergency():
-    return os.path.isfile('run_emergency')
+    return os.path.isfile(run_emergency)
 
 
 def get_location_range(force_all=False):
@@ -153,7 +152,7 @@ def get_city_by_name(city_name):
                     WHEN 'pagasta centrs' THEN 4
                     WHEN 'ciems' THEN 5
                 END as ctype,
-                editdist3(search_name, '{city_name}') AS distance
+                fuzzy_editdist(search_name, '{city_name}') AS distance
             FROM
                 cities
             WHERE
@@ -165,7 +164,7 @@ def get_city_by_name(city_name):
             edit_distances
         ORDER BY
             distance ASC, ctype ASC
-        LIMIT 1
+        LIMIT 10
     """).fetchall()
     if len(cities) == 0:
         return ()
@@ -386,7 +385,7 @@ def get_aurora_probability(cur, lat, lon):
             lat={lat} AND lon={lon}
         LIMIT 1
     """).fetchall()
-    aurora_probs_time = json.loads(open("data/ovation_aurora_times.json", "r").read())
+    aurora_probs_time = json.loads(open(f"{data_folder}/ovation_aurora_times.json", "r").read())
 
     return {
         "prob": aurora_probs[0][0] if len(aurora_probs) > 0 else 0, # just default to 0 if there's no data
@@ -404,8 +403,6 @@ def get_city_reponse(city, add_last_no_skip, h_city_override, use_simple_warning
     h_params = get_params(cur, hourly_params)
     d_params = get_params(cur, daily_params)
     c_date = datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
-    if warning_mode:
-        c_date = "202407270000"
     h_forecast = get_forecast(cur, city if h_city_override is None else h_city_override, c_date, h_params)
     d_forecast = get_forecast(cur, city, c_date, d_params)
     metadata_f = f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam.json"
@@ -505,10 +502,10 @@ async def get_meta():
         "is_emergency": is_emergency()
     }
     if retval["is_emergency"]:
-        retval["emergency_dl"] = open('run_emergency', 'r').readline()
+        retval["emergency_dl"] = open(run_emergency, 'r').readline()
     return retval
 
 
 if __name__ == "__main__":
     cwd = pathlib.Path(__file__).parent.resolve()
-    uvicorn.run(app, host="127.0.0.1", port=8000, log_config=f"{cwd}/log.ini")
+    uvicorn.run(app, host="app", port=8000, log_config=f"{cwd}/log.ini")

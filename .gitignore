@@ -4,12 +4,5 @@ settings.py
 __pycache__/*
 data/*
 .DS_Store
-meteo.db
-git.version
-
-# I've got a bunch of warning data I'd like to save for later
-data_warnings/*
-meteo_warning_test.db
+*.pyc
 server.log
-last_updated
-run_emergency

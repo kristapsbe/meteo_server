@@ -1,0 +1,35 @@
+services:
+  app:
+    build: app
+    ports:
+      - "8000:8000"
+    volumes:
+      - data:/data
+
+  haproxy:
+    build: haproxy
+    ports:
+      - "443:443"
+    volumes:
+      - certs:/certs
+
+volumes:
+  data:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ./data
+  certs:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ./certs
+
+networks:
+  frontend:
+    # Specify driver options
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.host_binding_ipv4: "127.0.0.1"
