@@ -143,15 +143,36 @@ chmod +x python_run.sh
 
 # TODO
 
+https://docs.docker.com/engine/install/fedora/
 ```bash
-dnf install docker
-dnf install docker-compose
-systemctl status docker
-systemctl start docker
+dnf remove docker \
+    docker-client \
+    docker-client-latest \
+    docker-common \
+    docker-latest \
+    docker-latest-logrotate \
+    docker-logrotate \
+    docker-selinux \
+    docker-engine-selinux \
+    docker-engine
 ```
 
 ```bash
-docker-compose build && docker-compose up
+dnf install dnf-plugins-core
+dnf-3 config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
+dnf install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
+
+```bash
+systemctl enable --now docker
+```
+
+```bash
+docker compose build
+```
+
+```bash
+docker compose up
 ```
 
 ```bash
