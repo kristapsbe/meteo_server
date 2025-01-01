@@ -20,5 +20,5 @@ RUN echo "10	*/4	*	*	*	/app/run_job.sh crawl_site" >> cron # need an empty line 
 RUN echo "" >> cron # need an empty line at the end of the file
 RUN crontab cron
 
-CMD ["uv", "run", "main.py"]
+CMD ["sh", "start.sh"]
 EXPOSE 8000
