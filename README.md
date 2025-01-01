@@ -115,32 +115,6 @@ systemctl stop haproxy
 haproxy -f /etc/haproxy/haproxy.cfg
 ```
 
-```bash
-screen -d -m python main.py
-screen -d -m haproxy -f /etc/haproxy/haproxy.cfg
-```
-
-https://github.com/nalgeon/sqlpkg-cli
-```bash
-curl -sS https://webi.sh/sqlpkg | sh
-sqlpkg install sqlite/spellfix
-sqlpkg which sqlite/spellfix
-```
-
-crontab https://crontab.guru/
-```
-crontab -e
-```
-
-```
-chmod +x python_run.sh
-```
-
-```
-*/20 * * * * /root/meteo_server/python_run.sh download
-10 */4 * * * /root/meteo_server/python_run.sh crawl_site
-```
-
 # TODO
 
 https://docs.docker.com/engine/install/fedora/
