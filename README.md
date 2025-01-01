@@ -18,7 +18,7 @@ docker exec -it meteo_server-app-1 sh
 
 ## Digital ocean setup
 
-## Docker
+### Docker
 
 https://docs.docker.com/engine/install/fedora/
 ```bash
@@ -44,7 +44,7 @@ dnf install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-co
 systemctl enable --now docker
 ```
 
-## Certs
+### Certs
 
 **TODO: figure out if the update is going to actually work - pretty sure I need to cat the cert files, should make a script for this and use that instead of hte example cron https://certbot.org/renewal-setup**
 
