@@ -15,9 +15,8 @@ RUN ~/.local/bin/sqlpkg install nalgeon/fuzzy # sqlite/spellfix isn't available 
 RUN sed -i "s~{editdist_extension}~$(~/.local/bin/sqlpkg which nalgeon/fuzzy)~" utils/settings.py
 
 RUN crontab -l > cron
-RUN echo "*/20	*	*	*	*	/app/run_job.sh download" >> cron
-RUN echo "10	*/4	*	*	*	/app/run_job.sh crawl_site" >> cron # need an empty line at the end of the file
-RUN echo "" >> cron # need an empty line at the end of the file
+RUN echo "*/20	*	*	*	*	/app/run_job.sh download >> /app/download.logs 2>&1" >> cron
+RUN echo "10	*/4	*	*	*	/app/run_job.sh crawl_site >> /app/crawl_site.logs 2>&1" >> cron # need an empty line at the end of the file
 RUN crontab cron
 
 CMD ["sh", "start.sh"]
