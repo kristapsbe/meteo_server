@@ -3,6 +3,7 @@ settings.py
 .venv/*
 __pycache__/*
 data/*
+certs/*
 .DS_Store
 *.pyc
 server.log
