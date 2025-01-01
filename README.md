@@ -5,11 +5,7 @@ A small webserver for caching, filtering, transforming, and serving weather fore
 ## Start-up
 
 ```bash
-docker compose build
-```
-
-```bash
-docker compose up
+docker compose down && docker compose build && docker compose up -d
 ```
 
 ```bash
