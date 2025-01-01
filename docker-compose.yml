@@ -10,6 +10,8 @@ services:
     build: haproxy
     ports:
       - "80:80"
+    volumes:
+      - certs:/certs
 
 volumes:
   data:
@@ -18,6 +20,12 @@ volumes:
       o: bind
       type: none
       device: ./data
+  certs:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ./certs
 
 networks:
   frontend:
