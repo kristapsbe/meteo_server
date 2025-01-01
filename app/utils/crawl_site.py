@@ -20,7 +20,7 @@ from settings import db_file, data_folder, run_emergency
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s')
 
 if not os.path.isfile(run_emergency):
-    logging.info(f"No emergency - exiting")
+    logging.info("No emergency - exiting")
     exit()
 
 # TODO cleanup - copied from download script atm
