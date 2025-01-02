@@ -10,4 +10,4 @@ RUN echo "0	0	1	*/2	*	/haproxy/renew_certs.sh" >> cron
 RUN crontab cron
 
 CMD ["sh", "start.sh"]
-EXPOSE 443
+EXPOSE 80 443
