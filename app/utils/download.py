@@ -212,6 +212,7 @@ def update_table(t_conf, db_cur):
         INSERT INTO {t_conf["table_name"]} ({", ".join([c["name"] for cols in t_conf["cols"] for c in cols])})
         VALUES ({", ".join(["?"]*len([0 for cols in t_conf["cols"] for _ in cols]))})
     """, df.values.tolist())
+    db_cur.commit()
     logging.info(f"TABLE '{t_conf["table_name"]}' updated")
 
 
@@ -243,6 +244,7 @@ def update_warning_bounds_table(db_cur):
         GROUP BY
             warning_id, polygon_id
     """)
+    db_cur.commit()
     logging.info("TABLE 'warning_bounds' updated")
 
 
@@ -251,10 +253,8 @@ def update_db():
     try:
         upd_cur = upd_con.cursor()
         for t_conf in table_conf:
-            # TODO: check if I should make a cursor and commit once, or once per function call
             update_table(t_conf, upd_cur)
         update_warning_bounds_table(upd_cur)
-        upd_con.commit() # TODO: last updated should come from here
         logging.info("DB update finished")
     except BaseException as e:
         logging.info(f"DB update FAILED - {e}")
@@ -281,14 +281,14 @@ def update_aurora_forecast(): # TODO: cleanup
         upd_con = sqlite3.connect(db_file)
         upd_cur = upd_con.cursor()
         try:
-            upd_cur.execute("DROP TABLE IF EXISTS aurora_prob") # no point in storing old data
             upd_cur.execute("""
-                CREATE TABLE aurora_prob (
+                CREATE TABLE IF NOT EXISTS aurora_prob (
                     lon INTEGER,
                     lat INTEGER,
                     aurora INTEGER
                 )
             """)
+            # TODO: batch
             upd_cur.executemany("""
                 INSERT INTO aurora_prob (lon, lat, aurora)
                 VALUES (?, ?, ?)

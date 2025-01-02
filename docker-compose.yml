@@ -9,7 +9,7 @@ services:
   haproxy:
     build: haproxy
     ports:
-      - "443:443"
+      - "80:80"
     volumes:
       - certs:/certs
 
