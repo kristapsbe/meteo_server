@@ -10,6 +10,7 @@ services:
       - "443:443"
     volumes:
       - certs:/certs
+      - letsencrypt:/etc/letsencrypt
 
 volumes:
   data:
@@ -24,6 +25,12 @@ volumes:
       o: bind
       type: none
       device: ./certs
+  letsencrypt:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: /etc/letsencrypt
 
 networks:
   frontend:

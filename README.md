@@ -4,6 +4,8 @@ A small webserver for caching, filtering, transforming, and serving weather fore
 
 ## Start-up
 
+NB - remember that `/etc/letsencrypt` has to exist
+
 ```bash
 docker compose down && docker compose build && docker compose up -d
 ```
