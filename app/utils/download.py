@@ -103,12 +103,12 @@ table_conf = [{
         "name": f"{data_folder}hidrometeorologiskie-bridinajumi/bridinajumu_poligoni.csv"
     }],
     "table_name": "warnings_polygons",
-    "cols": [ # TODO: figure out why the pks failed
-        [{"name": "warning_id", "type": "INTEGER"}], # "pk": True}],
-        [{"name": "polygon_id", "type": "INTEGER"}], # "pk": True}],
+    "cols": [
+        [{"name": "warning_id", "type": "INTEGER", "pk": True}],
+        [{"name": "polygon_id", "type": "INTEGER", "pk": True}],
         [{"name": "lat", "type": "REAL"}],
         [{"name": "lon", "type": "REAL"}],
-        [{"name": "order_id", "type": "INTEGER"}], # "pk": True}],
+        [{"name": "order_id", "type": "INTEGER", "pk": True}],
     ]
 },{ # TODO: partial at the moment - finish this
     "files": [{
@@ -180,7 +180,7 @@ def clean_and_part_line(l):
     return [e[1:-1] if "\"" == e[0] and "\"" == e[-1] else e for e in l.split(",")]
 
 
-def update_table(t_conf, db_con):
+def update_table(t_conf, update_time, db_con):
     logging.info(f"UPDATING '{t_conf["table_name"]}'")
     db_cur = db_con.cursor()
     df = None
@@ -202,60 +202,71 @@ def update_table(t_conf, db_con):
 
     pks = [c["name"] for cols in t_conf["cols"] for c in cols if c.get("pk", False)]
     primary_key_q = "" if len(pks) < 1 else f", PRIMARY KEY ({", ".join(pks)})"
-    db_cur.execute(f"DROP TABLE IF EXISTS {t_conf["table_name"]}") # no point in storing old data
     db_cur.execute(f"""
         CREATE TABLE IF NOT EXISTS {t_conf["table_name"]} (
-            {", ".join([f"{c["name"]} {col_types.get(c["name"], c["type"])}" for cols in t_conf["cols"] for c in cols])}
+            {", ".join([f"{c["name"]} {col_types.get(c["name"], c["type"])}" for cols in t_conf["cols"] for c in cols])},
+            update_time DATEH
             {primary_key_q}
         )
     """)
+    upsert_q = "" if len(pks) == 0 else f"""
+        ON CONFLICT({", ".join(pks)}) DO UPDATE SET {",".join([f"{c["name"]}=excluded.{c["name"]}" for cols in t_conf["cols"] for c in cols if not c.get("pk", False)])}
+    """
     db_cur.executemany(f"""
-        INSERT INTO {t_conf["table_name"]} ({", ".join([c["name"] for cols in t_conf["cols"] for c in cols])})
-        VALUES ({", ".join(["?"]*len([0 for cols in t_conf["cols"] for _ in cols]))})
+        INSERT INTO {t_conf["table_name"]} ({", ".join([c["name"] for cols in t_conf["cols"] for c in cols])}, update_time)
+        VALUES ({", ".join(["?"]*len([0 for cols in t_conf["cols"] for _ in cols]))}, {update_time})
+        {upsert_q}
     """, df.values.tolist())
     db_con.commit()
     logging.info(f"TABLE '{t_conf["table_name"]}' updated")
 
 
-def update_warning_bounds_table(db_con):
+def update_warning_bounds_table(update_time, db_con):
     logging.info("UPDATING 'warning_bounds'")
     db_cur = db_con.cursor()
-    db_cur.execute("DROP TABLE IF EXISTS warning_bounds") # no point in storing old data
     db_cur.execute("""
         CREATE TABLE IF NOT EXISTS warning_bounds (
-            warning_id,
-            polygon_id,
-            min_lat,
-            max_lat,
-            min_lon,
-            max_lon,
+            warning_id INTEGER,
+            polygon_id INTEGER,
+            min_lat REAL,
+            max_lat REAL,
+            min_lon REAL,
+            max_lon REAL,
+            update_time DATEH,
             PRIMARY KEY (warning_id, polygon_id)
         )
     """)
-    db_cur.execute("""
-        INSERT INTO warning_bounds (warning_id, polygon_id, min_lat, max_lat, min_lon, max_lon)
+    db_cur.execute(f"""
+        INSERT INTO warning_bounds (warning_id, polygon_id, min_lat, max_lat, min_lon, max_lon, update_time)
         SELECT
             warning_id,
             polygon_id,
             MIN(lat) as min_lat,
             MAX(lat) as max_lat,
             MIN(lon) as min_lon,
-            MAX(lon) as max_lon
+            MAX(lon) as max_lon,
+            {update_time} as update_time
         FROM
             warnings_polygons
         GROUP BY
             warning_id, polygon_id
+        ON CONFLICT(warning_id, polygon_id) DO UPDATE SET
+            min_lat=excluded.min_lat,
+            max_lat=excluded.max_lat,
+            min_lon=excluded.min_lon,
+            max_lon=excluded.max_lon,
+            update_time=excluded.update_time
     """)
     db_con.commit()
     logging.info("TABLE 'warning_bounds' updated")
 
 
-def update_db():
+def update_db(update_time):
     upd_con = sqlite3.connect(db_file, timeout=5)
     try:
         for t_conf in table_conf:
-            update_table(t_conf, upd_con)
-        update_warning_bounds_table(upd_con)
+            update_table(t_conf, update_time, upd_con)
+        update_warning_bounds_table(update_time, upd_con)
         logging.info("DB update finished")
     except BaseException as e:
         logging.info(f"DB update FAILED - {e}")
@@ -263,7 +274,7 @@ def update_db():
         upd_con.close()
 
 
-def update_aurora_forecast(): # TODO: cleanup
+def update_aurora_forecast(update_time): # TODO: cleanup
     url = "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"
     fpath = f"{data_folder}ovation_aurora_latest.json"
     times_fpath = f"{data_folder}ovation_aurora_times.json"
@@ -286,12 +297,14 @@ def update_aurora_forecast(): # TODO: cleanup
                 CREATE TABLE IF NOT EXISTS aurora_prob (
                     lon INTEGER,
                     lat INTEGER,
-                    aurora INTEGER
+                    aurora INTEGER,
+                    update_time DATEH,
+                    PRIMARY KEY (lon, lat)
                 )
             """)
-            upd_cur.executemany("""
-                INSERT INTO aurora_prob (lon, lat, aurora)
-                VALUES (?, ?, ?)
+            upd_cur.executemany(f"""
+                INSERT INTO aurora_prob (lon, lat, aurora, update_time)
+                VALUES (?, ?, ?, {update_time})
                 ON CONFLICT(lon, lat) DO UPDATE SET aurora=excluded.aurora
             """, aurora_data["coordinates"])
             upd_con.commit()
@@ -311,18 +324,17 @@ def run_downloads(datasets):
     if skipped_empty and not os.path.isfile(run_emergency):
         open(run_emergency, 'w').write("")
 
-    update_db()
-    update_aurora_forecast()
+    update_time = datetime.datetime.fromtimestamp(os.path.getmtime(f"{data_folder}{target_ds[0]}.json")).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
+    update_db(update_time)
+    update_aurora_forecast(update_time)
 
-    if not skipped_empty: # moving here in case the db updates blow up
-        open(last_updated, 'w').write(
-            datetime.datetime.fromtimestamp(os.path.getmtime(f"{data_folder}{target_ds[0]}.json")).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
-        )
+    if not skipped_empty:
+        open(last_updated, 'w').write(update_time)
         if os.path.isfile(run_emergency):
             os.remove(run_emergency)
 
 
-if __name__ == "__main__": # TODO: don't drop tables and upsert in batches to avoid not having data for a couple of secs https://www.sqlite.org/lang_upsert.html
+if __name__ == "__main__":
     if skip_download:
         update_db()
         update_aurora_forecast()
