@@ -180,8 +180,9 @@ def clean_and_part_line(l):
     return [e[1:-1] if "\"" == e[0] and "\"" == e[-1] else e for e in l.split(",")]
 
 
-def update_table(t_conf, db_cur):
+def update_table(t_conf, db_con):
     logging.info(f"UPDATING '{t_conf["table_name"]}'")
+    db_cur = db_con.cursor()
     df = None
 
     for data_file in t_conf["files"]:
@@ -212,12 +213,13 @@ def update_table(t_conf, db_cur):
         INSERT INTO {t_conf["table_name"]} ({", ".join([c["name"] for cols in t_conf["cols"] for c in cols])})
         VALUES ({", ".join(["?"]*len([0 for cols in t_conf["cols"] for _ in cols]))})
     """, df.values.tolist())
-    db_cur.commit()
+    db_con.commit()
     logging.info(f"TABLE '{t_conf["table_name"]}' updated")
 
 
-def update_warning_bounds_table(db_cur):
+def update_warning_bounds_table(db_con):
     logging.info("UPDATING 'warning_bounds'")
+    db_cur = db_con.cursor()
     db_cur.execute("DROP TABLE IF EXISTS warning_bounds") # no point in storing old data
     db_cur.execute("""
         CREATE TABLE IF NOT EXISTS warning_bounds (
@@ -244,17 +246,16 @@ def update_warning_bounds_table(db_cur):
         GROUP BY
             warning_id, polygon_id
     """)
-    db_cur.commit()
+    db_con.commit()
     logging.info("TABLE 'warning_bounds' updated")
 
 
 def update_db():
     upd_con = sqlite3.connect(db_file, timeout=5)
     try:
-        upd_cur = upd_con.cursor()
         for t_conf in table_conf:
-            update_table(t_conf, upd_cur)
-        update_warning_bounds_table(upd_cur)
+            update_table(t_conf, upd_con)
+        update_warning_bounds_table(upd_con)
         logging.info("DB update finished")
     except BaseException as e:
         logging.info(f"DB update FAILED - {e}")
@@ -288,10 +289,10 @@ def update_aurora_forecast(): # TODO: cleanup
                     aurora INTEGER
                 )
             """)
-            # TODO: batch
             upd_cur.executemany("""
                 INSERT INTO aurora_prob (lon, lat, aurora)
                 VALUES (?, ?, ?)
+                ON CONFLICT(lon, lat) DO UPDATE SET aurora=excluded.aurora
             """, aurora_data["coordinates"])
             upd_con.commit()
             logging.info("DB update finished")
