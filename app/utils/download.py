@@ -210,13 +210,24 @@ def update_table(t_conf, update_time, db_con):
         )
     """)
     upsert_q = "" if len(pks) == 0 else f"""
-        ON CONFLICT({", ".join(pks)}) DO UPDATE SET {",".join([f"{c["name"]}=excluded.{c["name"]}" for cols in t_conf["cols"] for c in cols if not c.get("pk", False)])}
+        ON CONFLICT({", ".join(pks)}) DO UPDATE SET
+            {",".join([f"{c["name"]}=excluded.{c["name"]}" for cols in t_conf["cols"] for c in cols if not c.get("pk", False)])},
+            update_time={update_time}
     """
-    db_cur.executemany(f"""
+    full_q = f"""
         INSERT INTO {t_conf["table_name"]} ({", ".join([c["name"] for cols in t_conf["cols"] for c in cols])}, update_time)
         VALUES ({", ".join(["?"]*len([0 for cols in t_conf["cols"] for _ in cols]))}, {update_time})
         {upsert_q}
-    """, df.values.tolist())
+    """
+    total = len(df.index)
+    batch_size = 10000
+    batch_count = total//batch_size
+    for i in range(batch_count+1):
+        db_cur.executemany(full_q, df.iloc[i*batch_size:(i+1)*batch_size].values.tolist())
+        logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} rows upserted (batch {i}/{batch_count}, total {total})")
+        db_con.commit()
+    db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE update_time < {update_time}")
+    logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} old rows deleted")
     db_con.commit()
     logging.info(f"TABLE '{t_conf["table_name"]}' updated")
 
@@ -257,6 +268,10 @@ def update_warning_bounds_table(update_time, db_con):
             max_lon=excluded.max_lon,
             update_time=excluded.update_time
     """)
+    logging.info(f"TABLE 'warning_bounds' - {db_cur.rowcount} rows upserted")
+    db_con.commit()
+    db_cur.execute(f"DELETE FROM warning_bounds WHERE update_time < {update_time}")
+    logging.info(f"TABLE 'warning_bounds' - {db_cur.rowcount} old rows deleted")
     db_con.commit()
     logging.info("TABLE 'warning_bounds' updated")
 
@@ -305,8 +320,14 @@ def update_aurora_forecast(update_time): # TODO: cleanup
             upd_cur.executemany(f"""
                 INSERT INTO aurora_prob (lon, lat, aurora, update_time)
                 VALUES (?, ?, ?, {update_time})
-                ON CONFLICT(lon, lat) DO UPDATE SET aurora=excluded.aurora
+                ON CONFLICT(lon, lat) DO UPDATE SET
+                    aurora=excluded.aurora,
+                    update_time={update_time}
             """, aurora_data["coordinates"])
+            logging.info(f"TABLE 'aurora_prob' - {upd_cur.rowcount} rows upserted")
+            upd_con.commit()
+            upd_cur.execute(f"DELETE FROM warning_bounds WHERE update_time < {update_time}")
+            logging.info(f"TABLE 'aurora_prob' - {upd_cur.rowcount} old rows deleted")
             upd_con.commit()
             logging.info("DB update finished")
         except BaseException as e:
@@ -324,12 +345,14 @@ def run_downloads(datasets):
     if skipped_empty and not os.path.isfile(run_emergency):
         open(run_emergency, 'w').write("")
 
-    update_time = datetime.datetime.fromtimestamp(os.path.getmtime(f"{data_folder}{target_ds[0]}.json")).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
+    update_time = datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
     update_db(update_time)
     update_aurora_forecast(update_time)
 
     if not skipped_empty:
-        open(last_updated, 'w').write(update_time)
+        open(last_updated, 'w').write(
+            datetime.datetime.fromtimestamp(os.path.getmtime(f"{data_folder}{target_ds[0]}.json")).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
+        )
         if os.path.isfile(run_emergency):
             os.remove(run_emergency)
 
