@@ -4,8 +4,6 @@ A small webserver for caching, filtering, transforming, and serving weather fore
 
 ## Start-up
 
-NB - remember that `/etc/letsencrypt` has to exist
-
 ```bash
 docker compose down && docker compose build && docker compose up -d
 ```
@@ -52,26 +50,6 @@ systemctl enable --now docker
 
 ### Certs
 
-**TODO: figure out if the update is going to actually work - pretty sure I need to cat the cert files, should make a script for this and use that instead of hte example cron https://certbot.org/renewal-setup**
+https://letsencrypt.org/
 
-cert setup
-```bash
-sudo dnf install python3 augeas-libs
-sudo dnf remove certbot
-sudo dnf install python3-pip
-pip install certbot
-ln -s /opt/certbot/bin/certbot /usr/bin/certbot
-certbot certonly --standalone
-echo "0 0,12 * * * root /opt/certbot/bin/python -c 'import random; import time; time.sleep(random.random() * 3600)' && sudo certbot renew -q" | sudo tee -a /etc/crontab > /dev/null
-```
-
-cert upgrade
-```bash
-pip install --upgrade certbot
-```
-
-```bash
-mkdir /etc/haproxy/ssl/
-cp haproxy.cfg /etc/haproxy/haproxy.cfg
-sudo cat /etc/letsencrypt/live/meteo.kristapsbe.lv/fullchain.pem /etc/letsencrypt/live/meteo.kristapsbe.lv/privkey.pem > /etc/haproxy/ssl/haproxy.pem
-```
+The default setup expects ssl certificates to already be present in the `certs` folder, and it expects `/etc/letsencrypt` to exist on the host
