@@ -52,9 +52,7 @@ systemctl enable --now docker
 
 ### Certs
 
-https://letsencrypt.org/
-
-The default setup expects ssl certificates to already be present in the `certs` folder, and it expects `/etc/letsencrypt` to exist on the host
+The default setup expects [ssl certificates](https://letsencrypt.org/) to already be present in the `certs` folder, and it expects `/etc/letsencrypt` to exist on the host
 
 ### DB
 
