@@ -343,6 +343,7 @@ def run_downloads(datasets):
         for ds in datasets:
             skipped_empty = download_resources(ds) or skipped_empty
     except:
+        logging.info("Download failed!")
         skipped_empty = True
 
     if skipped_empty and not os.path.isfile(run_emergency):
