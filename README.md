@@ -10,10 +10,6 @@ A small webserver for caching, filtering, transforming, and serving weather fore
 docker compose down && docker compose build && docker compose up -d
 ```
 
-```bash
-docker exec -it meteo_server-app-1 sh
-```
-
 ## Setup
 
 ### Docker
