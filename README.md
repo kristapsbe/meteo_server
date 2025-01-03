@@ -2,6 +2,8 @@
 
 A small webserver for caching, filtering, transforming, and serving weather forecast data published by the [Latvian meteorological institute](https://videscentrs.lvgmc.lv/) to the [Latvian open data portal](https://data.gov.lv/lv).
 
+It's been made for use with [this android app](https://github.com/kristapsbe/meteo_android).
+
 ## Overview
 
 The server consists of two [docker](https://www.docker.com/) containers. One for the webserver itself, and one for [HAProxy](https://www.haproxy.org/) (this is mostly here for dealing with ssl certificates).
