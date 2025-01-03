@@ -478,6 +478,7 @@ async def get_city_forecasts(lat: float, lon: float, add_last_no_skip: bool = Fa
 
 # http://localhost:8000/api/v1/forecast/cities/name?city_name=vamier
 @app.get("/api/v1/forecast/cities/name")
+@app.head("/api/v1/forecast/cities/name") # added for https://stats.uptimerobot.com/EAWZfpoMkw
 async def get_city_forecasts_name(city_name: str, add_last_no_skip: bool = False, use_simple_warnings: bool = False, add_city_coords=False):
     city = get_city_by_name(simlpify_string(regex.sub('', city_name).strip().lower()))
     # TODO: test more carefully
@@ -489,6 +490,7 @@ async def get_city_forecasts_name(city_name: str, add_last_no_skip: bool = False
 
 # http://localhost:8000/privacy-policy
 @app.get("/privacy-policy", response_class=HTMLResponse)
+@app.head("/privacy-policy") # added for https://stats.uptimerobot.com/EAWZfpoMkw
 async def get_privacy_policy(lang: str = "en"):
     match lang:
         case "lv":
@@ -499,6 +501,7 @@ async def get_privacy_policy(lang: str = "en"):
 
 # http://localhost:8000/api/v1/meta
 @app.get("/api/v1/meta")
+@app.head("/api/v1/meta") # added for https://stats.uptimerobot.com/EAWZfpoMkw
 async def get_meta():
     retval = {
         "is_emergency": is_emergency()
