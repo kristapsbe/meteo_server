@@ -198,7 +198,7 @@ def update_table(t_conf, update_time, db_con):
     # TODO: FIX
     group_keys = [f"_new_{c["name"]}" for cols in t_conf["cols"] for c in cols if c.get("pk", False)]
     if len(group_keys) > 0:
-        df = df.groupby(group_keys).max().reset_index() # getting rid of duplicates
+        df = df.groupby(group_keys).max().reset_index()[[f"_new_{c["name"]}" for cols in t_conf["cols"] for c in cols]] # getting rid of duplicates
 
     pks = [c["name"] for cols in t_conf["cols"] for c in cols if c.get("pk", False)]
     primary_key_q = "" if len(pks) < 1 else f", PRIMARY KEY ({", ".join(pks)})"
@@ -255,7 +255,8 @@ def update_warning_bounds_table(update_time, db_con):
             MIN(lat) as min_lat,
             MAX(lat) as max_lat,
             MIN(lon) as min_lon,
-            MAX(lon) as max_lon
+            MAX(lon) as max_lon,
+            {update_time} as update_time
         FROM
             warnings_polygons
         GROUP BY
@@ -265,7 +266,7 @@ def update_warning_bounds_table(update_time, db_con):
             max_lat=excluded.max_lat,
             min_lon=excluded.min_lon,
             max_lon=excluded.max_lon,
-            update_time={update_time}
+            update_time=excluded.update_time
     """)
     logging.info(f"TABLE 'warning_bounds' - {db_cur.rowcount} rows upserted")
     db_con.commit()
