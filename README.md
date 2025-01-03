@@ -64,3 +64,9 @@ The server uses [SQLite](https://www.sqlite.org/) to cache forecast information,
 ```bash
 docker compose down && docker compose build && docker compose up -d
 ```
+
+useful
+
+```bash
+docker exec -it meteo_server-app-1 sh
+```
