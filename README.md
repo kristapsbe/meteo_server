@@ -8,7 +8,7 @@ It's been made for use with [this android app](https://github.com/kristapsbe/met
 
 The server consists of two [docker](https://www.docker.com/) containers. One for the webserver itself, and one for [HAProxy](https://www.haproxy.org/) (this is mostly here for dealing with ssl certificates).
 
-![image](https://github.com/user-attachments/assets/56591931-10ad-48f7-a857-aae309507495)
+![image](https://github.com/user-attachments/assets/f2332137-216a-424f-910f-6363bae8eb00)
 
 [Status page](https://stats.uptimerobot.com/EAWZfpoMkw).
 
