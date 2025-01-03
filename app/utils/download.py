@@ -255,8 +255,7 @@ def update_warning_bounds_table(update_time, db_con):
             MIN(lat) as min_lat,
             MAX(lat) as max_lat,
             MIN(lon) as min_lon,
-            MAX(lon) as max_lon,
-            {update_time} as update_time
+            MAX(lon) as max_lon
         FROM
             warnings_polygons
         GROUP BY
@@ -266,7 +265,7 @@ def update_warning_bounds_table(update_time, db_con):
             max_lat=excluded.max_lat,
             min_lon=excluded.min_lon,
             max_lon=excluded.max_lon,
-            update_time=excluded.update_time
+            update_time={update_time}
     """)
     logging.info(f"TABLE 'warning_bounds' - {db_cur.rowcount} rows upserted")
     db_con.commit()
