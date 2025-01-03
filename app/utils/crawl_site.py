@@ -45,7 +45,7 @@ for id in ids:
     print(f"pulling {id} ({ct}/{total})")
     ct += 1
 
-    rs = requests.get(f"{url}{id}")
+    rs = requests.get(f"{url}{id}", timeout=10)
     data = json.loads(rs.content)
     for e in data:
         l = e['laiks']
