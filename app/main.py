@@ -466,6 +466,7 @@ def get_city_reponse(city, add_last_no_skip, h_city_override, use_simple_warning
 
 # http://localhost:8000/api/v1/forecast/cities?lat=56.9730&lon=24.1327
 @app.get("/api/v1/forecast/cities")
+@app.head("/api/v1/forecast/cities") # added for https://stats.uptimerobot.com/EAWZfpoMkw
 async def get_city_forecasts(lat: float, lon: float, add_last_no_skip: bool = False, use_simple_warnings: bool = False, add_city_coords=False):
     city = get_closest_city(cur=cur, lat=lat, lon=lon, force_all=True)
     # TODO: test more carefully
