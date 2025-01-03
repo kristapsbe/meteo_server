@@ -326,7 +326,7 @@ def update_aurora_forecast(update_time): # TODO: cleanup
             """, aurora_data["coordinates"])
             logging.info(f"TABLE 'aurora_prob' - {upd_cur.rowcount} rows upserted")
             upd_con.commit()
-            upd_cur.execute(f"DELETE FROM warning_bounds WHERE update_time < {update_time}")
+            upd_cur.execute(f"DELETE FROM aurora_prob WHERE update_time < {update_time}")
             logging.info(f"TABLE 'aurora_prob' - {upd_cur.rowcount} old rows deleted")
             upd_con.commit()
             logging.info("DB update finished")
