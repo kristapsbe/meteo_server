@@ -2,11 +2,15 @@
 
 A small webserver for caching, filtering, transforming, and serving weather forecast data published by the [Latvian meteorological institute](https://videscentrs.lvgmc.lv/) to the [Latvian open data portal](https://data.gov.lv/lv).
 
+## Overview
+
+The server consists of two [docker](https://www.docker.com/) containers. One for the webserver itself, and one for [HAProxy](https://www.haproxy.org/) (this is mostly here for dealing with ssl certificates).
+
+![image](https://github.com/user-attachments/assets/672f9361-e2b0-4421-921c-072fb351cdc7)
+
 [Status page](https://stats.uptimerobot.com/EAWZfpoMkw).
 
 ## Start-up
-
-The server consists of two [docker](https://www.docker.com/) containers. One for the webserver itself, and one for [HAProxy](https://www.haproxy.org/) (this is mostly here for dealing with ssl certificates).
 
 ```bash
 docker compose down && docker compose build && docker compose up -d
