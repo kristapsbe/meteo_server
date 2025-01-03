@@ -12,12 +12,6 @@ The server consists of two [docker](https://www.docker.com/) containers. One for
 
 [Status page](https://stats.uptimerobot.com/EAWZfpoMkw).
 
-## Start-up
-
-```bash
-docker compose down && docker compose build && docker compose up -d
-```
-
 ## Setup
 
 ### Docker
@@ -64,3 +58,9 @@ The default setup expects [ssl certificates](https://letsencrypt.org/) to alread
 ### DB
 
 The server uses [SQLite](https://www.sqlite.org/) to cache forecast information, and I like using [DBeaver](https://dbeaver.io/download/) if/when I need to poke around the tables.
+
+## Start-up
+
+```bash
+docker compose down && docker compose build && docker compose up -d
+```
