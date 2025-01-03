@@ -18,6 +18,8 @@ docker compose down && docker compose build && docker compose up -d
 
 #### MacOS
 
+https://formulae.brew.sh/cask/rancher
+
 ```bash
 brew install rancher
 ```
@@ -25,6 +27,7 @@ brew install rancher
 #### Fedora
 
 https://docs.docker.com/engine/install/fedora/
+
 ```bash
 dnf remove docker \
     docker-client \
