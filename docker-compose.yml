@@ -7,7 +7,7 @@ services:
   haproxy:
     build: haproxy
     ports:
-      - "80:80" # used for cert renewal
+      - "80:80" # used for ssl certificate renewal
       - "443:443"
     volumes:
       - certs:/certs
@@ -35,7 +35,6 @@ volumes:
 
 networks:
   frontend:
-    # Specify driver options
     driver: bridge
     driver_opts:
       com.docker.network.bridge.host_binding_ipv4: "127.0.0.1"
