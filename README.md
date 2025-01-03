@@ -2,6 +2,8 @@
 
 A small webserver for caching, filtering, transforming, and serving weather forecast data published by the [Latvian meteorological institute](https://videscentrs.lvgmc.lv/) to the [Latvian open data portal](https://data.gov.lv/lv).
 
+[Status page](https://stats.uptimerobot.com/EAWZfpoMkw)
+
 ## Start-up
 
 ```bash
@@ -54,6 +56,6 @@ https://letsencrypt.org/
 
 The default setup expects ssl certificates to already be present in the `certs` folder, and it expects `/etc/letsencrypt` to exist on the host
 
-### DB exploration
+### DB
 
-https://dbeaver.io/download/
+The server uses [SQLite](https://www.sqlite.org/) to cache forecast information, and I like using [DBeaver](https://dbeaver.io/download/) if/when I need to poke around the tables.
