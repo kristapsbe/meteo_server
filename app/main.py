@@ -507,8 +507,12 @@ async def get_privacy_policy(lang: str = "en"):
 @app.get("/api/v1/meta")
 @app.head("/api/v1/meta") # added for https://stats.uptimerobot.com/EAWZfpoMkw
 async def get_meta():
+    aurora_probs_time = datetime.datetime.strptime(json.loads(open(f"{data_folder}/ovation_aurora_times.json", "r").read())["Forecast Time"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga'))
+    curr_date = datetime.datetime.now(pytz.timezone('Europe/Riga'))
+
     retval = {
-        "is_emergency": is_emergency()
+        "is_emergency": is_emergency(),
+        "is_aurora_ood": (aurora_probs_time < curr_date)
     }
     if retval["is_emergency"]:
         retval["emergency_dl"] = open(run_emergency, 'r').readline()
