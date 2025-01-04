@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
 from utils.utils import simlpify_string
-from utils.settings import editdist_extension, db_file, data_folder, last_updated, run_emergency
+from utils.settings import editdist_extension, db_file, data_folder, last_updated, run_emergency, run_emergency_failed
 
 
 if not os.path.isfile(last_updated):
@@ -78,6 +78,10 @@ def get_params(cur, param_q):
 
 def is_emergency():
     return os.path.isfile(run_emergency)
+
+
+def has_emergency_failed():
+    return os.path.isfile(run_emergency_failed)
 
 
 def get_location_range(force_all=False):
@@ -508,6 +512,7 @@ async def get_meta():
     }
     if retval["is_emergency"]:
         retval["emergency_dl"] = open(run_emergency, 'r').readline()
+        retval["has_emergency_failed"] = has_emergency_failed()
     return retval
 
 

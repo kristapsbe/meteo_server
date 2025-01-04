@@ -8,7 +8,7 @@ import datetime
 import requests
 
 from utils import simlpify_string
-from settings import db_file, data_folder, last_updated, run_emergency
+from settings import db_file, data_folder, last_updated, run_emergency, run_emergency_failed
 
 
 skip_download = False
@@ -359,6 +359,8 @@ def run_downloads(datasets):
         )
         if os.path.isfile(run_emergency):
             os.remove(run_emergency)
+        if os.path.isfile(run_emergency_failed):
+            os.remove(run_emergency_failed)
 
 
 if __name__ == "__main__":
