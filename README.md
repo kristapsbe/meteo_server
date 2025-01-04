@@ -12,6 +12,8 @@ The server consists of two [docker](https://www.docker.com/) containers. One for
 
 [Status page](https://stats.uptimerobot.com/EAWZfpoMkw) - the lowest value of the non-`/api/v1/meta` metrics can be used to gauge availability. 99.9% should be possible with 1-2 deployments a day, since building and starting the image takes around 30 seconds, during which the API is unavailable. This will improve if/when I start using a container registry.
 
+I'd expect incidents that are shorter than 20 minutes to be deployment related, and incidents that are longer than 20 minutes to be related to the forecast datasoures experiencing issues (and I'd expect the server to be sturdy enough to survive issues like these).
+
 ## Setup
 
 ### Docker
