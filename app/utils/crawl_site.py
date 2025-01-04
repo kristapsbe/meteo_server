@@ -3,7 +3,7 @@
 # manually trigger this to fetch hourly forecasts from the LVĢMC website instead
 #
 # I'll just keep reusing city and param data, and the LVĢMC site appears to use he same data
-# as they upload to the open data porta when it comes to daily forecasts -
+# as they upload to the open data portal when it comes to daily forecasts -
 # meaning that I can't use the site as a fallback there
 import os
 import json
