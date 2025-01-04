@@ -10,7 +10,7 @@ The server consists of two [docker](https://www.docker.com/) containers. One for
 
 ![image](https://github.com/user-attachments/assets/e99d866c-eba8-4a4e-85cf-5a525d551fb7)
 
-[Status page](https://stats.uptimerobot.com/EAWZfpoMkw).
+[Status page](https://stats.uptimerobot.com/EAWZfpoMkw)
 
 ## Setup
 
