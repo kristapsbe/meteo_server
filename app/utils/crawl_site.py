@@ -68,5 +68,4 @@ if len(csv) > 1:
     open(run_emergency, 'w').write(datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"))
     logging.info("Successfully performed emergency download")
 else:
-    os.remove(run_emergency)
     logging.info("Failed to perform emergency download")
