@@ -94,3 +94,5 @@ And to comment out the ssl part in the [haproxy config](https://github.com/krist
 ```
     bind :443 # ssl crt /certs/haproxy.pem
 ```
+
+Example links that can be used to call endpoints can be found in comments at the end of [main.py](https://github.com/kristapsbe/meteo_server/blob/main/app/main.py) (search for `http://localhost:443/`).

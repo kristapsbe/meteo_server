@@ -468,7 +468,7 @@ def get_city_reponse(city, add_last_no_skip, h_city_override, use_simple_warning
     return ret_val
 
 
-# http://localhost:8000/api/v1/forecast/cities?lat=56.9730&lon=24.1327
+# http://localhost:443/api/v1/forecast/cities?lat=56.9730&lon=24.1327
 @app.get("/api/v1/forecast/cities")
 @app.head("/api/v1/forecast/cities") # added for https://stats.uptimerobot.com/EAWZfpoMkw
 async def get_city_forecasts(lat: float, lon: float, add_last_no_skip: bool = False, use_simple_warnings: bool = False, add_city_coords=False):
@@ -480,7 +480,7 @@ async def get_city_forecasts(lat: float, lon: float, add_last_no_skip: bool = Fa
     return get_city_reponse(city, add_last_no_skip, h_city_override, use_simple_warnings, add_city_coords)
 
 
-# http://localhost:8000/api/v1/forecast/cities/name?city_name=vamier
+# http://localhost:443/api/v1/forecast/cities/name?city_name=vamier
 @app.get("/api/v1/forecast/cities/name")
 @app.head("/api/v1/forecast/cities/name") # added for https://stats.uptimerobot.com/EAWZfpoMkw
 async def get_city_forecasts_name(city_name: str, add_last_no_skip: bool = False, use_simple_warnings: bool = False, add_city_coords=False):
@@ -492,7 +492,7 @@ async def get_city_forecasts_name(city_name: str, add_last_no_skip: bool = False
     return get_city_reponse(city, add_last_no_skip, h_city_override, use_simple_warnings, add_city_coords)
 
 
-# http://localhost:8000/privacy-policy
+# http://localhost:443/privacy-policy
 @app.get("/privacy-policy", response_class=HTMLResponse)
 @app.head("/privacy-policy") # added for https://stats.uptimerobot.com/EAWZfpoMkw
 async def get_privacy_policy(lang: str = "en"):
@@ -503,7 +503,7 @@ async def get_privacy_policy(lang: str = "en"):
             return open("privacy_policy/privacy-policy.html").read()
 
 
-# http://localhost:8000/api/v1/meta
+# http://localhost:443/api/v1/meta
 @app.get("/api/v1/meta")
 @app.head("/api/v1/meta") # added for https://stats.uptimerobot.com/EAWZfpoMkw
 async def get_meta():
