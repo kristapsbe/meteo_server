@@ -72,3 +72,25 @@ useful
 ```bash
 docker exec -it meteo_server-app-1 sh
 ```
+
+### Notes on running locally
+
+When running the containers locally I find it most convenient to get rid of the certificate volume by removing
+```
+      - letsencrypt:/etc/letsencrypt
+```
+and
+```
+  letsencrypt:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: /etc/letsencrypt
+```
+from the [docker compose](https://github.com/kristapsbe/meteo_server/blob/main/docker-compose.yml) file.
+
+And to comment out the ssl part in the [haproxy config](https://github.com/kristapsbe/meteo_server/blob/main/haproxy/haproxy.cfg) like so
+```
+    bind :443 # ssl crt /certs/haproxy.pem
+```
