@@ -4,13 +4,16 @@ A small webserver for caching, filtering, transforming, and serving weather fore
 
 It's been made for use with [this android app](https://github.com/kristapsbe/meteo_android).
 
+[<img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png"
+     height="80">](https://play.google.com/store/apps/details?id=lv.kristapsbe.meteo_android)
+
 ## Overview
 
 The server consists of two [docker](https://www.docker.com/) containers. One for the webserver itself, and one for [HAProxy](https://www.haproxy.org/) (this is mostly here for dealing with ssl certificates).
 
 ![image](https://github.com/user-attachments/assets/e99d866c-eba8-4a4e-85cf-5a525d551fb7)
 
-[Status page](https://stats.uptimerobot.com/EAWZfpoMkw) - the lowest value of the non-`/api/v1/meta` metrics can be used to gauge availability. 99.9% should be possible with 1-2 deployments a day (assuming all else goes well), since building and starting the image takes around 30 seconds, during which the API is unavailable. This will improve if/when I start using a container registry.
+[Status page](https://stats.uptimerobot.com/EAWZfpoMkw) - the lowest value of the non-`/api/v1/meta` metrics can be used to gauge availability. 99.9% should be possible with 1-2 deployments a day (assuming all else goes well), since building and starting the image takes around 30 seconds, during which the API is unavailable. This will improve if/when I start using a container registry. The `/api/v1/meta` endpoints report data source health.
 
 I'd expect incidents that are shorter than 20 minutes to be deployment related, and incidents that are longer than 20 minutes to mostly be related to the forecast datasoures experiencing issues (and I'd expect the server to be sturdy enough to survive issues like these).
 
@@ -56,6 +59,10 @@ systemctl enable --now docker
 ### Certs
 
 The default setup expects [ssl certificates](https://letsencrypt.org/) to already be present in the `certs` folder, and it expects `/etc/letsencrypt` to exist on the host
+
+```bash
+cat /etc/letsencrypt/live/meteo.kristapsbe.lv/fullchain.pem /etc/letsencrypt/live/meteo.kristapsbe.lv/privkey.pem > ~/meteo_server/data/haproxy.pem
+```
 
 ### DB
 
