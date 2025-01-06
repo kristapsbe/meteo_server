@@ -61,7 +61,7 @@ systemctl enable --now docker
 The default setup expects [ssl certificates](https://letsencrypt.org/) to already be present in the `certs` folder, and it expects `/etc/letsencrypt` to exist on the host
 
 ```bash
-cat /etc/letsencrypt/live/meteo.kristapsbe.lv/fullchain.pem /etc/letsencrypt/live/meteo.kristapsbe.lv/privkey.pem > ~/meteo_server/data/haproxy.pem
+cat /etc/letsencrypt/live/meteo.kristapsbe.lv/fullchain.pem /etc/letsencrypt/live/meteo.kristapsbe.lv/privkey.pem > ~/meteo_server/certs/haproxy.pem
 ```
 
 ### DB
