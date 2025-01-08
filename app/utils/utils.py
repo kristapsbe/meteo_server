@@ -12,5 +12,6 @@ char_map = {
     'ž': 'z'
 }
 
+
 def simlpify_string(s):
     return ''.join([char_map.get(c, c) for c in s])

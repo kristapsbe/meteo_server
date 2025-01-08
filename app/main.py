@@ -199,7 +199,6 @@ def get_forecast(cur, city, c_date, params):
 
 def get_warnings(cur, lat, lon):
     # TODO: turning the warning polygons into big squares - this should at least work - should use the actual poly bounds at some point
-    # since I'm using squares anyhow precomputing them to save time
     relevant_warnings = cur.execute(f"""
         SELECT
             warning_id
@@ -294,7 +293,6 @@ def get_warnings(cur, lat, lon):
 
 def get_simple_warnings(cur, lat, lon):
     # TODO: turning the warning polygons into big squares - this should at least work - should use the actual poly bounds at some point
-    # since I'm using squares anyhow precomputing them to save time
     relevant_warnings = cur.execute(f"""
         SELECT
             warning_id
@@ -473,7 +471,7 @@ def get_city_reponse(city, add_last_no_skip, h_city_override, use_simple_warning
 @app.head("/api/v1/forecast/cities") # added for https://stats.uptimerobot.com/EAWZfpoMkw
 async def get_city_forecasts(lat: float, lon: float, add_last_no_skip: bool = False, use_simple_warnings: bool = False, add_city_coords=False):
     city = get_closest_city(cur=cur, lat=lat, lon=lon, force_all=True)
-    # TODO: test more carefully
+    # TODO: test override logic more carefully
     h_city_override = None
     if is_emergency() and len(city) > 0:
         h_city_override = get_closest_city(cur=cur, lat=city[2], lon=city[3])
@@ -485,7 +483,7 @@ async def get_city_forecasts(lat: float, lon: float, add_last_no_skip: bool = Fa
 @app.head("/api/v1/forecast/cities/name") # added for https://stats.uptimerobot.com/EAWZfpoMkw
 async def get_city_forecasts_name(city_name: str, add_last_no_skip: bool = False, use_simple_warnings: bool = False, add_city_coords=False):
     city = get_city_by_name(simlpify_string(regex.sub('', city_name).strip().lower()))
-    # TODO: test more carefully
+    # TODO: test override logic more carefully
     h_city_override = None
     if is_emergency() and len(city) > 0:
         h_city_override = get_closest_city(cur=cur, lat=city[2], lon=city[3])
