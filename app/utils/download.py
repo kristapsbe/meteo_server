@@ -195,10 +195,10 @@ def update_table(t_conf, update_time, db_con):
             df = pd.DataFrame(tmp_df)
         else:
             df = pd.concat([df, tmp_df])
-    # TODO: FIX
+
     group_keys = [f"_new_{c["name"]}" for cols in t_conf["cols"] for c in cols if c.get("pk", False)]
-    if len(group_keys) > 0:
-        df = df.groupby(group_keys).max().reset_index()[[f"_new_{c["name"]}" for cols in t_conf["cols"] for c in cols]] # getting rid of duplicates
+    if len(group_keys) > 0: # getting rid of duplicates
+        df = df.groupby(group_keys).max().reset_index()[[f"_new_{c["name"]}" for cols in t_conf["cols"] for c in cols]]
 
     pks = [c["name"] for cols in t_conf["cols"] for c in cols if c.get("pk", False)]
     primary_key_q = "" if len(pks) < 1 else f", PRIMARY KEY ({", ".join(pks)})"
@@ -220,7 +220,7 @@ def update_table(t_conf, update_time, db_con):
         {upsert_q}
     """
     total = len(df.index)
-    batch_size = 10000
+    batch_size = 10000 # value selected arbitrarily - small enough to make batches fast, big enough to fit non-forecast data into a single batch
     batch_count = total//batch_size
     for i in range(batch_count+1):
         db_cur.executemany(full_q, df.iloc[i*batch_size:(i+1)*batch_size].values.tolist())

@@ -24,7 +24,6 @@ if not os.path.isfile(run_emergency):
     exit()
 
 try:
-    # TODO cleanup - copied from download script atm
     url = 'https://videscentrs.lvgmc.lv/data/weather_forecast_for_location_hourly?punkts='
 
     con = sqlite3.connect(db_file)
