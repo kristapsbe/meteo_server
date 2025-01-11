@@ -101,7 +101,7 @@ def get_closest_city(cur, lat, lon, distance=10, force_all=False, only_closest=F
     if only_closest_active:
         where_str = ""
 
-    # calculating dist in km since using Euclidean doesn't appear to yield big savings
+    # calculating dist in km since using Euclidean doesn't appear to yield big performance savings
     # and this makes messing around with distance values a bit more intuitive
     cities = cur.execute(f"""
         WITH city_distances AS (
@@ -304,7 +304,7 @@ def get_simple_warnings(cur, lat, lon):
     warnings = []
     if len(relevant_warnings) > 0:
         # the weather service occasionally serves the same warnings
-        # for the same are, and with the same text, but with two
+        # for the same area, and with the same text, but with two
         # different intensity levels - getting only the highest intensity
         warnings = cur.execute(f"""
             WITH warning_levels AS (
@@ -396,7 +396,7 @@ def get_aurora_probability(cur, lat, lon):
     }
 
 
-# TODO: rip out the params that are no longer needed
+# TODO: delete the params that are no longer needed
 def get_city_reponse(city, add_last_no_skip, h_city_override, use_simple_warnings, add_city_coords):
     lat = lon = 0.0
     if len(city) > 0:
@@ -423,7 +423,7 @@ def get_city_reponse(city, add_last_no_skip, h_city_override, use_simple_warning
         } for f in d_forecast],
         "aurora_probs": get_aurora_probability(cur, round(lat), round(lon)),
         "last_updated": metadata["result"]["metadata_modified"].replace("-", "").replace("T", "").replace(":", "")[:12],
-        # TODO: get local timezone instead
+        # TODO: get local timezone instead - at the moment I just assume that everyone's in Latvia (could also use UTC and use decides timezone in the app)
         "last_downloaded": datetime.datetime.fromtimestamp(os.path.getmtime(metadata_f)).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"),
     }
 
