@@ -210,7 +210,7 @@ def get_warnings(cur, lat, lon):
     warnings = []
     if len(relevant_warnings) > 0:
         # the weather service occasionally serves the same warnings
-        # for the same are, and with the same text, but with two
+        # for the same area, and with the same text, but with two
         # different intensity levels - getting only the highest intensity
         warnings = cur.execute(f"""
             WITH warning_levels AS (
