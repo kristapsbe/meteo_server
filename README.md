@@ -86,20 +86,14 @@ When running the containers locally I find it most convenient to get rid of the 
 ```
       - letsencrypt:/etc/letsencrypt
 ```
-and
-```
-  letsencrypt:
-    driver: local
-    driver_opts:
-      o: bind
-      type: none
-      device: /etc/letsencrypt
-```
+
 from the [docker compose](https://github.com/kristapsbe/meteo_server/blob/main/docker-compose.yml) file.
 
 And to comment out the ssl part in the [haproxy config](https://github.com/kristapsbe/meteo_server/blob/main/haproxy/haproxy.cfg) like so
 ```
     bind :443 # ssl crt /certs/haproxy.pem
 ```
+
+Remember that you need to rebuild images after doing this
 
 Example links that can be used to call endpoints can be found in comments at the end of [main.py](https://github.com/kristapsbe/meteo_server/blob/main/app/main.py) (search for `http://localhost:443/`).
