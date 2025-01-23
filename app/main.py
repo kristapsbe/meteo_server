@@ -179,22 +179,16 @@ def get_city_by_name(city_name):
 def get_forecast(cur, city, c_date, params):
     if len(city) == 0:
         return []
-    # TODO: nvm, not a join - more of a pivot -----I think this is a join-----
-    param_queries = ",".join([f"(SELECT value FROM forecast_cities AS fci WHERE fc.city_id=fci.city_id AND fc.date=fci.date AND param_id={p[0]}) AS val_{p[0]}" for p in params])
-    param_where = " OR ".join([f"val_{p[0]} IS NOT NULL" for p in params])
     return cur.execute(f"""
-        WITH h_temp AS (
-            SELECT
-                city_id, date,
-                {param_queries}
-            FROM
-                forecast_cities AS fc
-            WHERE
-                city_id = '{city[0]}' AND date >= '{c_date}'
-            GROUP BY
-                city_id, date
-        )
-        SELECT * FROM h_temp WHERE {param_where}
+        SELECT
+            city_id, date,
+            {",".join([f"max(case when param_id={p[0]} then value end) AS val_{p[0]}" for p in params])}
+        FROM
+            forecast_cities AS fc
+        WHERE
+            city_id = '{city[0]}' AND date >= '{c_date}' AND param_id IN ({",".join([str(p[0]) for p in params])})
+        GROUP BY
+            city_id, date
     """).fetchall()
 
 
