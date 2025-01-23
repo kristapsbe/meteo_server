@@ -179,6 +179,8 @@ def get_city_by_name(city_name):
 def get_forecast(cur, city, c_date, params):
     if len(city) == 0:
         return []
+    # pivoting the table and using max to discard nulls
+    # TODO: check if max is the correct funtion to use for this
     return cur.execute(f"""
         SELECT
             city_id, date,
