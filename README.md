@@ -71,9 +71,9 @@ crontab -e
 ```
 
 ```bash
-10	*	*	*	*	~/meteo_server/renew_certs.sh
-30	*	*	*	*	~/meteo_server/renew_certs.sh
-50	*	*	*	*	~/meteo_server/renew_certs.sh
+10	*	*	*	*	~/meteo_server/redeploy.sh
+30	*	*	*	*	~/meteo_server/redeploy.sh
+50	*	*	*	*	~/meteo_server/redeploy.sh
 ```
 
 ### DB
