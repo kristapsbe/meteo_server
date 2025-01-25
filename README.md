@@ -50,6 +50,8 @@ dnf remove docker \
 dnf install dnf-plugins-core
 dnf-3 config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
 dnf install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+dnf install vim-default-editor --allowerasing
 ```
 
 ```bash
@@ -62,6 +64,14 @@ The default setup expects [ssl certificates](https://letsencrypt.org/) to alread
 
 ```bash
 cat /etc/letsencrypt/live/meteo.kristapsbe.lv/fullchain.pem /etc/letsencrypt/live/meteo.kristapsbe.lv/privkey.pem > ~/meteo_server/certs/haproxy.pem
+```
+
+### Setting up auto-redeployment
+
+```bash
+crontab -e
+
+*/10	*	*	*	*	~/meteo_server/renew_certs.sh
 ```
 
 ### DB
@@ -100,6 +110,4 @@ Example links that can be used to call endpoints can be found in comments at the
 
 ### NOTE
 
-I need to check if I could set up a pair of backends in HAProxy and rotate them during redeployment
-
-I could also re-add a version endpont and make the server redeploy itself once a day if changes are available
+I could re-add a version endpont and make the server redeploy itself once a day if changes are available
