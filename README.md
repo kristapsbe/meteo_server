@@ -70,8 +70,12 @@ cat /etc/letsencrypt/live/meteo.kristapsbe.lv/fullchain.pem /etc/letsencrypt/liv
 
 ```bash
 crontab -e
+```
 
-*/10	*	*	*	*	~/meteo_server/renew_certs.sh
+```bash
+10	*	*	*	*	~/meteo_server/renew_certs.sh
+30	*	*	*	*	~/meteo_server/renew_certs.sh
+50	*	*	*	*	~/meteo_server/renew_certs.sh
 ```
 
 ### DB
