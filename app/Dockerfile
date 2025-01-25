@@ -16,7 +16,7 @@ RUN sed -i "s~{editdist_extension}~$(~/.local/bin/sqlpkg which nalgeon/fuzzy)~" 
 
 RUN crontab -l > cron
 RUN echo "*/20	*	*	*	*	/app/run_job.sh download" >> cron
-RUN echo "10	*/4	*	*	*	/app/run_job.sh crawl_site" >> cron
+RUN echo "5	*/4	*	*	*	/app/run_job.sh crawl_site" >> cron
 RUN crontab cron
 
 CMD ["sh", "start.sh"]
