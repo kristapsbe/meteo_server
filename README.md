@@ -101,3 +101,5 @@ Example links that can be used to call endpoints can be found in comments at the
 ### NOTE
 
 I need to check if I could set up a pair of backends in HAProxy and rotate them during redeployment
+
+I could also re-add a version endpont and make the server redeploy itself once a day if changes are available
