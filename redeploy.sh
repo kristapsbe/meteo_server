@@ -1,3 +1,4 @@
+cd ~/meteo_server
 git checkout main
 git pull
 docker compose build
