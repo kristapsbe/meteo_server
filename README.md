@@ -50,8 +50,6 @@ dnf remove docker \
 dnf install dnf-plugins-core
 dnf-3 config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
 dnf install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-
-dnf install vim-default-editor --allowerasing
 ```
 
 ```bash
