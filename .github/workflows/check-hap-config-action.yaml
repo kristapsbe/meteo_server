@@ -6,6 +6,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install HAProxy
-        run: sudo apt-get install -y haproxy=3.0.\*
+        run: sudo apt-get update && sudo apt-get install -y haproxy=3.0.\*
       - name: Install HAProxy
         run: haproxy -c -f haproxy/haproxy.cfg
