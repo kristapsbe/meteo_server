@@ -526,6 +526,7 @@ async def get_version():
         "version": open("version.txt", "r").read().strip(),
         "updated": update_time.strftime("%Y%m%d%H%M"),
         "is_valid_update": (curr_time-update_time).total_seconds() // 60.0 < 30, # pull is expected to happen every 20 mins
+        "is_update_recent": (curr_time-update_time).total_seconds() // 60.0 < 30, # pull is expected to happen every 20 mins
     }
 
 
