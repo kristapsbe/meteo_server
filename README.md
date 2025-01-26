@@ -76,6 +76,13 @@ crontab -e
 50	*	*	*	*	~/meteo_server/redeploy.sh
 ```
 
+When set up I end up in a situation where:
+* a download is triggered once every 20 minutes (green)
+* an emergency download is potentially triggered every 4 hours, 5 minutes past the hour (yellow)
+* OS and code updates are pulled 10, 30, and 50 minutes past the hour (red)
+
+<img width="792" alt="image" src="https://github.com/user-attachments/assets/8460803f-0664-4ce0-be47-efb657aeeb73" />
+
 ### DB
 
 The server uses [SQLite](https://www.sqlite.org/) to cache forecast information, and I like using [DBeaver](https://dbeaver.io/download/) if/when I need to poke around the tables.
