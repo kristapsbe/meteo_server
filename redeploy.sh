@@ -4,3 +4,4 @@ git checkout main
 git pull
 docker compose build
 docker compose up -d
+git rev-parse HEAD > app/version.txt

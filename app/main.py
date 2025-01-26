@@ -515,6 +515,15 @@ async def get_meta():
     return retval
 
 
+# http://localhost:443/api/v1/version
+@app.get("/api/v1/version")
+async def get_version():
+    return {
+        "version": open("version.txt", "r").read().strip(),
+        "updated": datetime.datetime.fromtimestamp(os.path.getmtime("version.txt")).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"),
+    }
+
+
 if __name__ == "__main__":
     cwd = pathlib.Path(__file__).parent.resolve()
     uvicorn.run(app, host="app", port=8000, log_config=f"{cwd}/log.ini")
