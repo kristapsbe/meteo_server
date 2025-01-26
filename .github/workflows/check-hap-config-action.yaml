@@ -1,5 +1,5 @@
 name: GitHub Actions Test
-on: [push, pull_request]
+on: [pull_request]
 jobs:
   Explore-GitHub-Actions:
     runs-on: ubuntu-latest
