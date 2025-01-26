@@ -517,6 +517,7 @@ async def get_meta():
 
 # http://localhost:443/api/v1/version
 @app.get("/api/v1/version")
+@app.head("/api/v1/version") # added for https://stats.uptimerobot.com/EAWZfpoMkw
 async def get_version():
     return {
         "version": open("version.txt", "r").read().strip(),
