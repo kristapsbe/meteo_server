@@ -1,0 +1,11 @@
+name: GitHub Actions Test
+on: [push, pull_request]
+jobs:
+  Explore-GitHub-Actions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install HAProxy
+        run: sudo apt-get install -y haproxy=3.0.7-r0
+      - name: Install HAProxy
+        run: haproxy -c -f haproxy/haproxy.cfg
