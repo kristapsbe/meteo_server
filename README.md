@@ -117,6 +117,12 @@ Remember that you need to rebuild images after doing this
 
 Example links that can be used to call endpoints can be found in comments at the end of [main.py](https://github.com/kristapsbe/meteo_server/blob/main/app/main.py) (search for `http://localhost:443/`).
 
-### NOTE
+### NOTES
 
 I could re-add a version endpont and make the server redeploy itself once a day if changes are available
+
+useful for getting rod of merged branches
+
+```bash
+git checkout main && git fetch -p && git branch -vv | awk '/: gone]/{print $1}' | xargs git branch -d
+```
