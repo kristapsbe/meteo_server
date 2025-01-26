@@ -9,5 +9,5 @@ jobs:
         # I want 3.0.7, looks like I can only get 2.8.5 on ubuntu at the moment
         run: sudo apt-get update && sudo apt-get install -y haproxy
       - name: Check HAProxy Config
-        # deal with the fact that we don't have ssl certs
-        run: sed -i "s~bind :443 ssl~bind :443 \#ssl~" haproxy/haproxy.cfg && haproxy -c -f haproxy/haproxy.cfg
+        # deal with the fact that we don't have ssl certs, and we're not in the correct container
+        run: sed -i "s~app:8000~localhost:8000~" haproxy/haproxy.cfg && sed -i "s~bind :443 ssl~bind :443 \#ssl~" haproxy/haproxy.cfg && haproxy -c -f haproxy/haproxy.cfg
