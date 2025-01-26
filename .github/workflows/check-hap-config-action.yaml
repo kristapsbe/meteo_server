@@ -1,5 +1,8 @@
 name: Check HAProxy Config
-on: [pull_request]
+on:
+  pull_request:
+    branches:
+      - main
 jobs:
   check-haproxy-config:
     #if: github.event.pull_request.draft == false
