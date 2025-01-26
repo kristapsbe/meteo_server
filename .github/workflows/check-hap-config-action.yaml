@@ -12,6 +12,6 @@ jobs:
         run: |
           grep -q "app:8000" haproxy/haproxy.cfg &&\
           sed -i "s~app:8000~localhost:8000~" haproxy/haproxy.cfg &&\
-          grep -q "bind :443 \#ssl" haproxy/haproxy.cfg &&\
+          grep -q "bind :443 ssl" haproxy/haproxy.cfg &&\
           sed -i "s~bind :443 ssl~bind :443 \#ssl~" haproxy/haproxy.cfg &&\
           haproxy -c -f haproxy/haproxy.cfg
