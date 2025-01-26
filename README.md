@@ -81,7 +81,7 @@ When set up I end up in a situation where:
 * an emergency download is potentially triggered every 4 hours, 5 minutes past the hour (yellow)
 * OS and code updates are pulled 10, 30, and 50 minutes past the hour (red)
 
-<img width="792" alt="image" src="https://github.com/user-attachments/assets/f992fe17-750e-45c2-bf0f-33133ab40ee7" />
+<img width="792" alt="image" src="https://github.com/user-attachments/assets/dd7828d9-41bd-4f1f-a771-a4cebe3c35f1" />
 
 ### DB
 
