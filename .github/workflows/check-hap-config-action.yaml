@@ -1,4 +1,4 @@
-name: GitHub Actions Test
+name: Check HAProxy Config
 on: [pull_request]
 jobs:
   Explore-GitHub-Actions:
@@ -6,6 +6,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install HAProxy
-        run: sudo apt-get install -y haproxy=3.0.7-r0
+        run: sudo apt-get install -y haproxy=3.0.7
       - name: Install HAProxy
         run: haproxy -c -f haproxy/haproxy.cfg
