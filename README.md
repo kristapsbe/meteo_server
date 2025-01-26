@@ -90,7 +90,7 @@ The server uses [SQLite](https://www.sqlite.org/) to cache forecast information,
 ## Start-up
 
 ```bash
-docker compose down && docker compose build && docker compose up -d
+docker compose build && docker compose up -d
 ```
 
 useful
