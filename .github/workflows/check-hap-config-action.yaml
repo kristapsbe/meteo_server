@@ -6,6 +6,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install HAProxy
+        # I want 3.0.7, looks like I can only get 2.8.5 on ubuntu at the moment
         run: sudo apt-get update && sudo apt-get install -y haproxy
       - name: Check HAProxy Config
-        run: haproxy -c -f haproxy/haproxy.cfg
+        # deal with the fact that we don't have ssl certs
+        run: sed -i "s~bind :443 ssl~bind :443 \#ssl~" haproxy/haproxy.cfg && haproxy -c -f haproxy/haproxy.cfg
