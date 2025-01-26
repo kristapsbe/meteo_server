@@ -519,11 +519,9 @@ async def get_meta():
 @app.get("/api/v1/version")
 @app.head("/api/v1/version") # added for https://stats.uptimerobot.com/EAWZfpoMkw
 async def get_version():
-    update_time = datetime.datetime.fromtimestamp(os.path.getmtime("version.txt")).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga'))
-
     return {
         "version": open("version.txt", "r").read().strip(),
-        "updated": update_time.strftime("%Y%m%d%H%M"),
+        "updated": datetime.datetime.fromtimestamp(os.path.getmtime("version.txt")).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"),
     }
 
 
