@@ -519,9 +519,13 @@ async def get_meta():
 @app.get("/api/v1/version")
 @app.head("/api/v1/version") # added for https://stats.uptimerobot.com/EAWZfpoMkw
 async def get_version():
+    update_time = datetime.datetime.fromtimestamp(os.path.getmtime("version.txt")).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga'))
+    curr_time = datetime.datetime.now(pytz.timezone('Europe/Riga'))
+
     return {
         "version": open("version.txt", "r").read().strip(),
-        "updated": datetime.datetime.fromtimestamp(os.path.getmtime("version.txt")).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"),
+        "updated": update_time.strftime("%Y%m%d%H%M"),
+        "is_valid_update": (curr_time-update_time).total_seconds() // 60.0 < 30, # pull is expected to happen every 20 mins
     }
 
 
