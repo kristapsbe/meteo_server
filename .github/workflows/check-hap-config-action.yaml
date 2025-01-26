@@ -7,5 +7,5 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install HAProxy
         run: sudo apt-get update && sudo apt-get install -y haproxy
-      - name: Install HAProxy
+      - name: Check HAProxy Config
         run: haproxy -c -f haproxy/haproxy.cfg
