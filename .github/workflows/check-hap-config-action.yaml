@@ -1,7 +1,8 @@
 name: Check HAProxy Config
 on: [pull_request]
 jobs:
-  Explore-GitHub-Actions:
+  check-haproxy-config:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
