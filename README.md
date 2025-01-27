@@ -86,12 +86,6 @@ The server uses [SQLite](https://www.sqlite.org/) to cache forecast information,
 docker compose build && docker compose up -d
 ```
 
-useful
-
-```bash
-docker exec -it meteo_server-app-1 sh
-```
-
 ### Notes on running locally
 
 When running the containers locally I find it most convenient to get rid of the certificate volume by removing
@@ -112,7 +106,9 @@ Example links that can be used to call endpoints can be found in comments at the
 
 ### NOTES
 
-I could re-add a version endpont and make the server redeploy itself once a day if changes are available
+```bash
+docker exec -it meteo_server-app-1 sh
+```
 
 useful for getting rod of merged branches
 
