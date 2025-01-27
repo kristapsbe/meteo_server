@@ -9,5 +9,5 @@ if [ $changed = 1 ]; then
     docker compose build
     docker compose up -d
 
-    bash install.sh
+    bash utils/install.sh
 fi
