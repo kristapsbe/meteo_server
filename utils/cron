@@ -1,0 +1,3 @@
+30	*	*	*	*	~/meteo_server/utils/redeploy.sh
+50	*	*	*	*	~/meteo_server/utils/redeploy.sh
+10	2	*	*	*	~/meteo_server/utils/update.sh
