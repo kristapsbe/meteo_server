@@ -66,20 +66,13 @@ cat /etc/letsencrypt/live/meteo.kristapsbe.lv/fullchain.pem /etc/letsencrypt/liv
 
 ### Setting up auto-redeployment
 
-```bash
-crontab -e
-```
-
-```bash
-10	*	*	*	*	~/meteo_server/redeploy.sh
-30	*	*	*	*	~/meteo_server/redeploy.sh
-50	*	*	*	*	~/meteo_server/redeploy.sh
-```
+Run `utils/install.sh` to set up a cronjob that checks for new code that has been added to the repos main branch.
 
 When set up I end up in a situation where:
 * a download is triggered once every 20 minutes (green)
 * an emergency download is potentially triggered every 4 hours, 5 minutes past the hour (yellow)
-* OS and code updates are pulled 10, 30, and 50 minutes past the hour (red)
+* code updates are pulled 30 and 50 minutes past the hour (red)
+* an OS update is triggered once a day at 2:10 in the morning (blue)
 
 <img width="792" alt="image" src="https://github.com/user-attachments/assets/dd7828d9-41bd-4f1f-a771-a4cebe3c35f1" />
 
