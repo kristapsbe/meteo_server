@@ -74,7 +74,7 @@ When set up I end up in a situation where:
 * code updates are pulled 30 and 50 minutes past the hour (red)
 * an OS update is triggered once a day at 2:10 in the morning (blue)
 
-<img width="792" alt="image" src="https://github.com/user-attachments/assets/dd7828d9-41bd-4f1f-a771-a4cebe3c35f1" />
+<img width="1025" alt="image" src="https://github.com/user-attachments/assets/2c0b28e9-9046-4682-8434-aaae651910d4" />
 
 ### DB
 
