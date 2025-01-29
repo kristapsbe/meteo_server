@@ -110,7 +110,7 @@ Example links that can be used to call endpoints can be found in comments at the
 docker exec -it meteo_server-app-1 sh
 ```
 
-useful for getting rod of merged branches
+useful for getting rid of merged branches
 
 ```bash
 git checkout main && git fetch -p && git branch -vv | awk '/: gone]/{print $1}' | xargs git branch -d
