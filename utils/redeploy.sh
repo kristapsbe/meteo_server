@@ -9,6 +9,7 @@ if [ $changed = 1 ]; then
     docker compose build
     docker compose down # turn off both containers to make sure that the HAProxy container restarts so that new certs are picked up - not sure if this is going to make the whole thing too slow
     docker compose up -d
+    docker image prune -a -f
 
     bash utils/install.sh
 fi
