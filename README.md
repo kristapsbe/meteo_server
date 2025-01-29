@@ -4,8 +4,7 @@ A small webserver for caching, filtering, transforming, and serving weather fore
 
 It's been made for use with [this android app](https://github.com/kristapsbe/meteo_android).
 
-[<img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png"
-     height="80">](https://play.google.com/store/apps/details?id=lv.kristapsbe.meteo_android)
+[<img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png" height="80">](https://play.google.com/store/apps/details?id=lv.kristapsbe.meteo_android)
 
 ## Overview
 
@@ -89,6 +88,7 @@ docker compose build && docker compose up -d
 ### Notes on running locally
 
 When running the containers locally I find it most convenient to get rid of the certificate volume by removing
+
 ```
       - letsencrypt:/etc/letsencrypt
 ```
@@ -96,6 +96,7 @@ When running the containers locally I find it most convenient to get rid of the 
 from the [docker compose](https://github.com/kristapsbe/meteo_server/blob/main/docker-compose.yml) file.
 
 And to comment out the ssl part in the [haproxy config](https://github.com/kristapsbe/meteo_server/blob/main/haproxy/haproxy.cfg) like so
+
 ```
     bind :443 # ssl crt /certs/haproxy.pem
 ```
