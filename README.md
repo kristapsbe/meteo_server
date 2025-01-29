@@ -105,7 +105,7 @@ Remember that you need to rebuild images after doing this
 
 Example links that can be used to call endpoints can be found in comments at the end of [main.py](https://github.com/kristapsbe/meteo_server/blob/main/app/main.py) (search for `http://localhost:443/`).
 
-### ASSORTED NOTES
+### Assorted notes
 
 ```bash
 docker exec -it meteo_server-app-1 sh
