@@ -13,7 +13,12 @@ from settings import db_file, data_folder, last_updated, run_emergency, run_emer
 
 skip_download = False
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s')
+logging.basicConfig(
+    filename='/data/download.log',
+    filemode='a',
+    level=logging.DEBUG,
+    format='%(asctime)s [%(levelname)s] %(message)s'
+)
 
 base_url = "https://data.gov.lv/dati/api/3/"
 
