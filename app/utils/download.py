@@ -371,6 +371,7 @@ def run_downloads(datasets):
 
 
 if __name__ == "__main__":
+    logging.info("Download job starting")
     if skip_download:
         update_db()
         update_aurora_forecast()
