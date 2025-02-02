@@ -17,7 +17,12 @@ import requests
 from settings import db_file, data_folder, run_emergency, run_emergency_failed
 
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s')
+logging.basicConfig(
+    filename='/data/crawl_site.log',
+    filemode='a',
+    level=logging.DEBUG,
+    format='%(asctime)s [%(levelname)s] %(message)s'
+)
 
 if not os.path.isfile(run_emergency):
     logging.info("No emergency - exiting")
