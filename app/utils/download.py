@@ -154,6 +154,7 @@ def refresh_file(url, fpath, verify_download):
             f.write(r_text)
         return False
     else:
+        logging.error(f"{fpath} failed (status code {r.status_code})")
         return do_emergency_dl
 
 
@@ -352,6 +353,7 @@ def run_downloads(datasets):
         skipped_empty = True
 
     if skipped_empty and not os.path.isfile(run_emergency):
+        logger.error("Failure encountered - setting emergency flag")
         open(run_emergency, 'w').write("")
 
     update_time = datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
