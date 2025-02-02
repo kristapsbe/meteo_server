@@ -27,6 +27,7 @@ logging.basicConfig(
 if not os.path.isfile(run_emergency):
     logging.info("No emergency - exiting")
     exit()
+logging.info("Emergency download job starting")
 
 try:
     url = 'https://videscentrs.lvgmc.lv/data/weather_forecast_for_location_hourly?punkts='
