@@ -168,7 +168,7 @@ def get_city_by_name(city_name):
             edit_distances
         ORDER BY
             distance ASC, ctype ASC
-        LIMIT 10
+        LIMIT 1
     """).fetchall()
     if len(cities) == 0:
         return ()
@@ -394,7 +394,7 @@ def get_aurora_probability(cur, lat, lon):
 
 
 # TODO: delete the params that are no longer needed
-def get_city_reponse(city, add_last_no_skip, h_city_override, use_simple_warnings, add_city_coords):
+def get_city_response(city, add_last_no_skip, h_city, use_simple_warnings, add_city_coords):
     lat = lon = 0.0
     if len(city) > 0:
         lat = float(city[2])
@@ -403,7 +403,7 @@ def get_city_reponse(city, add_last_no_skip, h_city_override, use_simple_warning
     h_params = get_params(cur, hourly_params)
     d_params = get_params(cur, daily_params)
     c_date = datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
-    h_forecast = get_forecast(cur, city if h_city_override is None else h_city_override, c_date, h_params)
+    h_forecast = get_forecast(cur, h_city, c_date, h_params)
     d_forecast = get_forecast(cur, city, c_date, d_params)
     metadata_f = f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam.json"
     metadata = json.loads(open(metadata_f, "r").read())
@@ -467,24 +467,28 @@ def get_city_reponse(city, add_last_no_skip, h_city_override, use_simple_warning
 @app.get("/api/v1/forecast/cities")
 @app.head("/api/v1/forecast/cities") # added for https://stats.uptimerobot.com/EAWZfpoMkw
 async def get_city_forecasts(lat: float, lon: float, add_last_no_skip: bool = False, use_simple_warnings: bool = False, add_city_coords=False):
-    city = get_closest_city(cur=cur, lat=lat, lon=lon, force_all=True)
-    # TODO: test override logic more carefully
-    h_city_override = None
-    if is_emergency() and len(city) > 0:
-        h_city_override = get_closest_city(cur=cur, lat=city[2], lon=city[3])
-    return get_city_reponse(city, add_last_no_skip, h_city_override, use_simple_warnings, add_city_coords)
+    city = get_closest_city(cur=cur, lat=lat, lon=lon, force_all=True) # always getting closest city since override only affects hourly forecasts
+    return get_city_response(
+        city,
+        add_last_no_skip,
+        get_closest_city(cur=cur, lat=city[2], lon=city[3]) if is_emergency() and len(city) > 0 else city, # getting hourly forecast for closest large city if we're in emergency mode
+        use_simple_warnings,
+        add_city_coords
+    )
 
 
 # http://localhost:443/api/v1/forecast/cities/name?city_name=vamier
 @app.get("/api/v1/forecast/cities/name")
 @app.head("/api/v1/forecast/cities/name") # added for https://stats.uptimerobot.com/EAWZfpoMkw
 async def get_city_forecasts_name(city_name: str, add_last_no_skip: bool = False, use_simple_warnings: bool = False, add_city_coords=False):
-    city = get_city_by_name(simlpify_string(regex.sub('', city_name).strip().lower()))
-    # TODO: test override logic more carefully
-    h_city_override = None
-    if is_emergency() and len(city) > 0:
-        h_city_override = get_closest_city(cur=cur, lat=city[2], lon=city[3])
-    return get_city_reponse(city, add_last_no_skip, h_city_override, use_simple_warnings, add_city_coords)
+    city = get_city_by_name(simlpify_string(regex.sub('', city_name).strip().lower())) # always getting closest city since override only affects hourly forecasts
+    return get_city_response(
+        city,
+        add_last_no_skip,
+        get_closest_city(cur=cur, lat=city[2], lon=city[3]) if is_emergency() and len(city) > 0 else city, # getting hourly forecast for closest large city if we're in emergency mode
+        use_simple_warnings,
+        add_city_coords
+    )
 
 
 # http://localhost:443/privacy-policy
