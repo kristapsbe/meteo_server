@@ -7,4 +7,4 @@ certs/*
 *.pyc
 server.log
 version.txt
-.env
+app.env
