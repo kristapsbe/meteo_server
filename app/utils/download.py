@@ -1,7 +1,6 @@
 import os
 import json
 import pytz
-import time
 import pandas as pd
 import sqlite3
 import logging
@@ -376,7 +375,7 @@ def pull_uptimerobot_data(update_time):
             timeout=10
         )
         if r.status_code == 200:
-            with open(f"{data_uptimerobot_folder}uptimerobot_{int(time.time())}.json", "wb") as f:
+            with open(f"{data_uptimerobot_folder}uptimerobot_{update_time}.json", "wb") as f:
                 f.write(r.content)
             monit_data = json.loads(r.content)
             metrics = {k: {} for k in meta.values()}
