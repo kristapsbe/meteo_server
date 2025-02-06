@@ -1,6 +1,5 @@
 FROM alpine:3.21
 
-ARG UPTIMEROBOT
 ARG HOST_ARCHITECTURE="unknown"
 
 USER root
