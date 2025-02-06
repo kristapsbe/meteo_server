@@ -1,4 +1,7 @@
 cd ~/meteo_server
+
+[ -f "app/app.env" ] || cp app/app.example.env app/app.env
+
 git checkout main
 
 changed=0
