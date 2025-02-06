@@ -528,6 +528,8 @@ async def get_version():
         "updated": datetime.datetime.fromtimestamp(os.path.getmtime("version.txt")).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"),
     }
 
+# TODO: add stats endpoint that serves aggregated uptimerobot stats
+
 
 if __name__ == "__main__":
     cwd = pathlib.Path(__file__).parent.resolve()
