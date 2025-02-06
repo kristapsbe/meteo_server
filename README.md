@@ -85,6 +85,12 @@ The server uses [SQLite](https://www.sqlite.org/) to cache forecast information,
 docker compose build && docker compose up -d
 ```
 
+running on arm
+
+```bash
+docker compose build --no-cache --build-arg HOST_ARCHITECTURE="$(uname -p)" && docker compose up
+```
+
 ### Notes on running locally
 
 When running the containers locally I find it most convenient to get rid of the certificate volume by removing
