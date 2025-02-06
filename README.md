@@ -81,6 +81,11 @@ The server uses [SQLite](https://www.sqlite.org/) to cache forecast information,
 
 ## Start-up
 
+create env file and set `UPTIMEROBOT` to the uptimerobot read-only API key ([found here](https://dashboard.uptimerobot.com/integrations))
+```bash
+cp example.env .env
+```
+
 ```bash
 docker compose build && docker compose up -d
 ```

@@ -19,4 +19,6 @@ RUN echo "*/20	*	*	*	*	/app/run_job.sh download" >> cron
 RUN echo "5	*/4	*	*	*	/app/run_job.sh crawl_site" >> cron
 RUN crontab cron
 
+RUN echo $UPTIMEROBOT
+
 CMD ["sh", "start.sh"]
