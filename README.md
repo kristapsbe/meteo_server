@@ -82,10 +82,8 @@ The server uses [SQLite](https://www.sqlite.org/) to cache forecast information,
 ## Start-up
 
 ```bash
-docker compose build && docker compose up -d
+docker compose build --build-arg HOST_ARCHITECTURE="$(uname -p)" && docker compose up -d
 ```
-
-for dev on an arm mac
 
 ```bash
 docker compose build --no-cache --build-arg HOST_ARCHITECTURE="$(uname -p)" && docker compose up
