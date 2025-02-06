@@ -343,7 +343,7 @@ def update_aurora_forecast(update_time): # TODO: cleanup
             upd_con.close()
 
 
-def pull_uptimerobot_data():
+def pull_uptimerobot_data(update_time):
     uptime = [
         '/api/v1/forecast/cities (DOWN if city name is missing)',
         '/api/v1/forecast/cities (DOWN if daily forecast is an empty list)',
@@ -380,9 +380,11 @@ def pull_uptimerobot_data():
                 f.write(r.content)
             monit_data = json.loads(r.content)
             metrics = {k: {} for k in meta.values()}
-            metrics["downtime"] = {}
+            metrics["downtime"] = {min([e["create_datetime"] for e in monit_data["monitors"]]): 0}
             for e in monit_data["monitors"]:
                 is_meta = e["friendly_name"] in meta
+                if is_meta:
+                    metrics[meta[e["friendly_name"]]][e["create_datetime"]] = 0
                 if is_meta or e["friendly_name"] in uptime:
                     for ent in e["logs"]:
                         if ent["type"] == 1:
@@ -393,7 +395,36 @@ def pull_uptimerobot_data():
                                     metrics[ek][ent["datetime"]] += match[0]-(ent["datetime"]+ent["duration"])
                             else:
                                 metrics[ek][ent["datetime"]] = ent["duration"]
-            logging.info(metrics)
+
+            upd_con = sqlite3.connect(db_file)
+            upd_cur = upd_con.cursor()
+            try:
+                upd_cur.execute("""
+                    CREATE TABLE IF NOT EXISTS downtimes (
+                        type TEXT,
+                        start_time INTEGER,
+                        duration INTEGER,
+                        update_time DATEH,
+                        PRIMARY KEY (type, start_time)
+                    )
+                """)
+                upd_cur.executemany(f"""
+                    INSERT INTO downtimes (type, start_time, duration, update_time)
+                    VALUES (?, ?, ?, {update_time})
+                    ON CONFLICT(type, start_time) DO UPDATE SET
+                        duration=excluded.duration,
+                        update_time={update_time}
+                """, [[ki, kj, vj] for ki, vi in metrics.items() for kj, vj in vi.items()])
+                logging.info(f"TABLE 'downtimes' - {upd_cur.rowcount} rows upserted")
+                upd_con.commit()
+                upd_cur.execute(f"DELETE FROM downtimes WHERE update_time < {update_time}")
+                logging.info(f"TABLE 'downtimes' - {upd_cur.rowcount} old rows deleted")
+                upd_con.commit()
+                logging.info("DB update finished")
+            except BaseException as e:
+                logging.info(f"DB update FAILED - {e}")
+            finally:
+                upd_con.close()
 
 
 def run_downloads(datasets):
@@ -407,13 +438,13 @@ def run_downloads(datasets):
         skipped_empty = True
 
     if skipped_empty and not os.path.isfile(run_emergency):
-        logger.error("Failure encountered - setting emergency flag")
+        logging.error("Failure encountered - setting emergency flag")
         open(run_emergency, 'w').write("")
 
     update_time = datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
     update_db(update_time)
     update_aurora_forecast(update_time)
-    pull_uptimerobot_data()
+    pull_uptimerobot_data(update_time)
 
     if not skipped_empty:
         open(last_updated, 'w').write(
