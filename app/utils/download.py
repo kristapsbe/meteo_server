@@ -360,9 +360,9 @@ def pull_uptimerobot_data():
     ]
 
     meta = {
-        'aurora': '/api/v1/meta (DOWN if aurora forecast is out of date)',
-        'emergency': '/api/v1/meta (DOWN if forecast download fallback has failed)',
-        'forecast': '/api/v1/meta (DOWN if forecast download has failed)',
+        '/api/v1/meta (DOWN if aurora forecast is out of date)': 'aurora',
+        '/api/v1/meta (DOWN if forecast download fallback has failed)': 'emergency',
+        '/api/v1/meta (DOWN if forecast download has failed)': 'forecast',
     }
 
     if os.environ['UPTIMEROBOT']:
@@ -379,18 +379,21 @@ def pull_uptimerobot_data():
             with open(f"{data_uptimerobot_folder}uptimerobot_{int(time.time())}.json", "wb") as f:
                 f.write(r.content)
             monit_data = json.loads(r.content)
-            uptimes = {}
+            metrics = {k: {} for k in meta.values()}
+            metrics["downtime"] = {}
             for e in monit_data["monitors"]:
-                if e["friendly_name"] in uptime:
+                is_meta = e["friendly_name"] in meta
+                if is_meta or e["friendly_name"] in uptime:
                     for ent in e["logs"]:
                         if ent["type"] == 1:
-                            match = [k+v for k,v in uptimes.items() if ent["datetime"] >= k and ent["datetime"] <= k+v]
+                            ek = meta[e["friendly_name"]] if is_meta and ent["duration"] > 300 else "downtime"
+                            match = [k+v for k,v in metrics[ek].items() if ent["datetime"] >= k and ent["datetime"] <= k+v]
                             if len(match) > 0:
                                 if ent["datetime"]+ent["duration"] > match[0]:
-                                    uptimes[ent["datetime"]] += match[0]-(ent["datetime"]+ent["duration"])
+                                    metrics[ek][ent["datetime"]] += match[0]-(ent["datetime"]+ent["duration"])
                             else:
-                                uptimes[ent["datetime"]] = ent["duration"]
-            #logging.info(uptimes)
+                                metrics[ek][ent["datetime"]] = ent["duration"]
+            logging.info(metrics)
 
 
 def run_downloads(datasets):
