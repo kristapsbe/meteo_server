@@ -13,11 +13,9 @@ RUN apk update && \
     apk add --no-cache libc6-compat=1.1.0-r4 curl=8.11.1-r0 python3=3.12.8-r1 uv=0.5.6-r0
 
 RUN [ "${HOST_ARCHITECTURE}" = "arm" ] &&\
-    wget "https://github.com/nalgeon/sqlpkg-cli/releases/download/0.2.3/sqlpkg-cli_0.2.3_linux_arm64.tar.gz" -O sqlpkg.tar.gz ||\
-    wget "https://github.com/nalgeon/sqlpkg-cli/releases/download/0.2.3/sqlpkg-cli_0.2.3_linux_amd64.tar.gz" -O sqlpkg.tar.gz &&\
-    tar x -z -v -f sqlpkg.tar.gz &&\
-    /app/sqlpkg install nalgeon/fuzzy &&\
-    sed -i "s~{editdist_extension}~$(/app/sqlpkg which nalgeon/fuzzy)~" utils/settings.py
+    wget "https://github.com/nalgeon/sqlean/releases/download/0.27.1/sqlean-linux-arm64.zip" -O sqlean.zip ||\
+    wget "https://github.com/nalgeon/sqlean/releases/download/0.27.1/sqlean-linux-x86.zip" -O sqlean.zip &&\
+    unzip sqlean.zip -d /sqlite_extensions
 
 RUN crontab -l > cron
 RUN echo "*/20	*	*	*	*	/app/run_job.sh download" >> cron
