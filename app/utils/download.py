@@ -417,9 +417,10 @@ def pull_uptimerobot_data(update_time):
                 """, [[ki, kj, vj] for ki, vi in metrics.items() for kj, vj in vi.items()])
                 logging.info(f"TABLE 'downtimes' - {upd_cur.rowcount} rows upserted")
                 upd_con.commit()
-                upd_cur.execute(f"DELETE FROM downtimes WHERE update_time < {update_time}")
-                logging.info(f"TABLE 'downtimes' - {upd_cur.rowcount} old rows deleted")
-                upd_con.commit()
+                # keep the older data from uptimerobot since they'll discard it
+                #upd_cur.execute(f"DELETE FROM downtimes WHERE update_time < {update_time}")
+                #logging.info(f"TABLE 'downtimes' - {upd_cur.rowcount} old rows deleted")
+                #upd_con.commit()
                 logging.info("DB update finished")
             except BaseException as e:
                 logging.info(f"DB update FAILED - {e}")
