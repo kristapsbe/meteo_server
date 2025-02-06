@@ -1,6 +1,7 @@
 import os
 import json
 import pytz
+import time
 import pandas as pd
 import sqlite3
 import logging
@@ -8,7 +9,7 @@ import datetime
 import requests
 
 from utils import simlpify_string
-from settings import db_file, data_folder, last_updated, run_emergency, run_emergency_failed
+from settings import db_file, data_folder, data_uptimerobot_folder, last_updated, run_emergency, run_emergency_failed
 
 
 skip_download = False
@@ -342,6 +343,56 @@ def update_aurora_forecast(update_time): # TODO: cleanup
             upd_con.close()
 
 
+def pull_uptimerobot_data():
+    uptime = [
+        '/api/v1/forecast/cities (DOWN if city name is missing)',
+        '/api/v1/forecast/cities (DOWN if daily forecast is an empty list)',
+        '/api/v1/forecast/cities (DOWN if hourly forecast is an empty list)',
+        '/api/v1/forecast/cities (DOWN if status is not 2xx or 3xx)',
+        '/api/v1/forecast/cities/name (DOWN if city name is missing)',
+        '/api/v1/forecast/cities/name (DOWN if daily forecast is an empty list)',
+        '/api/v1/forecast/cities/name (DOWN if hourly forecast is an empty list)',
+        '/api/v1/forecast/cities/name (DOWN if status is not 2xx or 3xx)',
+        '/api/v1/meta (DOWN if status is not 2xx or 3xx)',
+        '/api/v1/version (DOWN if status is not 2xx or 3xx)',
+        '/privacy-policy (DOWN if page title is missing)',
+        '/privacy-policy (DOWN if status is not 2xx or 3xx)'
+    ]
+
+    meta = {
+        'aurora': '/api/v1/meta (DOWN if aurora forecast is out of date)',
+        'emergency': '/api/v1/meta (DOWN if forecast download fallback has failed)',
+        'forecast': '/api/v1/meta (DOWN if forecast download has failed)',
+    }
+
+    if os.environ['UPTIMEROBOT']:
+        url = "https://api.uptimerobot.com/v2/getMonitors"
+        r = requests.post(
+            url,
+            data={
+                "api_key": os.environ['UPTIMEROBOT'],
+                "logs": 1
+            },
+            timeout=10
+        )
+        if r.status_code == 200:
+            with open(f"{data_uptimerobot_folder}uptimerobot_{int(time.time())}.json", "wb") as f:
+                f.write(r.content)
+            monit_data = json.loads(r.content)
+            uptimes = {}
+            for e in monit_data["monitors"]:
+                if e["friendly_name"] in uptime:
+                    for ent in e["logs"]:
+                        if ent["type"] == 1:
+                            match = [k+v for k,v in uptimes.items() if ent["datetime"] >= k and ent["datetime"] <= k+v]
+                            if len(match) > 0:
+                                if ent["datetime"]+ent["duration"] > match[0]:
+                                    uptimes[ent["datetime"]] += match[0]-(ent["datetime"]+ent["duration"])
+                            else:
+                                uptimes[ent["datetime"]] = ent["duration"]
+            #logging.info(uptimes)
+
+
 def run_downloads(datasets):
     logging.info("Triggering refresh")
     skipped_empty = False
@@ -359,8 +410,7 @@ def run_downloads(datasets):
     update_time = datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
     update_db(update_time)
     update_aurora_forecast(update_time)
-
-    # TODO: pull stats from uptimerobot
+    pull_uptimerobot_data()
 
     if not skipped_empty:
         open(last_updated, 'w').write(
