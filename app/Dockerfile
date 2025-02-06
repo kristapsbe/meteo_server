@@ -1,5 +1,6 @@
 FROM alpine:3.21
 
+ARG UPTIMEROBOT
 ARG HOST_ARCHITECTURE="unknown"
 
 USER root
@@ -21,7 +22,5 @@ RUN crontab -l > cron
 RUN echo "*/20	*	*	*	*	/app/run_job.sh download" >> cron
 RUN echo "5	*/4	*	*	*	/app/run_job.sh crawl_site" >> cron
 RUN crontab cron
-
-RUN echo $UPTIMEROBOT
 
 CMD ["sh", "start.sh"]

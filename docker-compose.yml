@@ -1,6 +1,7 @@
 services:
   app:
     build: app
+    env_file: "app/app.env"
     volumes:
       - data:/data
 
