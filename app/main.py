@@ -538,33 +538,37 @@ async def get_metrics():
     downtimes = cur.execute(f"""
         SELECT
             type,
-            100-1.0*SUM(duration)/({now}-MIN(start_time)) AS total,
-            100-1.0*SUM(CASE
+            (1.0-1.0*SUM(duration)/({now}-MIN(start_time)))*100 AS total,
+            (1.0-1.0*SUM(CASE
                 WHEN start_time >= ({now}-(60*60*24*90)) THEN duration
                 WHEN start_time < ({now}-(60*60*24*90)) AND start_time+duration >= ({now}-(60*60*24*90)) THEN duration-({now}-start_time)
                 ELSE 0
-            END)/MIN((60*60*24*90), ({now}-MIN(start_time))) AS ninety,
-            100-1.0*SUM(CASE
+            END)/MIN((60*60*24*90), ({now}-MIN(start_time))))*100 AS ninety,
+            (1.0-1.0*SUM(CASE
                 WHEN start_time >= ({now}-(60*60*24*30)) THEN duration
                 WHEN start_time < ({now}-(60*60*24*30)) AND start_time+duration >= ({now}-(60*60*24*30)) THEN duration-({now}-start_time)
                 ELSE 0
-            END)/MIN((60*60*24*30), ({now}-MIN(start_time))) AS thirty,
-            100-1.0*SUM(CASE
+            END)/MIN((60*60*24*30), ({now}-MIN(start_time))))*100 AS thirty,
+            (1.0-1.0*SUM(CASE
                 WHEN start_time >= ({now}-(60*60*24*7)) THEN duration
                 WHEN start_time < ({now}-(60*60*24*7)) AND start_time+duration >= ({now}-(60*60*24*7)) THEN duration-({now}-start_time)
                 ELSE 0
-            END)/MIN((60*60*24*7), ({now}-MIN(start_time))) AS seven,
-            100-1.0*SUM(CASE
+            END)/MIN((60*60*24*7), ({now}-MIN(start_time))))*100 AS seven,
+            (1.0-1.0*SUM(CASE
                 WHEN start_time >= ({now}-(60*60*24)) THEN duration
                 WHEN start_time < ({now}-(60*60*24)) AND start_time+duration >= ({now}-(60*60*24)) THEN duration-({now}-start_time)
                 ELSE 0
-            END)/MIN((60*60*24), ({now}-MIN(start_time))) AS one
+            END)/MIN((60*60*24), ({now}-MIN(start_time))))*100 AS one
         FROM
             downtimes
         GROUP BY
             type
     """).fetchall()
-    ret = {"downtime": {}, "download": {}}
+    ret = {
+        "dashboard": "https://stats.uptimerobot.com/EAWZfpoMkw",
+        "downtime": {},
+        "download": {}
+    }
     for e in downtimes:
         if e[0] == "downtime":
             ret[e[0]] = {
