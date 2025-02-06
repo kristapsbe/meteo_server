@@ -7,7 +7,7 @@ if [ $changed = 1 ]; then
     git pull
     git rev-parse HEAD > app/version.txt
     docker compose build
-    docker compose down # turn off both containers to make sure that the HAProxy container restarts so that new certs are picked up - not sure if this is going to make the whole thing too slow
+    docker compose rm -svf haproxy # making sure that the HAProxy container restarts so that new certs are picked up
     docker compose up -d
 
     docker system prune -a -f --volumes
