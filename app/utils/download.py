@@ -360,6 +360,8 @@ def run_downloads(datasets):
     update_db(update_time)
     update_aurora_forecast(update_time)
 
+    # TODO: pull stats from uptimerobot
+
     if not skipped_empty:
         open(last_updated, 'w').write(
             datetime.datetime.fromtimestamp(os.path.getmtime(f"{data_folder}{target_ds[0]}.json")).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
