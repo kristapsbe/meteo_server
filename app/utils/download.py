@@ -355,7 +355,8 @@ def pull_uptimerobot_data(update_time):
         '/api/v1/meta (DOWN if status is not 2xx or 3xx)',
         '/api/v1/version (DOWN if status is not 2xx or 3xx)',
         '/privacy-policy (DOWN if page title is missing)',
-        '/privacy-policy (DOWN if status is not 2xx or 3xx)'
+        '/privacy-policy (DOWN if status is not 2xx or 3xx)',
+        '/api/v1/metrics (DOWN if status is not 2xx or 3xx)'
     ]
 
     meta = {
@@ -433,8 +434,8 @@ def run_downloads(datasets):
     try:
         for ds in datasets:
             skipped_empty = download_resources(ds) or skipped_empty
-    except:
-        logging.info("Download failed!")
+    except Exception as e:
+        logging.error(f"Download failed - {e}")
         skipped_empty = True
 
     if skipped_empty and not os.path.isfile(run_emergency):
