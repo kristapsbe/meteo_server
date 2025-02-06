@@ -4,6 +4,7 @@ services:
     env_file: "app/app.env"
     volumes:
       - data:/data
+      - data_uptimerobot:/data_uptimerobot
 
   haproxy:
     build: haproxy
@@ -21,6 +22,12 @@ volumes:
       o: bind
       type: none
       device: ./data
+  data_uptimerobot:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ./data_uptimerobot
   certs:
     driver: local
     driver_opts:

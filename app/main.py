@@ -2,6 +2,7 @@ import os
 import re
 import json
 import pytz
+import time
 import sqlite3
 import logging
 import pathlib
@@ -528,7 +529,64 @@ async def get_version():
         "updated": datetime.datetime.fromtimestamp(os.path.getmtime("version.txt")).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"),
     }
 
-# TODO: add stats endpoint that serves aggregated uptimerobot stats
+
+# http://localhost:443/api/v1/metrics
+@app.get("/api/v1/metrics")
+@app.head("/api/v1/metrics") # added for https://stats.uptimerobot.com/EAWZfpoMkw
+async def get_metrics():
+    now = int(time.time())
+    downtimes = cur.execute(f"""
+        SELECT
+            type,
+            (1.0-1.0*SUM(duration)/({now}-MIN(start_time)))*100 AS total,
+            (1.0-1.0*SUM(CASE
+                WHEN start_time >= ({now}-(60*60*24*90)) THEN duration
+                WHEN start_time < ({now}-(60*60*24*90)) AND start_time+duration >= ({now}-(60*60*24*90)) THEN duration-({now}-start_time)
+                ELSE 0
+            END)/MIN((60*60*24*90), ({now}-MIN(start_time))))*100 AS ninety,
+            (1.0-1.0*SUM(CASE
+                WHEN start_time >= ({now}-(60*60*24*30)) THEN duration
+                WHEN start_time < ({now}-(60*60*24*30)) AND start_time+duration >= ({now}-(60*60*24*30)) THEN duration-({now}-start_time)
+                ELSE 0
+            END)/MIN((60*60*24*30), ({now}-MIN(start_time))))*100 AS thirty,
+            (1.0-1.0*SUM(CASE
+                WHEN start_time >= ({now}-(60*60*24*7)) THEN duration
+                WHEN start_time < ({now}-(60*60*24*7)) AND start_time+duration >= ({now}-(60*60*24*7)) THEN duration-({now}-start_time)
+                ELSE 0
+            END)/MIN((60*60*24*7), ({now}-MIN(start_time))))*100 AS seven,
+            (1.0-1.0*SUM(CASE
+                WHEN start_time >= ({now}-(60*60*24)) THEN duration
+                WHEN start_time < ({now}-(60*60*24)) AND start_time+duration >= ({now}-(60*60*24)) THEN duration-({now}-start_time)
+                ELSE 0
+            END)/MIN((60*60*24), ({now}-MIN(start_time))))*100 AS one
+        FROM
+            downtimes
+        GROUP BY
+            type
+    """).fetchall()
+    ret = {
+        "dashboard": "https://stats.uptimerobot.com/EAWZfpoMkw",
+        "downtime": {},
+        "download": {}
+    }
+    for e in downtimes:
+        if e[0] == "downtime":
+            ret[e[0]] = {
+                "total": e[1],
+                "90d": e[2],
+                "30d": e[3],
+                "7d": e[4],
+                "1d": e[5]
+            }
+        else:
+            ret["download"][e[0]] = {
+                "total": e[1],
+                "90d": e[2],
+                "30d": e[3],
+                "7d": e[4],
+                "1d": e[5]
+            }
+    return ret
 
 
 if __name__ == "__main__":
