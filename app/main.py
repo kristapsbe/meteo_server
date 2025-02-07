@@ -535,7 +535,7 @@ async def get_version():
 @app.head("/api/v1/metrics") # added for https://stats.uptimerobot.com/EAWZfpoMkw
 async def get_metrics():
     now = int(time.time())
-    downtimes = cur.execute(f"""
+    uptimes = cur.execute(f"""
         SELECT
             type,
             (1.0-1.0*SUM(duration)/({now}-MIN(start_time)))*100 AS total,
@@ -566,12 +566,12 @@ async def get_metrics():
     """).fetchall()
     ret = {
         "dashboard": "https://stats.uptimerobot.com/EAWZfpoMkw",
-        "downtime": {},
+        "uptime": {},
         "download": {}
     }
-    for e in downtimes:
+    for e in uptimes:
         if e[0] == "downtime":
-            ret[e[0]] = {
+            ret["uptime"] = {
                 "total": e[1],
                 "90d": e[2],
                 "30d": e[3],
