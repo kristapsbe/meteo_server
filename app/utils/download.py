@@ -382,6 +382,9 @@ def pull_uptimerobot_data(update_time):
             # TODO: I suspect that this will break once events start dropping off after 90 days - add logic that checks if current events aren't part of events that exist in the db, but don't exist in the response
             metrics = {k: {} for k in meta.values()}
             metrics["downtime"] = {min([e["create_datetime"] for e in monit_data["monitors"]]): 0}
+            metrics_file = f"{data_uptimerobot_folder}uptimerobot_metrics.json"
+            if os.path.isfile(metrics_file):
+                metrics = {ki: {int(kj): vj for kj, vj in vi.items()} for ki, vi in json.loads(open(metrics_file, "r").read()).items()}
             for e in monit_data["monitors"]:
                 is_meta = e["friendly_name"] in meta
                 if is_meta:
@@ -396,7 +399,7 @@ def pull_uptimerobot_data(update_time):
                                     metrics[ek][ent["datetime"]] += match[0]-(ent["datetime"]+ent["duration"])
                             else:
                                 metrics[ek][ent["datetime"]] = ent["duration"]
-
+            open(metrics_file, "w").write(json.dumps(metrics))
             upd_con = sqlite3.connect(db_file)
             upd_cur = upd_con.cursor()
             try:
