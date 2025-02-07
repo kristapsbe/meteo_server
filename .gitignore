@@ -7,5 +7,6 @@ certs/*
 .DS_Store
 *.pyc
 server.log
+download.log
 version.txt
 app.env
