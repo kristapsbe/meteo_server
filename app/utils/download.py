@@ -379,6 +379,7 @@ def pull_uptimerobot_data(update_time):
             with open(f"{data_uptimerobot_folder}uptimerobot_{update_time}.json", "wb") as f:
                 f.write(r.content)
             monit_data = json.loads(r.content)
+            # TODO: I suspect that this will break once events start dropping off after 90 days - add logic that checks if current events aren't part of events that exist in the db, but don't exist in the response
             metrics = {k: {} for k in meta.values()}
             metrics["downtime"] = {min([e["create_datetime"] for e in monit_data["monitors"]]): 0}
             for e in monit_data["monitors"]:
