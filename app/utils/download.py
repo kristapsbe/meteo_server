@@ -290,7 +290,7 @@ def update_db(update_time):
         update_warning_bounds_table(update_time, upd_con)
         logging.info("DB update finished")
     except BaseException as e:
-        logging.info(f"DB update FAILED - {e}")
+        logging.error(f"DB update FAILED - {e}")
     finally:
         upd_con.close()
 
@@ -337,7 +337,7 @@ def update_aurora_forecast(update_time): # TODO: cleanup
             upd_con.commit()
             logging.info("DB update finished")
         except BaseException as e:
-            logging.info(f"DB update FAILED - {e}")
+            logging.error(f"DB update FAILED - {e}")
         finally:
             upd_con.close()
 
@@ -423,7 +423,7 @@ def pull_uptimerobot_data(update_time):
                 #upd_con.commit()
                 logging.info("DB update finished")
             except BaseException as e:
-                logging.info(f"DB update FAILED - {e}")
+                logging.error(f"DB update FAILED - {e}")
             finally:
                 upd_con.close()
 
@@ -434,7 +434,7 @@ def run_downloads(datasets):
     try:
         for ds in datasets:
             skipped_empty = download_resources(ds) or skipped_empty
-    except Exception as e:
+    except BaseException as e:
         logging.error(f"Download failed - {e}")
         skipped_empty = True
 
