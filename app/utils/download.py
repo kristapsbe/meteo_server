@@ -376,8 +376,6 @@ def pull_uptimerobot_data(update_time):
             timeout=10
         )
         if r.status_code == 200:
-            with open(f"{data_uptimerobot_folder}uptimerobot_{update_time}.json", "wb") as f:
-                f.write(r.content)
             monit_data = json.loads(r.content)
             metrics = {k: {} for k in meta.values()}
             metrics["downtime"] = {min([e["create_datetime"] for e in monit_data["monitors"]]): 0}
