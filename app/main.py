@@ -467,6 +467,18 @@ def get_city_response(city, add_last_no_skip, h_city, use_simple_warnings, add_c
     return ret_val
 
 
+def is_param_missing():
+    param_date_counts = cur.execute("""
+        SELECT
+            update_time , COUNT(*)
+        FROM
+            forecast_cities
+        GROUP BY
+            update_time
+    """).fetchall()
+    return len(param_date_counts) > 1
+
+
 # http://localhost:443/api/v1/forecast/cities?lat=56.9730&lon=24.1327
 @app.get("/api/v1/forecast/cities")
 @app.head("/api/v1/forecast/cities") # added for https://stats.uptimerobot.com/EAWZfpoMkw
@@ -515,6 +527,7 @@ async def get_meta():
 
     retval = {
         "is_emergency": is_emergency(),
+        "is_param_missing": is_param_missing(),
         "is_aurora_ood": (aurora_probs_time < curr_date)
     }
     if retval["is_emergency"]:

@@ -232,7 +232,16 @@ def update_table(t_conf, update_time, db_con):
         db_cur.executemany(full_q, df.iloc[i*batch_size:(i+1)*batch_size].values.tolist())
         logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} rows upserted (batch {i}/{batch_count}, total {total})")
         db_con.commit()
-    db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE update_time < {update_time}")
+    if t_conf["table_name"] == "forecast_cities":
+        # dealing with cases when a single forecast param may have gone missing
+        db_cur.execute(f"""
+            WITH valid_dates AS (
+                SELECT date FROM {t_conf["table_name"]} WHERE update_time = {update_time}
+            )
+            DELETE FROM {t_conf["table_name"]} WHERE date NOT IN valid_dates
+        """)
+    else:
+        db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE update_time < {update_time}")
     logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} old rows deleted")
     db_con.commit()
     logging.info(f"TABLE '{t_conf["table_name"]}' updated")
@@ -363,6 +372,7 @@ def pull_uptimerobot_data(update_time):
         '/api/v1/meta (DOWN if aurora forecast is out of date)': 'aurora',
         '/api/v1/meta (DOWN if forecast download fallback has failed)': 'emergency',
         '/api/v1/meta (DOWN if forecast download has failed)': 'forecast',
+        '/api/v1/meta (DOWN if forecast fields look to be missing)': 'forecast',
         '/api/v1/forecast/cities (DOWN if any forecast fields have defaulted to -999)': 'forecast',
     }
 
