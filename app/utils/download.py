@@ -390,7 +390,11 @@ def pull_uptimerobot_data(update_time):
                 if is_meta or e["friendly_name"] in uptime:
                     for ent in e["logs"]:
                         if ent["type"] == 1:
-                            ek = meta[e["friendly_name"]] if is_meta and ent["duration"] > 300 else "downtime"
+                            ek = "downtime"
+                            if is_meta and ent["duration"] > 300:
+                                if ent["datetime"] in metrics["downtime"] and metrics["downtime"][ent["datetime"]] <= 300:
+                                    del metrics["downtime"][ent["datetime"]]
+                                ek = meta[e["friendly_name"]]
                             match = [k+v for k,v in metrics[ek].items() if ent["datetime"] >= k and ent["datetime"] <= k+v]
                             if len(match) > 0:
                                 if ent["datetime"]+ent["duration"] > match[0]:
@@ -419,10 +423,9 @@ def pull_uptimerobot_data(update_time):
                 """, [[ki, kj, vj] for ki, vi in metrics.items() for kj, vj in vi.items()])
                 logging.info(f"TABLE 'downtimes' - {upd_cur.rowcount} rows upserted")
                 upd_con.commit()
-                # keep the older data from uptimerobot since they'll discard it
-                #upd_cur.execute(f"DELETE FROM downtimes WHERE update_time < {update_time}")
-                #logging.info(f"TABLE 'downtimes' - {upd_cur.rowcount} old rows deleted")
-                #upd_con.commit()
+                upd_cur.execute(f"DELETE FROM downtimes WHERE update_time < {update_time}")
+                logging.info(f"TABLE 'downtimes' - {upd_cur.rowcount} old rows deleted")
+                upd_con.commit()
                 logging.info("DB update finished")
             except BaseException as e:
                 logging.error(f"DB update FAILED - {e}")
