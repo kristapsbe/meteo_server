@@ -184,7 +184,7 @@ def get_forecast(cur, city, c_date, params):
     # pivoting the table and using max to discard nulls
     # TODO: check if max is the correct funtion to use for this
     #
-    # columns should not longer go missing because of the new cleanup logic, leaving the -99 just in case
+    # columns should not longer go missing because of the new cleanup logic, leaving the -999 just in case
     return cur.execute(f"""
         SELECT
             city_id, date,
