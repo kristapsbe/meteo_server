@@ -184,7 +184,7 @@ def get_forecast(cur, city, c_date, params):
     # pivoting the table and using max to discard nulls
     # TODO: check if max is the correct funtion to use for this
     # app cant cope with nulls atm - returning -999 for the time being
-    # TODO: fix
+    # TODO: fix - note, the page had blown up when this was relevant as well, cant really use emergency mode though
     return cur.execute(f"""
         SELECT
             city_id, date,
