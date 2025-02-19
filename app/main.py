@@ -469,10 +469,18 @@ def get_city_response(city, add_last_no_skip, h_city, use_simple_warnings, add_c
 
 def is_param_missing():
     param_date_counts = cur.execute("""
+        WITH filtered_forecasts AS (
+           	SELECT
+          		param_id, date, MAX(update_time) AS update_time
+           	FROM
+          		forecast_cities
+           	GROUP BY
+          		param_id, date
+        )
         SELECT
             update_time , COUNT(*)
         FROM
-            forecast_cities
+            filtered_forecasts
         GROUP BY
             update_time
     """).fetchall()
