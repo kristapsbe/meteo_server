@@ -240,6 +240,43 @@ def update_table(t_conf, update_time, db_con):
             )
             DELETE FROM {t_conf["table_name"]} WHERE date NOT IN valid_dates
         """)
+        logging.info("UPDATING 'forecast_age'")
+        db_cur.execute("""
+            CREATE TABLE IF NOT EXISTS forecast_age (
+                forecast_update_time DATEH,
+                count INTEGER,
+                update_time DATEH,
+                PRIMARY KEY (forecast_update_time)
+            )
+        """)
+        db_cur.execute(f"""
+            WITH filtered_forecasts AS (
+               	SELECT
+              		param_id, date, MAX(update_time) AS update_time
+               	FROM
+              		forecast_cities
+               	GROUP BY
+              		param_id, date
+            )
+            INSERT INTO forecast_age (forecast_update_time, count, update_time)
+            SELECT
+                update_time AS forecast_update_time,
+                COUNT(*) AS count,
+                {update_time} AS update_time
+            FROM
+                filtered_forecasts
+            GROUP BY
+                update_time
+            ON CONFLICT(forecast_update_time) DO UPDATE SET
+                count=excluded.count,
+                update_time=excluded.update_time
+        """)
+        logging.info(f"TABLE 'forecast_age' - {db_cur.rowcount} rows upserted")
+        db_con.commit()
+        db_cur.execute(f"DELETE FROM forecast_age WHERE update_time < {update_time}")
+        logging.info(f"TABLE 'forecast_age' - {db_cur.rowcount} old rows deleted")
+        db_con.commit()
+        logging.info("TABLE 'forecast_age' updated")
     else:
         db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE update_time < {update_time}")
     logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} old rows deleted")
