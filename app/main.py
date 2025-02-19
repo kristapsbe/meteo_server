@@ -471,11 +471,11 @@ def is_param_missing():
     param_date_counts = cur.execute("""
         WITH filtered_forecasts AS (
            	SELECT
-          		param_id, date, MAX(update_time) AS update_time
+                param_id, date, MAX(update_time) AS update_time
            	FROM
-          		forecast_cities
+                forecast_cities
            	GROUP BY
-          		param_id, date
+                param_id, date
         )
         SELECT
             update_time , COUNT(*)
