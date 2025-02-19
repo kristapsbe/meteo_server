@@ -183,10 +183,12 @@ def get_forecast(cur, city, c_date, params):
         return []
     # pivoting the table and using max to discard nulls
     # TODO: check if max is the correct funtion to use for this
+    # app cant cope with nulls atm - returning -999 for the time being
+    # TODO: fix
     return cur.execute(f"""
         SELECT
             city_id, date,
-            {",".join([f"max(case when param_id={p[0]} then value end) AS val_{p[0]}" for p in params])}
+            {",".join([f"IFNULL(MAX(case when param_id={p[0]} then value end), -999) AS val_{p[0]}" for p in params])}
         FROM
             forecast_cities AS fc
         WHERE
