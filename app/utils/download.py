@@ -401,7 +401,7 @@ def pull_uptimerobot_data(update_time):
                     for ent in e["logs"]:
                         if ent["type"] == 1:
                             ek = "downtime"
-                            if is_meta and ent["duration"] > 300:
+                            if is_meta and ent["duration"] > 300: # flipped the alerts over so this is not really relevant anymore - keeping it so that historical entries still work
                                 if ent["datetime"] in metrics["downtime"] and metrics["downtime"][ent["datetime"]] <= 300:
                                     del metrics["downtime"][ent["datetime"]]
                                 ek = meta[e["friendly_name"]]
