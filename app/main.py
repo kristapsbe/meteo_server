@@ -468,6 +468,7 @@ def get_city_response(city, add_last_no_skip, h_city, use_simple_warnings, add_c
 
 
 def is_param_missing():
+    # TODO: this is horribly slow - should take a look
     param_date_counts = cur.execute("""
         WITH filtered_forecasts AS (
             SELECT
