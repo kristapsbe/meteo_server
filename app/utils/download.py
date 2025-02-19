@@ -363,6 +363,7 @@ def pull_uptimerobot_data(update_time):
         '/api/v1/meta (DOWN if aurora forecast is out of date)': 'aurora',
         '/api/v1/meta (DOWN if forecast download fallback has failed)': 'emergency',
         '/api/v1/meta (DOWN if forecast download has failed)': 'forecast',
+        '/api/v1/forecast/cities (DOWN if any forecast fields have defaulted to -999)': 'forecast',
     }
 
     if os.environ['UPTIMEROBOT']:
