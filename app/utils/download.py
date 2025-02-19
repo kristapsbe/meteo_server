@@ -429,6 +429,8 @@ def pull_uptimerobot_data(update_time):
             metrics["downtime"] = {min([e["create_datetime"] for e in monit_data["monitors"]]): 0}
             metrics_file = f"{data_uptimerobot_folder}uptimerobot_metrics.json"
             if os.path.isfile(metrics_file):
+                # negative check should be unnecessary, I think I just messed the db up with a bad update_time
+                # TODO: double check
                 metrics = {ki: {int(kj): vj for kj, vj in vi.items() if vj >= 0} for ki, vi in json.loads(open(metrics_file, "r").read()).items()}
             for e in monit_data["monitors"]:
                 is_meta = e["friendly_name"] in meta
