@@ -237,7 +237,7 @@ def update_table(t_conf, update_time, db_con):
         valid_dates = db_cur.execute(f"""
             SELECT MIN(date), MAX(date) FROM {t_conf["table_name"]} WHERE update_time = {update_time}
         """).fetchall() # better than getting all dates, but still slow
-        db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE date < {valid_dates[0][0]} OR date > {valid_dates[0][1]}")
+        db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE date < {valid_dates[0][0]} OR date > {valid_dates[0][1]}") # why does this work? I expected it to break when switching from emergency mode (I thought I would end up with some extra hourly forecasts laying around)
         logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} old rows deleted")
         db_con.commit()
         logging.info("UPDATING 'forecast_age'")
@@ -524,7 +524,8 @@ def run_downloads(datasets):
 if __name__ == "__main__":
     logging.info("Download job starting")
     if skip_download:
-        update_db()
-        update_aurora_forecast()
+        update_time = datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
+        update_db(update_time)
+        update_aurora_forecast(update_time)
     else:
         run_downloads(target_ds)
