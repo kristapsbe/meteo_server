@@ -239,18 +239,18 @@ def update_table(t_conf, update_time, db_con):
         h_where = f"param_id IN ({",".join([str(p[0]) for p in h_params])})"
         not_params = f"param_id NOT IN ({",".join([str(p[0]) for p in h_params+d_params])})"
         valid_dates = db_cur.execute(f"""
-            SELECT MIN(date), MAX(date) FROM {t_conf["table_name"]} WHERE (update_time = {update_time} AND {h_where}) OR {not_params}
+            SELECT MIN(date), MAX(date) FROM {t_conf["table_name"]} WHERE update_time = {update_time} AND {h_where}
         """).fetchall() # better than getting all dates, but still slow
-        db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE ((date < {valid_dates[0][0]} OR date > {valid_dates[0][1]}) AND {h_where}) OR {not_params}")
+        db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE ((date < {valid_dates[0][0]} OR date > {valid_dates[0][1]}) AND {h_where}) OR {not_params} OR param_id IS NULL")
         logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} old rows deleted (hourly params)")
         db_con.commit()
 
         d_params = get_params(db_cur, daily_params)
         d_where = f"param_id IN ({",".join([str(p[0]) for p in d_params])})"
         valid_dates = db_cur.execute(f"""
-            SELECT MIN(date), MAX(date) FROM {t_conf["table_name"]} WHERE (update_time = {update_time} AND {d_where}) OR {not_params}
+            SELECT MIN(date), MAX(date) FROM {t_conf["table_name"]} WHERE update_time = {update_time} AND {d_where}
         """).fetchall() # better than getting all dates, but still slow
-        db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE ((date < {valid_dates[0][0]} OR date > {valid_dates[0][1]}) AND {d_where}) OR {not_params}")
+        db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE ((date < {valid_dates[0][0]} OR date > {valid_dates[0][1]}) AND {d_where}) OR {not_params} OR param_id IS NULL")
         logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} old rows deleted (daily params)")
         db_con.commit()
 
