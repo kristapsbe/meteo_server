@@ -234,12 +234,12 @@ def update_table(t_conf, update_time, db_con):
         db_con.commit()
     if t_conf["table_name"] == "forecast_cities":
         # dealing with cases when a single forecast param may have gone missing
-        db_cur.execute(f"""
-            WITH valid_dates AS (
-                SELECT date FROM {t_conf["table_name"]} WHERE update_time = {update_time}
-            )
-            DELETE FROM {t_conf["table_name"]} WHERE date NOT IN valid_dates
-        """)
+        valid_dates = db_cur.execute(f"""
+            SELECT date FROM {t_conf["table_name"]} WHERE update_time = {update_time}
+        """).fetchall()
+        db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE date NOT IN ('{"','".join([str(e[0]) for e in valid_dates])}')")
+        logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} old rows deleted")
+        db_con.commit()
         logging.info("UPDATING 'forecast_age'")
         db_cur.execute("""
             CREATE TABLE IF NOT EXISTS forecast_age (
@@ -249,7 +249,7 @@ def update_table(t_conf, update_time, db_con):
                 PRIMARY KEY (forecast_update_time)
             )
         """)
-        db_cur.execute(f"""
+        g_forecasts = db_cur.execute("""
             WITH filtered_forecasts AS (
                	SELECT
               		param_id, date, MAX(update_time) AS update_time
@@ -258,19 +258,21 @@ def update_table(t_conf, update_time, db_con):
                	GROUP BY
               		param_id, date
             )
-            INSERT INTO forecast_age (forecast_update_time, count, update_time)
             SELECT
                 update_time AS forecast_update_time,
-                COUNT(*) AS count,
-                {update_time} AS update_time
+                COUNT(*) AS count
             FROM
                 filtered_forecasts
             GROUP BY
                 update_time
+        """).fetchall()
+        db_cur.executemany(f"""
+            INSERT INTO forecast_age (forecast_update_time, count, update_time)
+            VALUES (?, ?, {update_time})
             ON CONFLICT(forecast_update_time) DO UPDATE SET
                 count=excluded.count,
-                update_time=excluded.update_time
-        """)
+                update_time={update_time}
+        """, g_forecasts)
         logging.info(f"TABLE 'forecast_age' - {db_cur.rowcount} rows upserted")
         db_con.commit()
         db_cur.execute(f"DELETE FROM forecast_age WHERE update_time < {update_time}")
@@ -279,8 +281,8 @@ def update_table(t_conf, update_time, db_con):
         logging.info("TABLE 'forecast_age' updated")
     else:
         db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE update_time < {update_time}")
-    logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} old rows deleted")
-    db_con.commit()
+        logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} old rows deleted")
+        db_con.commit()
     logging.info(f"TABLE '{t_conf["table_name"]}' updated")
 
 
@@ -437,7 +439,7 @@ def pull_uptimerobot_data(update_time):
                 if is_meta:
                     metrics[meta[e["friendly_name"]]][e["create_datetime"]] = 0
                 if is_meta or e["friendly_name"] in uptime:
-                    for ent in e["logs"]:
+                    for ent in sorted(e["logs"], key=lambda e: e['datetime']): # downstream logic only really works if we start from the lowest datetime and go up
                         if ent["type"] == 1:
                             ek = "downtime"
                             if is_meta and ent["duration"] > 300: # flipped the alerts over so this is not really relevant anymore - keeping it so that historical entries still work
