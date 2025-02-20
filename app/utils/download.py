@@ -428,30 +428,38 @@ def pull_uptimerobot_data(update_time):
         if r.status_code == 200:
             monit_data = json.loads(r.content)
             metrics = {k: {} for k in meta.values()}
-            metrics["downtime"] = {min([e["create_datetime"] for e in monit_data["monitors"]]): 0}
+            oldest_monit = min([e["create_datetime"] for e in monit_data["monitors"]])
+            metrics["downtime"] = {oldest_monit: oldest_monit}
             metrics_file = f"{data_uptimerobot_folder}uptimerobot_metrics.json"
             if os.path.isfile(metrics_file):
-                # negative check should be unnecessary, I think I just messed the db up with a bad update_time
-                # TODO: double check
-                metrics = {ki: {int(kj): vj for kj, vj in vi.items() if vj >= 0} for ki, vi in json.loads(open(metrics_file, "r").read()).items()}
+                metrics = {ki: {int(kj): vj for kj, vj in vi.items()} for ki, vi in json.loads(open(metrics_file, "r").read()).items()}
+
             for e in monit_data["monitors"]:
                 is_meta = e["friendly_name"] in meta
                 if is_meta:
-                    metrics[meta[e["friendly_name"]]][e["create_datetime"]] = 0
+                    # adds a bunch of duplicate stuff if multiple monits are looking at a specific meta val, shouldn't matted since they'll be 0 len though
+                    metrics[meta[e["friendly_name"]]][e["create_datetime"]] = e["create_datetime"]
                 if is_meta or e["friendly_name"] in uptime:
-                    for ent in sorted(e["logs"], key=lambda e: e['datetime']): # downstream logic only really works if we start from the lowest datetime and go up
+                    for ent in e["logs"]:
                         if ent["type"] == 1:
-                            ek = "downtime"
-                            if is_meta and ent["duration"] > 300: # flipped the alerts over so this is not really relevant anymore - keeping it so that historical entries still work
-                                if ent["datetime"] in metrics["downtime"] and metrics["downtime"][ent["datetime"]] <= 300:
-                                    del metrics["downtime"][ent["datetime"]]
-                                ek = meta[e["friendly_name"]]
-                            match = [k+v for k,v in metrics[ek].items() if ent["datetime"] >= k and ent["datetime"] <= k+v]
-                            if len(match) > 0:
-                                if ent["datetime"]+ent["duration"] > match[0]:
-                                    metrics[ek][ent["datetime"]] += match[0]-(ent["datetime"]+ent["duration"])
+                            ek = meta[e["friendly_name"]] if is_meta and ent["duration"] > 300 else "downtime"
+                            end_dt = ent["datetime"]+ent["duration"]
+                            # work out if the current incidents start time falls within a different incident, and merge them if that's the case
+                            matches = {
+                                k:v for k,v in metrics[ek].items()
+                                if (
+                                    (ent["datetime"] >= k and ent["datetime"] <= v) or # new entries start falls within existing entry
+                                    (end_dt >= k and end_dt <= v) or # new entries end falls within existing entry
+                                    (ent["datetime"] <= k and end_dt >= v) # old entry fully falls within the new one
+                                )
+                            }
+                            if len(matches) > 0:
+                                for k in matches.keys():
+                                    del metrics[ek][k]
+                                metrics[ek][min(min(matches.keys()), ent["datetime"])] = max(max(matches.values()), end_dt)
                             else:
-                                metrics[ek][ent["datetime"]] = ent["duration"]
+                                metrics[ek][ent["datetime"]] = end_dt
+
             open(metrics_file, "w").write(json.dumps(metrics))
             upd_con = sqlite3.connect(db_file)
             upd_cur = upd_con.cursor()
@@ -471,7 +479,7 @@ def pull_uptimerobot_data(update_time):
                     ON CONFLICT(type, start_time) DO UPDATE SET
                         duration=excluded.duration,
                         update_time={update_time}
-                """, [[ki, kj, vj] for ki, vi in metrics.items() for kj, vj in vi.items()])
+                """, [[ki, kj, vj-kj] for ki, vi in metrics.items() for kj, vj in vi.items()])
                 logging.info(f"TABLE 'downtimes' - {upd_cur.rowcount} rows upserted")
                 upd_con.commit()
                 upd_cur.execute(f"DELETE FROM downtimes WHERE update_time < {update_time}")
