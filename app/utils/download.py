@@ -7,7 +7,7 @@ import logging
 import datetime
 import requests
 
-from utils import simlpify_string
+from utils import simlpify_string, hourly_params, daily_params, get_params
 from settings import db_file, data_folder, data_uptimerobot_folder, last_updated, run_emergency, run_emergency_failed
 
 
@@ -234,12 +234,24 @@ def update_table(t_conf, update_time, db_con):
         db_con.commit()
     if t_conf["table_name"] == "forecast_cities":
         # dealing with cases when a single forecast param may have gone missing
+        h_params = get_params(db_cur, hourly_params)
+        h_where = f"param_id IN ({",".join([str(p[0]) for p in h_params])})"
         valid_dates = db_cur.execute(f"""
-            SELECT MIN(date), MAX(date) FROM {t_conf["table_name"]} WHERE update_time = {update_time}
+            SELECT MIN(date), MAX(date) FROM {t_conf["table_name"]} WHERE update_time = {update_time} AND {h_where}
         """).fetchall() # better than getting all dates, but still slow
-        db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE date < {valid_dates[0][0]} OR date > {valid_dates[0][1]}") # why does this work? I expected it to break when switching from emergency mode (I thought I would end up with some extra hourly forecasts laying around)
-        logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} old rows deleted")
+        db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE (date < {valid_dates[0][0]} OR date > {valid_dates[0][1]}) AND {h_where}")
+        logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} old rows deleted (hourly params)")
         db_con.commit()
+
+        d_params = get_params(db_cur, daily_params)
+        d_where = f"param_id IN ({",".join([str(p[0]) for p in d_params])})"
+        valid_dates = db_cur.execute(f"""
+            SELECT MIN(date), MAX(date) FROM {t_conf["table_name"]} WHERE update_time = {update_time} AND {d_where}
+        """).fetchall() # better than getting all dates, but still slow
+        db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE (date < {valid_dates[0][0]} OR date > {valid_dates[0][1]}) AND {d_where}")
+        logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} old rows deleted (daily params)")
+        db_con.commit()
+
         logging.info("UPDATING 'forecast_age'")
         db_cur.execute("""
             CREATE TABLE IF NOT EXISTS forecast_age (
