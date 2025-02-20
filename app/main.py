@@ -12,7 +12,7 @@ import datetime
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
-from utils.utils import simlpify_string
+from utils.utils import simlpify_string, hourly_params, daily_params, get_params
 from utils.settings import editdist_extension, db_file, data_folder, last_updated, run_emergency, run_emergency_failed
 
 
@@ -41,40 +41,6 @@ app = FastAPI(
     redoc_url=None
 )
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s')
-
-hourly_params = "','".join([
-    'Laika apstākļu piktogramma',
-    'Temperatūra (°C)',
-    'Sajūtu temperatūra (°C)',
-    'Vēja ātrums (m/s)',
-    'Vēja virziens (°)',
-    'Brāzmas (m/s)',
-    'Nokrišņi (mm)',
-    'UV indekss (0-10)',
-    'Pērkona negaisa varbūtība (%)',
-])
-
-daily_params = "','".join([
-    'Diennakts vidējā vēja vērtība (m/s)',
-    'Diennakts maksimālā vēja brāzma (m/s)',
-    'Diennakts maksimālā temperatūra (°C)',
-    'Diennakts minimālā temperatūra (°C)',
-    'Diennakts nokrišņu summa (mm)',
-    'Diennakts nokrišņu varbūtība (%)',
-    'Laika apstākļu piktogramma nakti',
-    'Laika apstākļu piktogramma diena',
-])
-
-
-def get_params(cur, param_q):
-    return cur.execute(f"""
-        SELECT
-            id, title_lv, title_en
-        FROM
-            forecast_cities_params
-        WHERE
-            title_lv in ('{param_q}')
-    """).fetchall()
 
 
 def is_emergency():
