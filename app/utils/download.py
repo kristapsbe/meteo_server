@@ -235,9 +235,9 @@ def update_table(t_conf, update_time, db_con):
     if t_conf["table_name"] == "forecast_cities":
         # dealing with cases when a single forecast param may have gone missing
         valid_dates = db_cur.execute(f"""
-            SELECT date FROM {t_conf["table_name"]} WHERE update_time = {update_time}
-        """).fetchall() # stuff looks to be very slow - breaking it apart to see if it keeps me from hitting db locks
-        db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE date NOT IN ('{"','".join([str(e[0]) for e in valid_dates])}')")
+            SELECT MIN(date), MAX(date) FROM {t_conf["table_name"]} WHERE update_time = {update_time}
+        """).fetchall() # better than getting all dates, but still slow
+        db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE date < {valid_dates[0][0]} OR date > {valid_dates[0][1]}")
         logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} old rows deleted")
         db_con.commit()
         logging.info("UPDATING 'forecast_age'")
