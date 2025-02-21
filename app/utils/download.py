@@ -441,6 +441,7 @@ def pull_uptimerobot_data(update_time):
         )
         if r.status_code == 200:
             monit_data = json.loads(r.content)
+            open("/data_uptimerobot/crap.json", "w").write(json.dumps(monit_data))
             metrics = {k: {} for k in meta.values()}
             oldest_monit = min([e["create_datetime"] for e in monit_data["monitors"]])
             metrics["downtime"] = {oldest_monit: oldest_monit}
@@ -455,7 +456,7 @@ def pull_uptimerobot_data(update_time):
                     metrics[meta[e["friendly_name"]]][e["create_datetime"]] = e["create_datetime"]
                 if is_meta or e["friendly_name"] in uptime:
                     for ent in e["logs"]:
-                        if ent["type"] == 1:
+                        if ent["type"] == 1 and (not is_meta or (is_meta and ent["reason"]["code"] != "333333")): # discarding timeouts from the meta metrics - server was dead, so data sources weren't checked
                             ek = meta[e["friendly_name"]] if is_meta and ent["duration"] > 300 else "downtime"
                             end_dt = ent["datetime"]+ent["duration"]
                             # work out if the current incidents start time falls within a different incident, and merge them if that's the case
