@@ -72,8 +72,9 @@ When set up I end up in a situation where:
 * an emergency download is potentially triggered every 4 hours, 5 minutes past the hour (yellow)
 * code updates are pulled 30 and 50 minutes past the hour (red)
 * an OS update is triggered once a day at 2:10 in the morning (blue)
+* docker containers are started 15, 25, 35, 45, and 55 minutes past the hour (sand)
 
-<img width="1025" alt="image" src="https://github.com/user-attachments/assets/2c0b28e9-9046-4682-8434-aaae651910d4" />
+<img width="1025" alt="image" src="https://github.com/user-attachments/assets/5b28517b-b023-4a2f-a7f5-db641829bef5" />
 
 ### DB
 
