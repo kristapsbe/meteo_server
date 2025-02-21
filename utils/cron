@@ -1,3 +1,9 @@
 30	*	*	*	*	~/meteo_server/utils/redeploy.sh
 50	*	*	*	*	~/meteo_server/utils/redeploy.sh
 10	2	*	*	*	~/meteo_server/utils/update.sh
+
+15	*	*	*	*	~/meteo_server/utils/start.sh
+25	*	*	*	*	~/meteo_server/utils/start.sh
+35	*	*	*	*	~/meteo_server/utils/start.sh
+45	*	*	*	*	~/meteo_server/utils/start.sh
+55	*	*	*	*	~/meteo_server/utils/start.sh
