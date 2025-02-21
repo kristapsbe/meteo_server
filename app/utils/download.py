@@ -250,7 +250,7 @@ def update_table(t_conf, update_time, db_con):
         valid_dates = db_cur.execute(f"""
             SELECT MIN(date), MAX(date) FROM {t_conf["table_name"]} WHERE update_time = {update_time} AND {d_where}
         """).fetchall() # better than getting all dates, but still slow
-        db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE ((date < {valid_dates[0][0]} OR date > {valid_dates[0][1]}) AND {d_where}) OR {not_params} OR param_id IS NULL")
+        db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE (date < {valid_dates[0][0]} OR date > {valid_dates[0][1]}) AND {d_where}")
         logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} old rows deleted (daily params)")
         db_con.commit()
 
