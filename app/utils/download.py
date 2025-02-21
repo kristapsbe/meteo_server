@@ -441,7 +441,6 @@ def pull_uptimerobot_data(update_time):
         )
         if r.status_code == 200:
             monit_data = json.loads(r.content)
-            open("/data_uptimerobot/crap.json", "w").write(json.dumps(monit_data))
             metrics = {k: {} for k in meta.values()}
             oldest_monit = min([e["create_datetime"] for e in monit_data["monitors"]])
             metrics["downtime"] = {oldest_monit: oldest_monit}
