@@ -10,7 +10,7 @@ It's been made for use with [this android app](https://github.com/kristapsbe/met
 
 The server consists of two [docker](https://www.docker.com/) containers. One for the webserver itself, and one for [HAProxy](https://www.haproxy.org/) (this is mostly here for dealing with ssl certificates).
 
-![image](https://github.com/user-attachments/assets/e99d866c-eba8-4a4e-85cf-5a525d551fb7)
+![image](https://github.com/user-attachments/assets/2ecbdd56-ba91-4370-b1d8-442ca5085ab0)
 
 Status page is available [here](https://stats.uptimerobot.com/EAWZfpoMkw), and aggregated availability metrics are available [here](https://meteo.kristapsbe.lv/api/v1/metrics). 
 
@@ -111,11 +111,11 @@ Example links that can be used to call endpoints can be found in comments at the
 Weather forecasts are location specific, and locations are selected either by matching their names, or by finding the closest city to the provided coordintes.
 
 When searching for cities the full set of cities is at first filtered down by selecting
-* Republic cities within 10km (red)
-* Other cities within 5 km (orange)
-* Regional centers within 3.3km (green)
-* Parish centers within 2.5km (blue)
-* villages within 2km (purple)
+* Republic cities within 10km (red),
+* Other cities within 5 km (orange),
+* Regional centers within 3.3km (green),
+* Parish centers within 2.5km (blue),
+* villages within 2km (purple).
 
 ![image](https://github.com/user-attachments/assets/cf39f9cf-fb2b-4aa7-b837-fe95644a0ae8)
 (defined [here](https://github.com/kristapsbe/meteo_server/blob/06a7f55b07744fa07ea14209aea1d5f6552116e8/app/main.py#L115))
