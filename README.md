@@ -139,3 +139,7 @@ useful for getting rid of merged branches
 ```bash
 git checkout main && git fetch -p && git branch -vv | awk '/: gone]/{print $1}' | xargs git branch -d
 ```
+
+```bash
+openssl x509 -enddate -noout -in file.pem
+```
