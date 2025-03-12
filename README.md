@@ -10,7 +10,7 @@ It's been made for use with [this android app](https://github.com/kristapsbe/met
 
 The server consists of two [docker](https://www.docker.com/) containers. One for the webserver itself, and one for [HAProxy](https://www.haproxy.org/).
 
-![image](https://github.com/user-attachments/assets/6fc49d46-9356-46f9-b9f6-ba809e602678)
+![image](https://github.com/user-attachments/assets/b074b78b-c43f-4177-8ce7-634a8e302c89)
 
 Status page is available [here](https://stats.uptimerobot.com/EAWZfpoMkw), and aggregated availability metrics are available [here](https://meteo.kristapsbe.lv/api/v1/metrics). 
 
