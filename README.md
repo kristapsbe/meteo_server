@@ -55,11 +55,7 @@ systemctl enable --now docker
 
 ### Certs
 
-The default setup expects [ssl certificates](https://letsencrypt.org/) to already be present in the `certs` folder, and it expects `/etc/letsencrypt` to exist on the host
-
-```bash
-cat /etc/letsencrypt/live/meteo.kristapsbe.lv/fullchain.pem /etc/letsencrypt/live/meteo.kristapsbe.lv/privkey.pem > ~/meteo_server/certs/haproxy.pem
-```
+The default setup expects [the ssl certificate](https://letsencrypt.org/) to already be present in the `certs` folder, and it expects `/etc/letsencrypt` to exist on the host. Once running the HAProxy container will automatically refresh the certificate every two months.
 
 ### Setting up auto-redeployment
 
@@ -134,11 +130,13 @@ Weather warnings are considered relevant if coordinates are within a given warni
 docker exec -it meteo_server-app-1 sh
 ```
 
-useful for getting rid of merged branches
+get rid of merged branches
 
 ```bash
 git checkout main && git fetch -p && git branch -vv | awk '/: gone]/{print $1}' | xargs git branch -d
 ```
+
+check cert expiry
 
 ```bash
 openssl x509 -enddate -noout -in file.pem
