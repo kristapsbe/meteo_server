@@ -55,7 +55,7 @@ systemctl enable --now docker
 
 ### Certs
 
-The default setup expects [ssl certificates](https://letsencrypt.org/) to already be present in the `certs` folder, and it expects `/etc/letsencrypt` to exist on the host
+The default setup expects [ssl certificates](https://letsencrypt.org/) to already be present in the `certs` folder, and it expects `/etc/letsencrypt` to exist on the host. Once running the HAProxy container will automatically refresh the certificate every two months.
 
 ```bash
 uv run certbot certonly --standalone
