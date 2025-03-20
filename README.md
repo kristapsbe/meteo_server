@@ -8,9 +8,9 @@ It's been made for use with [this android app](https://github.com/kristapsbe/met
 
 ## Overview
 
-The server consists of two [docker](https://www.docker.com/) containers. One for the webserver itself, and one for [HAProxy](https://www.haproxy.org/) (this is mostly here for dealing with ssl certificates).
+The server consists of two [docker](https://www.docker.com/) containers. One for the webserver itself, and one for [HAProxy](https://www.haproxy.org/).
 
-![image](https://github.com/user-attachments/assets/e99d866c-eba8-4a4e-85cf-5a525d551fb7)
+![image](https://github.com/user-attachments/assets/b074b78b-c43f-4177-8ce7-634a8e302c89)
 
 Status page is available [here](https://stats.uptimerobot.com/EAWZfpoMkw), and aggregated availability metrics are available [here](https://meteo.kristapsbe.lv/api/v1/metrics).
 
@@ -70,11 +70,11 @@ cat /etc/letsencrypt/live/meteo.kristapsbe.lv/fullchain.pem /etc/letsencrypt/liv
 Run `utils/install.sh` to set up a cronjob that checks for new code that has been added to the repos main branch.
 
 When set up I end up in a situation where:
-* a download is triggered once every 20 minutes (green)
-* an emergency download is potentially triggered every 4 hours, 5 minutes past the hour (yellow)
-* code updates are pulled 30 and 50 minutes past the hour (red)
-* an OS update is triggered once a day at 2:10 in the morning (blue)
-* docker containers are started 15, 25, 35, 45, and 55 minutes past the hour (sand)
+* a download is triggered once every 20 minutes (green),
+* an emergency download is potentially triggered every 4 hours, 5 minutes past the hour (yellow),
+* code updates are pulled 30 and 50 minutes past the hour (red),
+* an OS update is triggered once a day at 2:10 in the morning (blue),
+* docker containers are started 15, 25, 35, 45, and 55 minutes past the hour (sand).
 
 <img width="1025" alt="image" src="https://github.com/user-attachments/assets/5b28517b-b023-4a2f-a7f5-db641829bef5" />
 
@@ -115,11 +115,11 @@ Example links that can be used to call endpoints can be found in comments at the
 Weather forecasts are location specific, and locations are selected either by matching their names, or by finding the closest city to the provided coordintes.
 
 When searching for cities the full set of cities is at first filtered down by selecting
-* Republic cities within 10km (red)
-* Other cities within 5 km (orange)
-* Regional centers within 3.3km (green)
-* Parish centers within 2.5km (blue)
-* villages within 2km (purple)
+* Republic cities within 10km (red),
+* Other cities within 5 km (orange),
+* Regional centers within 3.3km (green),
+* Parish centers within 2.5km (blue),
+* villages within 2km (purple).
 
 ![image](https://github.com/user-attachments/assets/cf39f9cf-fb2b-4aa7-b837-fe95644a0ae8)
 (defined [here](https://github.com/kristapsbe/meteo_server/blob/06a7f55b07744fa07ea14209aea1d5f6552116e8/app/main.py#L115))
@@ -138,8 +138,14 @@ Weather warnings are considered relevant if coordinates are within a given warni
 docker exec -it meteo_server-app-1 sh
 ```
 
-useful for getting rid of merged branches
+get rid of merged branches
 
 ```bash
 git checkout main && git fetch -p && git branch -vv | awk '/: gone]/{print $1}' | xargs git branch -d
+```
+
+check cert expiry
+
+```bash
+openssl x509 -enddate -noout -in file.pem
 ```
