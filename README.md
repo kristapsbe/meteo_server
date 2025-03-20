@@ -62,7 +62,7 @@ uv run certbot certonly --standalone
 ```
 
 ```bash
-cat /etc/letsencrypt/live/meteo.kristapsbe.lv/fullchain.pem /etc/letsencrypt/live/meteo.kristapsbe.lv/privkey.pem > ~/meteo_server/certs/haproxy.pem
+cat /etc/letsencrypt/live/meteo.kristapsbe.lv/fullchain.pem /etc/letsencrypt/live/meteo.kristapsbe.lv/privkey.pem > /certs/haproxy.pem
 ```
 
 ### Setting up auto-redeployment
