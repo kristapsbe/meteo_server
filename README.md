@@ -12,7 +12,7 @@ The server consists of two [docker](https://www.docker.com/) containers. One for
 
 ![image](https://github.com/user-attachments/assets/b074b78b-c43f-4177-8ce7-634a8e302c89)
 
-Status page is available [here](https://stats.uptimerobot.com/EAWZfpoMkw), and aggregated availability metrics are available [here](https://meteo.kristapsbe.lv/api/v1/metrics). 
+Status page is available [here](https://stats.uptimerobot.com/EAWZfpoMkw), and aggregated availability metrics are available [here](https://meteo.kristapsbe.lv/api/v1/metrics).
 
 ## Setup
 
@@ -55,7 +55,15 @@ systemctl enable --now docker
 
 ### Certs
 
-The default setup expects [the ssl certificate](https://letsencrypt.org/) to already be present in the `certs` folder, and it expects `/etc/letsencrypt` to exist on the host. Once running the HAProxy container will automatically refresh the certificate every two months.
+The default setup expects [ssl certificates](https://letsencrypt.org/) to already be present in the `certs` folder, and it expects `/etc/letsencrypt` to exist on the host. Once running the HAProxy container will automatically refresh the certificate every two months.
+
+```bash
+uv run certbot certonly --standalone
+```
+
+```bash
+cat /etc/letsencrypt/live/meteo.kristapsbe.lv/fullchain.pem /etc/letsencrypt/live/meteo.kristapsbe.lv/privkey.pem > /certs/haproxy.pem
+```
 
 ### Setting up auto-redeployment
 
