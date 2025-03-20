@@ -13,6 +13,7 @@ services:
       - "443:443"
     volumes:
       - certs:/certs
+      - letsencrypt:/etc/letsencrypt
 
 volumes:
   data:
