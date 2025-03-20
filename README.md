@@ -12,7 +12,7 @@ The server consists of two [docker](https://www.docker.com/) containers. One for
 
 ![image](https://github.com/user-attachments/assets/e99d866c-eba8-4a4e-85cf-5a525d551fb7)
 
-Status page is available [here](https://stats.uptimerobot.com/EAWZfpoMkw), and aggregated availability metrics are available [here](https://meteo.kristapsbe.lv/api/v1/metrics). 
+Status page is available [here](https://stats.uptimerobot.com/EAWZfpoMkw), and aggregated availability metrics are available [here](https://meteo.kristapsbe.lv/api/v1/metrics).
 
 ## Setup
 
@@ -56,6 +56,10 @@ systemctl enable --now docker
 ### Certs
 
 The default setup expects [ssl certificates](https://letsencrypt.org/) to already be present in the `certs` folder, and it expects `/etc/letsencrypt` to exist on the host
+
+```bash
+uv run certbot certonly --standalone
+```
 
 ```bash
 cat /etc/letsencrypt/live/meteo.kristapsbe.lv/fullchain.pem /etc/letsencrypt/live/meteo.kristapsbe.lv/privkey.pem > ~/meteo_server/certs/haproxy.pem
