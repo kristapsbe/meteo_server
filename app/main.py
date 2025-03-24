@@ -385,7 +385,7 @@ def get_city_response(city, add_last_no_skip, h_city, use_simple_warnings, add_c
             "vals": f[2:]
         } for f in h_forecast],
         "daily_forecast": [{
-            "time": f[1],
+            "time": f[1] if str(f[1])[-4:] != "2300" else int((datetime.datetime.strptime(str(f[1]), "%Y%m%d%H%M") + datetime.timedelta(hours=1)).strftime("%Y%m%d%H%M")), # dealing with the clock getting turned forward
             "vals": f[2:]
         } for f in d_forecast],
         "aurora_probs": get_aurora_probability(cur, round(lat), round(lon)),
