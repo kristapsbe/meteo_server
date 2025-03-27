@@ -151,3 +151,41 @@ check cert expiry
 ```bash
 openssl x509 -enddate -noout -in file.pem
 ```
+
+#### First deployment
+
+on host
+
+```bash
+mkdir /etc/letsencrypt
+```
+
+change `haproxy/haproxy.cfg` to
+```
+    bind :443 # ssl crt /certs/haproxy.pem
+```
+
+```bash
+cd utils
+./redeploy.sh 
+```
+
+update dns records
+
+```bash
+docker exec -it meteo_server-haproxy-1 sh
+```
+
+from inside of the haproxy container
+
+```bash
+uv run certbot certonly --standalone
+cat /etc/letsencrypt/live/meteo.kristapsbe.lv/fullchain.pem /etc/letsencrypt/live/meteo.kristapsbe.lv/privkey.pem > /certs/haproxy.pem
+```
+
+leave the container, revert `haproxy/haproxy.cfg` and rebuild
+
+```bash
+cd utils
+./install.sh 
+```
