@@ -2,8 +2,6 @@ FROM alpine:3.21
 
 ARG HOST_ARCHITECTURE="unknown"
 
-USER root
-
 WORKDIR /app
 COPY . .
 COPY utils/settings.example.py utils/settings.py
