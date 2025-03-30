@@ -233,25 +233,29 @@ def update_table(t_conf, update_time, db_con):
         logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} rows upserted (batch {i}/{batch_count}, total {total})")
         db_con.commit()
     if t_conf["table_name"] == "forecast_cities":
-        # dealing with cases when a single forecast param may have gone missing
-        h_params = get_params(db_cur, hourly_params)
-        d_params = get_params(db_cur, daily_params)
-        not_params = f"param_id NOT IN ({",".join([str(p[0]) for p in h_params+d_params])})"
-        h_where = f"param_id IN ({",".join([str(p[0]) for p in h_params])})"
-        d_where = f"param_id IN ({",".join([str(p[0]) for p in d_params])})"
-        h_valid_dates = db_cur.execute(f"""
-            SELECT MIN(date), MAX(date) FROM {t_conf["table_name"]} WHERE update_time = {update_time} AND {h_where}
-        """).fetchall() # better than getting all dates, but still slow
-        d_valid_dates = db_cur.execute(f"""
-            SELECT MIN(date), MAX(date) FROM {t_conf["table_name"]} WHERE update_time = {update_time} AND {d_where}
-        """).fetchall() # better than getting all dates, but still slow
-        db_cur.execute(f"""
-            DELETE FROM {t_conf["table_name"]}
-            WHERE
-                ((date < {h_valid_dates[0][0]} OR date > {h_valid_dates[0][1]}) AND {h_where}) OR
-                ((date < {d_valid_dates[0][0]} OR date > {d_valid_dates[0][1]}) AND {d_where}) OR
-                {not_params} OR param_id IS NULL
-        """)
+        if True:
+            # clocks getting turned can mess the data up - leaving this as a contingency in case I just need to clear out all of the old data
+            db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE update_time < {update_time}")
+        else:
+            # dealing with cases when a single forecast param may have gone missing
+            h_params = get_params(db_cur, hourly_params)
+            d_params = get_params(db_cur, daily_params)
+            not_params = f"param_id NOT IN ({",".join([str(p[0]) for p in h_params+d_params])})"
+            h_where = f"param_id IN ({",".join([str(p[0]) for p in h_params])})"
+            d_where = f"param_id IN ({",".join([str(p[0]) for p in d_params])})"
+            h_valid_dates = db_cur.execute(f"""
+                SELECT MIN(date), MAX(date) FROM {t_conf["table_name"]} WHERE update_time = {update_time} AND {h_where}
+            """).fetchall() # better than getting all dates, but still slow
+            d_valid_dates = db_cur.execute(f"""
+                SELECT MIN(date), MAX(date) FROM {t_conf["table_name"]} WHERE update_time = {update_time} AND {d_where}
+            """).fetchall() # better than getting all dates, but still slow
+            db_cur.execute(f"""
+                DELETE FROM {t_conf["table_name"]}
+                WHERE
+                    ((date < {h_valid_dates[0][0]} OR date > {h_valid_dates[0][1]}) AND {h_where}) OR
+                    ((date < {d_valid_dates[0][0]} OR date > {d_valid_dates[0][1]}) AND {d_where}) OR
+                    {not_params} OR param_id IS NULL
+            """)
         logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} old rows deleted")
         db_con.commit()
 
