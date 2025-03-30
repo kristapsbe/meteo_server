@@ -233,8 +233,9 @@ def update_table(t_conf, update_time, db_con):
         logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} rows upserted (batch {i}/{batch_count}, total {total})")
         db_con.commit()
     if t_conf["table_name"] == "forecast_cities":
-        if True:
+        if False:
             # clocks getting turned can mess the data up - leaving this as a contingency in case I just need to clear out all of the old data
+            # TODO: it may be worth dealing with this in a more automated fashion
             db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE update_time < {update_time}")
         else:
             # dealing with cases when a single forecast param may have gone missing
