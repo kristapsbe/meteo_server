@@ -12,7 +12,7 @@ import datetime
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
-from utils.utils import simlpify_string, hourly_params, daily_params, get_params
+from utils.utils import simlpify_string, hourly_params, daily_params
 from utils.settings import editdist_extension, db_file, data_folder, last_updated, run_emergency, run_emergency_failed
 
 
@@ -154,11 +154,11 @@ def get_forecast(cur, city, c_date, params):
     return cur.execute(f"""
         SELECT
             city_id, date,
-            {",".join([f"IFNULL(MAX(case when param_id={p[0]} then value end), -999) AS val_{p[0]}" for p in params])}
+            {",".join([f"IFNULL(MAX(case when param_id={p} then value end), -999) AS val_{p}" for p in params])}
         FROM
             forecast_cities AS fc
         WHERE
-            city_id = '{city[0]}' AND date >= '{c_date}' AND param_id IN ({",".join([str(p[0]) for p in params])})
+            city_id = '{city[0]}' AND date >= '{c_date}' AND param_id IN ({",".join([str(p) for p in params])})
         GROUP BY
             city_id, date
     """).fetchall()
@@ -370,11 +370,9 @@ def get_city_response(city, add_last_no_skip, h_city, use_simple_warnings, add_c
         lat = float(city[2])
         lon = float(city[3])
 
-    h_params = get_params(cur, hourly_params)
-    d_params = get_params(cur, daily_params)
     c_date = datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
-    h_forecast = get_forecast(cur, h_city, c_date, h_params)
-    d_forecast = get_forecast(cur, city, c_date, d_params)
+    h_forecast = get_forecast(cur, h_city, c_date, hourly_params)
+    d_forecast = get_forecast(cur, city, c_date, daily_params)
     metadata_f = f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam.json"
     metadata = json.loads(open(metadata_f, "r").read())
 

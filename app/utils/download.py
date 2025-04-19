@@ -7,7 +7,7 @@ import logging
 import datetime
 import requests
 
-from utils import simlpify_string, hourly_params, daily_params, get_params
+from utils import simlpify_string, hourly_params, daily_params
 from settings import db_file, data_folder, data_uptimerobot_folder, last_updated, run_emergency, run_emergency_failed
 
 
@@ -24,7 +24,7 @@ base_url = "https://data.gov.lv/dati/api/3/"
 
 target_ds = [
     "hidrometeorologiskie-bridinajumi",
-    "meteorologiskas-prognozes-apdzivotam-vietam"
+    "meteorologiskas-prognozes-apdzivotam-vietam-jaunaka-datu-kopa"
 ]
 
 for ds in target_ds:
@@ -46,7 +46,7 @@ col_types = {
 
 table_conf = [{
     "files": [{
-        "name": f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam/cities.csv",
+        "name": f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam-jaunaka-datu-kopa/cities.csv",
         "skip_if_empty": True
     }],
     "table_name": "cities",
@@ -59,7 +59,7 @@ table_conf = [{
     ],
 },{
     "files": [{
-        "name": f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam/forcity_param.csv",
+        "name": f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam-jaunaka-datu-kopa/forcity_param.csv",
         "skip_if_empty": True
     }],
     "table_name": "forecast_cities_params",
@@ -70,10 +70,10 @@ table_conf = [{
     ]
 },{
     "files": [{
-        "name": f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities_day.csv",
+        "name": f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam-jaunaka-datu-kopa/forecast_cities_day.csv",
         "skip_if_empty": True
     }, {
-        "name": f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv",
+        "name": f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam-jaunaka-datu-kopa/forecast_cities.csv",
         "skip_if_empty": True,
         "do_emergency_dl": True
     }],
@@ -239,11 +239,9 @@ def update_table(t_conf, update_time, db_con):
             db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE update_time < {update_time}")
         else:
             # dealing with cases when a single forecast param may have gone missing
-            h_params = get_params(db_cur, hourly_params)
-            d_params = get_params(db_cur, daily_params)
-            not_params = f"param_id NOT IN ({",".join([str(p[0]) for p in h_params+d_params])})"
-            h_where = f"param_id IN ({",".join([str(p[0]) for p in h_params])})"
-            d_where = f"param_id IN ({",".join([str(p[0]) for p in d_params])})"
+            not_params = f"param_id NOT IN ({",".join([str(p) for p in hourly_params+daily_params])})"
+            h_where = f"param_id IN ({",".join([str(p) for p in hourly_params])})"
+            d_where = f"param_id IN ({",".join([str(p) for p in daily_params])})"
             h_valid_dates = db_cur.execute(f"""
                 SELECT MIN(date), MAX(date) FROM {t_conf["table_name"]} WHERE update_time = {update_time} AND {h_where}
             """).fetchall() # better than getting all dates, but still slow

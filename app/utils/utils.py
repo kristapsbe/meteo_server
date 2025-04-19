@@ -13,40 +13,32 @@ char_map = {
 }
 
 
-def simlpify_string(s):
+def simlpify_string(s: str) -> str:
     return ''.join([char_map.get(c, c) for c in s])
 
 
-hourly_params = "','".join([
-    'Laika apstākļu piktogramma',
-    'Temperatūra (°C)',
-    'Sajūtu temperatūra (°C)',
-    'Vēja ātrums (m/s)',
-    'Vēja virziens (°)',
-    'Brāzmas (m/s)',
-    'Nokrišņi (mm)',
-    'UV indekss (0-10)',
-    'Pērkona negaisa varbūtība (%)',
-])
+hourly_params = [
+    1, # Laika apstākļu ikona
+    2, # Temperatūra
+    3, # Sajūtu temperatūra
+    4, # Vēja ātrums
+    5, # Vēja virziens
+    6, # Brāzmas
+    7, # Nokrišņi
+    #8, # Atmosfēras spiediens
+    #9, # Gaisa relatīvais mitrums
+    10, # UV indeks
+    11, # Pērkona varbūtība
+]
 
-daily_params = "','".join([
-    'Diennakts vidējā vēja vērtība (m/s)',
-    'Diennakts maksimālā vēja brāzma (m/s)',
-    'Diennakts maksimālā temperatūra (°C)',
-    'Diennakts minimālā temperatūra (°C)',
-    'Diennakts nokrišņu summa (mm)',
-    'Diennakts nokrišņu varbūtība (%)',
-    'Laika apstākļu piktogramma nakti',
-    'Laika apstākļu piktogramma diena',
-])
-
-
-def get_params(cur, param_q):
-    return cur.execute(f"""
-        SELECT
-            id, title_lv, title_en
-        FROM
-            forecast_cities_params
-        WHERE
-            title_lv in ('{param_q}')
-    """).fetchall()
+daily_params = [
+    #12, # Diennakts vidējais vēja virziens
+    13, # Diennakts vidējā vēja vērtība
+    14, # Diennakts maksimālā vēja brāzma
+    15, # Diennakts maksimālā temperatūra
+    16, # Diennakts minimālā temperatūra
+    17, # Diennakts nokrišņu summa
+    18, # Diennakts nokrišņu varbūtība
+    19, # Laika apstākļu ikona nakti
+    20, # Laika apstākļu ikona diena
+]
