@@ -56,6 +56,7 @@ table_conf = [{
         [{"name": "lat", "type": "REAL"}],
         [{"name": "lon", "type": "REAL"}],
         [{"name": "type", "type": "TEXT"}],
+        [{"name": "county", "type": "TEXT"}],
     ],
 },{
     "files": [{
@@ -139,7 +140,8 @@ table_conf = [{
 
 def refresh_file(url, fpath, verify_download):
     r = requests.get(url, timeout=10)
-
+    # TODO: there's a damaged .csv - may want to deal with this in a more generic fashion (?)
+    r_text = r.content.replace(b'""Lidosta', b'"Lidosta').replace(b'ga""""', b'ga"""').replace(b'rupes nov.""', b'rupes nov."') if fpath == f"{data_folder}{forecast_s}/cities.csv" else r.content
     curr_conf = [f_conf for conf in table_conf for f_conf in conf["files"] if fpath in f_conf["name"]]
     skip_if_empty = False
     do_emergency_dl = False
@@ -147,9 +149,9 @@ def refresh_file(url, fpath, verify_download):
         skip_if_empty = curr_conf[0].get("skip_if_empty", False)
         do_emergency_dl = curr_conf[0].get("do_emergency_dl", False)
 
-    if r.status_code == 200 and verify_download(r.content, skip_if_empty):
+    if r.status_code == 200 and verify_download(r_text, skip_if_empty):
         with open(fpath, "wb") as f: # this can be eiher a json or csv
-            f.write(r.content)
+            f.write(r_text)
         return False
     else:
         logging.error(f"{fpath} failed (status code {r.status_code})")

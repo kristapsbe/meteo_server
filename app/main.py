@@ -53,9 +53,9 @@ def has_emergency_failed():
 
 def get_location_range(force_all=False):
     if force_all or not is_emergency():
-        return "('republikas pilseta', 'citas pilsētas', 'rajona centrs', 'pagasta centrs', 'ciems')"
+        return "('pilsēta', 'ciems')"
     else:
-        return "('republikas pilseta', 'citas pilsētas', 'rajona centrs')"
+        return "('pilsēta')"
 
 
 def get_closest_city(cur, lat, lon, distance=10, force_all=False, only_closest=False):
@@ -78,10 +78,7 @@ def get_closest_city(cur, lat, lon, distance=10, force_all=False, only_closest=F
                 lat,
                 lon,
                 CASE type
-                    WHEN 'republikas pilseta' THEN 1
-                    WHEN 'citas pilsētas' THEN 2
-                    WHEN 'rajona centrs' THEN 3
-                    WHEN 'pagasta centrs' THEN 4
+                    WHEN 'pilseta' THEN 1
                     WHEN 'ciems' THEN 5
                 END as ctype,
                 ACOS((SIN(RADIANS(lat))*SIN(RADIANS({lat})))+(COS(RADIANS(lat))*COS(RADIANS({lat})))*(COS(RADIANS({lon})-RADIANS(lon))))*6371 as distance
@@ -118,10 +115,7 @@ def get_city_by_name(city_name):
                 lat,
                 lon,
                 CASE type
-                    WHEN 'republikas pilseta' THEN 1
-                    WHEN 'citas pilsētas' THEN 2
-                    WHEN 'rajona centrs' THEN 3
-                    WHEN 'pagasta centrs' THEN 4
+                    WHEN 'pilseta' THEN 1
                     WHEN 'ciems' THEN 5
                 END as ctype,
                 fuzzy_editdist(search_name, '{city_name}') AS distance
