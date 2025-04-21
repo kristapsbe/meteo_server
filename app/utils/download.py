@@ -7,7 +7,7 @@ import logging
 import datetime
 import requests
 
-from utils import simlpify_string, hourly_params, daily_params, get_params
+from utils import simlpify_string, hourly_params, daily_params
 from settings import db_file, data_folder, data_uptimerobot_folder, last_updated, run_emergency, run_emergency_failed
 
 
@@ -22,10 +22,10 @@ logging.basicConfig(
 
 base_url = "https://data.gov.lv/dati/api/3/"
 
-target_ds = [
-    "hidrometeorologiskie-bridinajumi",
-    "meteorologiskas-prognozes-apdzivotam-vietam"
-]
+warning_s = "hidrometeorologiskie-bridinajumi"
+forecast_s = "meteorologiskas-prognozes-apdzivotam-vietam-jaunaka-datu-kopa"
+
+target_ds = [warning_s, forecast_s]
 
 for ds in target_ds:
     os.makedirs(f"{data_folder}{ds}/", exist_ok=True)
@@ -46,7 +46,7 @@ col_types = {
 
 table_conf = [{
     "files": [{
-        "name": f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam/cities.csv",
+        "name": f"{data_folder}{forecast_s}/cities.csv",
         "skip_if_empty": True
     }],
     "table_name": "cities",
@@ -56,10 +56,11 @@ table_conf = [{
         [{"name": "lat", "type": "REAL"}],
         [{"name": "lon", "type": "REAL"}],
         [{"name": "type", "type": "TEXT"}],
+        [{"name": "county", "type": "TEXT"}],
     ],
 },{
     "files": [{
-        "name": f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam/forcity_param.csv",
+        "name": f"{data_folder}{forecast_s}/forcity_param.csv",
         "skip_if_empty": True
     }],
     "table_name": "forecast_cities_params",
@@ -70,10 +71,10 @@ table_conf = [{
     ]
 },{
     "files": [{
-        "name": f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities_day.csv",
+        "name": f"{data_folder}{forecast_s}/forecast_cities_day.csv",
         "skip_if_empty": True
     }, {
-        "name": f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv",
+        "name": f"{data_folder}{forecast_s}/forecast_cities.csv",
         "skip_if_empty": True,
         "do_emergency_dl": True
     }],
@@ -86,7 +87,7 @@ table_conf = [{
     ]
 },{
     "files": [{
-        "name": f"{data_folder}hidrometeorologiskie-bridinajumi/novadi.csv"
+        "name": f"{data_folder}{warning_s}/novadi.csv"
     }],
     "table_name": "municipalities",
     "cols": [
@@ -96,7 +97,7 @@ table_conf = [{
     ]
 },{
     "files": [{
-        "name": f"{data_folder}hidrometeorologiskie-bridinajumi/bridinajumu_novadi.csv"
+        "name": f"{data_folder}{warning_s}/bridinajumu_novadi.csv"
     }],
     "table_name": "warnings_municipalities",
     "cols": [
@@ -105,7 +106,7 @@ table_conf = [{
     ]
 },{
     "files": [{
-        "name": f"{data_folder}hidrometeorologiskie-bridinajumi/bridinajumu_poligoni.csv"
+        "name": f"{data_folder}{warning_s}/bridinajumu_poligoni.csv"
     }],
     "table_name": "warnings_polygons",
     "cols": [
@@ -117,7 +118,7 @@ table_conf = [{
     ]
 },{ # TODO: partial at the moment - finish this
     "files": [{
-        "name": f"{data_folder}hidrometeorologiskie-bridinajumi/bridinajumu_metadata.csv"
+        "name": f"{data_folder}{warning_s}/bridinajumu_metadata.csv"
     }],
     "table_name": "warnings",
     "cols": [
@@ -140,8 +141,7 @@ table_conf = [{
 def refresh_file(url, fpath, verify_download):
     r = requests.get(url, timeout=10)
     # TODO: there's a damaged .csv - may want to deal with this in a more generic fashion (?)
-    r_text = r.content.replace(b'Pressure, (hPa)', b'Pressure (hPa)') if fpath == f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam/forcity_param.csv" else r.content
-
+    r_text = r.content.replace(b'""Lidosta', b'"Lidosta').replace(b'ga""""', b'ga"""').replace(b'rupes nov.""', b'rupes nov."') if fpath == f"{data_folder}{forecast_s}/cities.csv" else r.content
     curr_conf = [f_conf for conf in table_conf for f_conf in conf["files"] if fpath in f_conf["name"]]
     skip_if_empty = False
     do_emergency_dl = False
@@ -239,11 +239,9 @@ def update_table(t_conf, update_time, db_con):
             db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE update_time < {update_time}")
         else:
             # dealing with cases when a single forecast param may have gone missing
-            h_params = get_params(db_cur, hourly_params)
-            d_params = get_params(db_cur, daily_params)
-            not_params = f"param_id NOT IN ({",".join([str(p[0]) for p in h_params+d_params])})"
-            h_where = f"param_id IN ({",".join([str(p[0]) for p in h_params])})"
-            d_where = f"param_id IN ({",".join([str(p[0]) for p in d_params])})"
+            not_params = f"param_id NOT IN ({",".join([str(p) for p in hourly_params+daily_params])})"
+            h_where = f"param_id IN ({",".join([str(p) for p in hourly_params])})"
+            d_where = f"param_id IN ({",".join([str(p) for p in daily_params])})"
             h_valid_dates = db_cur.execute(f"""
                 SELECT MIN(date), MAX(date) FROM {t_conf["table_name"]} WHERE update_time = {update_time} AND {h_where}
             """).fetchall() # better than getting all dates, but still slow

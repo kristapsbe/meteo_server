@@ -167,7 +167,7 @@ change `haproxy/haproxy.cfg` to
 
 ```bash
 cd utils
-./redeploy.sh 
+./redeploy.sh
 ```
 
 update dns records
@@ -187,5 +187,10 @@ leave the container, revert `haproxy/haproxy.cfg` and rebuild
 
 ```bash
 cd utils
-./install.sh 
+./install.sh
+```
+
+ds update
+```bash
+docker compose build --no-cache --build-arg HOST_ARCHITECTURE="$(uname -p)" && rm data/meteo.db && rm data_uptimerobot/uptimerobot_metrics.json && docker compose up
 ```
