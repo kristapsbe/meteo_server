@@ -146,7 +146,7 @@ get rid of merged branches
 git checkout main && git fetch -p && git branch -vv | awk '/: gone]/{print $1}' | xargs git branch -d
 ```
 
-check cert expiry
+check cert expiration
 
 ```bash
 openssl x509 -enddate -noout -in file.pem
@@ -167,7 +167,7 @@ change `haproxy/haproxy.cfg` to
 
 ```bash
 cd utils
-./redeploy.sh 
+./redeploy.sh
 ```
 
 update dns records
@@ -187,5 +187,5 @@ leave the container, revert `haproxy/haproxy.cfg` and rebuild
 
 ```bash
 cd utils
-./install.sh 
+./install.sh
 ```
