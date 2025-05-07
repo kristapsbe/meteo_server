@@ -104,7 +104,6 @@ def get_closest_city(cur, lat, lon, distance=10, force_all=False, only_closest=F
         if only_closest_active:
             return ()
         else:
-            # TODO: set force_all to False so that the closest large city is returned instead?
             return get_closest_city(cur, lat, lon, distance, force_all, only_closest=True)
     return cities[0]
 
