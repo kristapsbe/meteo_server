@@ -58,7 +58,7 @@ def get_location_range(force_all=False):
         return "('republikas pilseta', 'citas pilsētas', 'rajona centrs')"
 
 
-def get_closest_city(cur, lat, lon, distance=10, force_all=False, only_closest=False):
+def get_closest_city(cur, lat, lon, distance=4, force_all=False, only_closest=False):
     cities = []
     only_closest_active = lat < 55.7 or lat > 58.05 or lon < 20.95 or lon > 28.25 or only_closest
     where_str = f"""
