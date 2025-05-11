@@ -61,12 +61,17 @@ def get_location_range(force_all=False):
 def get_closest_city(cur, lat, lon, distance=5, force_all=False, only_closest=False):
     cities = []
     only_closest_active = lat < 55.7 or lat > 58.05 or lon < 20.95 or lon > 28.25 or only_closest
-    where_str = f"""
+    where_order_str = f"""
         WHERE
             distance <= {distance}
+        ORDER BY
+            ctype ASC, distance ASC
     """
     if only_closest_active:
-        where_str = ""
+        where_order_str = """
+            ORDER BY
+                distance ASC
+        """
 
     # calculating dist in km since using Euclidean doesn't appear to yield big performance savings
     # and this makes messing around with distance values a bit more intuitive
@@ -94,9 +99,7 @@ def get_closest_city(cur, lat, lon, distance=5, force_all=False, only_closest=Fa
             id, name, lat, lon, ctype, distance
         FROM
             city_distances
-        {where_str}
-        ORDER BY
-            ctype ASC, distance ASC
+        {where_order_str}
         LIMIT 1
     """).fetchall()
 
