@@ -116,18 +116,6 @@ Example links that can be used to call endpoints can be found in comments at the
 
 Weather forecasts are location specific, and locations are selected either by matching their names, or by finding the closest city to the provided coordintes.
 
-When searching for cities the full set of cities is at first filtered down by selecting
-* Republic cities within 10km (red),
-* Other cities within 5 km (orange),
-* Regional centers within 3.3km (green),
-* Parish centers within 2.5km (blue),
-* villages within 2km (purple).
-
-![image](https://github.com/user-attachments/assets/cf39f9cf-fb2b-4aa7-b837-fe95644a0ae8)
-(defined [here](https://github.com/kristapsbe/meteo_server/blob/06a7f55b07744fa07ea14209aea1d5f6552116e8/app/main.py#L115))
-
-If the filtered set yields no results the closest location by absolute distance is selected.
-
 ### Weather warnings
 
 ![image](https://github.com/user-attachments/assets/d4199001-3c5e-4c97-af32-5ef505400b78)
