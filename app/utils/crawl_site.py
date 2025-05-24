@@ -25,7 +25,8 @@ logging.basicConfig(
 )
 
 logging.info("Emergency download job starting")
-if not os.path.isfile(run_emergency):
+# Disabling for the time being - need to wait for the site to switch over to the new ids
+if True or not os.path.isfile(run_emergency):
     logging.info("No emergency - exiting")
     exit()
 
