@@ -58,7 +58,7 @@ def get_location_range(force_all=False):
         return "('pilsēta')"
 
 
-def get_closest_city(cur, lat, lon, distance=5, force_all=False, only_closest=False):
+def get_closest_city(cur, lat, lon, distance=7, force_all=False, only_closest=False):
     cities = []
     only_closest_active = lat < 55.7 or lat > 58.05 or lon < 20.95 or lon > 28.25 or only_closest
     where_order_str = f"""
