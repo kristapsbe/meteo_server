@@ -369,7 +369,7 @@ def get_city_response(city, add_last_no_skip, h_city, use_simple_warnings, add_c
     c_date = datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
     h_forecast = get_forecast(cur, h_city, c_date, hourly_params)
     d_forecast = get_forecast(cur, city, c_date, daily_params)
-    metadata_f = f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam.json"
+    metadata_f = f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam-jaunaka-datu-kopa.json"
     metadata = json.loads(open(metadata_f, "r").read())
 
     ret_val = {
