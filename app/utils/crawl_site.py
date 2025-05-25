@@ -73,7 +73,7 @@ try:
 
 
     if len(csv) > 1:
-        with open(f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam/forecast_cities.csv", 'w') as f:
+        with open(f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam-jaunaka-datu-kopa/forecast_cities.csv", 'w') as f:
             f.write('\n'.join(csv))
         open(run_emergency, 'w').write(datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"))
         if os.path.isfile(run_emergency_failed):
