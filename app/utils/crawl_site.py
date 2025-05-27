@@ -25,8 +25,7 @@ logging.basicConfig(
 )
 
 logging.info("Emergency download job starting")
-# Disabling for the time being - need to wait for the site to switch over to the new ids
-if True or not os.path.isfile(run_emergency):
+if not os.path.isfile(run_emergency):
     logging.info("No emergency - exiting")
     exit()
 
@@ -42,7 +41,7 @@ try:
         FROM
             cities
         WHERE
-            type in ('republikas pilseta', 'citas pilsētas', 'rajona centrs')
+            type in ('pilsēta')
     """).fetchall()]
 
     ct = 1
