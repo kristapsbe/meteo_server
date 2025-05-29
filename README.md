@@ -177,8 +177,3 @@ leave the container, revert `haproxy/haproxy.cfg` and rebuild
 cd utils
 ./install.sh
 ```
-
-ds update
-```bash
-docker compose build --no-cache --build-arg HOST_ARCHITECTURE="$(uname -p)" && rm data/meteo.db && rm data_uptimerobot/uptimerobot_metrics.json && docker compose up
-```
