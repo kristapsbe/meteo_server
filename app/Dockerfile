@@ -1,4 +1,4 @@
-FROM alpine:3.21
+FROM alpine:3.22
 
 ARG HOST_ARCHITECTURE="unknown"
 
@@ -8,7 +8,7 @@ COPY utils/settings.example.py utils/settings.py
 
 RUN apk update && \
     apk upgrade && \
-    apk add --no-cache libc6-compat=1.1.0-r4 curl=8.12.1-r1 python3=3.12.10-r1 uv=0.5.31-r0
+    apk add --no-cache libc6-compat=1.1.0-r4 curl=8.14.0-r2 python3=3.12.10-r1 uv=0.7.9-r0
 
 RUN [ "${HOST_ARCHITECTURE}" = "arm" ] &&\
     wget "https://github.com/nalgeon/sqlean/releases/download/0.27.1/sqlean-linux-arm64.zip" -O sqlean.zip ||\
