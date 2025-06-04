@@ -37,7 +37,9 @@ col_parsers = {
     "INTEGER": lambda r: int(str(r).strip()),
     "REAL": lambda r: float(str(r).strip()),
     # TODO: do I really need minutes? - would mean that I consistently work with datetime strings that are YYYYMMDDHHMM
-    "DATEH": lambda r: str(r).strip().replace(".", "").replace("-", "").replace(" ", "").replace(":", "").ljust(12, "0")[:12] # YYYYMMDDHHMM
+    # TODO: revert when the source gets fixed
+    # "DATEH": lambda r: str(r).strip().replace(".", "").replace("-", "").replace(" ", "").replace(":", "").ljust(12, "0")[:12] # YYYYMMDDHHMM
+    "DATEH": lambda r: str(r).strip().replace(".", "").replace("-", "").replace(" ", "").replace(":", "").replace("T", "").ljust(12, "0")[:12] # YYYYMMDDHHMM
 }
 
 col_types = {
@@ -178,7 +180,9 @@ def download_resources(ds_name):
 
     skipped_empty = False
     for r in ds_data['result']['resources']:
-        skipped_empty = refresh_file(r['url'], f"{data_folder}{ds_name}/{r['url'].split('/')[-1]}", verif_funcs['csv']) or skipped_empty
+        # TODO: revert when the source gets fixed
+        # skipped_empty = refresh_file(r['url'], f"{data_folder}{ds_name}/{r['url'].split('/')[-1]}", verif_funcs['csv']) or skipped_empty
+        skipped_empty = refresh_file(f"https://data.gov.lv/dati/lv/datastore/dump/{r['id']}?format=csv", f"{data_folder}{ds_name}/{r['url'].split('/')[-1]}", verif_funcs['csv']) or skipped_empty
     return skipped_empty
 
 
@@ -193,6 +197,7 @@ def update_table(t_conf, update_time, db_con):
 
     for data_file in t_conf["files"]:
         tmp_df = pd.read_csv(data_file["name"]).dropna()
+        tmp_df = tmp_df[tmp_df.columns[1:]] # TODO: delete when the source gets fixed
         for ct in range(len(t_conf["cols"])):
             for col in t_conf["cols"][ct]:
                 tmp_df[f"_new_{col["name"]}"] = tmp_df[tmp_df.columns[ct]].apply(col_parsers[col["type"]])
