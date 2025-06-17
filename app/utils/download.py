@@ -180,7 +180,7 @@ def download_resources(ds_name):
 
     skipped_empty = False
     for r in ds_data['result']['resources']:
-        if ds_name == warning_s:
+        if True or ds_name == warning_s:
             # TODO: get rid of this when the source gets fixed
             skipped_empty = refresh_file(f"https://data.gov.lv/dati/lv/datastore/dump/{r['id']}?format=csv", f"{data_folder}{ds_name}/{r['url'].split('/')[-1]}", verif_funcs['csv']) or skipped_empty
         else:
