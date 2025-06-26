@@ -460,9 +460,6 @@ def pull_uptimerobot_data(update_time):
             metrics = {k: {} for k in meta.values()}
             oldest_monit = min([e["create_datetime"] for e in monit_data["monitors"]])
             metrics["downtime"] = {oldest_monit: oldest_monit}
-            metrics_file = f"{data_uptimerobot_folder}uptimerobot_metrics.json"
-            if os.path.isfile(metrics_file):
-                metrics = {ki: {int(kj): vj for kj, vj in vi.items()} for ki, vi in json.loads(open(metrics_file, "r").read()).items()}
 
             for e in monit_data["monitors"]:
                 is_meta = e["friendly_name"] in meta
@@ -490,7 +487,6 @@ def pull_uptimerobot_data(update_time):
                             else:
                                 metrics[ek][ent["datetime"]] = end_dt
 
-            open(metrics_file, "w").write(json.dumps(metrics))
             upd_con = sqlite3.connect(db_file)
             upd_cur = upd_con.cursor()
             try:
