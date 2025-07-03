@@ -272,35 +272,29 @@ def update_table(t_conf, update_time, db_con):
         logging.info("UPDATING 'forecast_age'")
         db_cur.execute("""
             CREATE TABLE IF NOT EXISTS forecast_age (
-                forecast_update_time DATEH,
-                count INTEGER,
-                update_time DATEH,
-                PRIMARY KEY (forecast_update_time)
+                min_param_count INTEGER,
+                update_time_count INTEGER,
+                update_time DATEH
             )
         """)
         g_forecasts = db_cur.execute("""
             WITH filtered_forecasts AS (
                	SELECT
-              		param_id, date, MAX(update_time) AS update_time
+              		COUNT(param_id) AS param_id, date, city_id, MAX(update_time) AS update_time
                	FROM
               		forecast_cities
                	GROUP BY
-              		param_id, date
+              		date, city_id
             )
             SELECT
-                update_time AS forecast_update_time,
-                COUNT(*) AS count
+                MIN(param_id) AS min_param_count,
+                COUNT(DISTINCT update_time) AS update_time_count
             FROM
                 filtered_forecasts
-            GROUP BY
-                update_time
         """).fetchall()
         db_cur.executemany(f"""
-            INSERT INTO forecast_age (forecast_update_time, count, update_time)
+            INSERT INTO forecast_age (min_param_count, update_time_count, update_time)
             VALUES (?, ?, {update_time})
-            ON CONFLICT(forecast_update_time) DO UPDATE SET
-                count=excluded.count,
-                update_time={update_time}
         """, g_forecasts)
         logging.info(f"TABLE 'forecast_age' - {db_cur.rowcount} rows upserted")
         db_con.commit()

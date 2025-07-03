@@ -43,6 +43,9 @@ app = FastAPI(
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s')
 
 
+MIN_PARAM_COUNT = min(len(hourly_params), len(daily_params))
+
+
 def is_emergency():
     return os.path.isfile(run_emergency)
 
@@ -144,9 +147,6 @@ def get_forecast(cur, city, c_date, params):
     if len(city) == 0:
         return []
     # pivoting the table and using max to discard nulls
-    # TODO: check if max is the correct funtion to use for this
-    #
-    # columns should not longer go missing because of the new cleanup logic, leaving the -999 just in case
     return cur.execute(f"""
         SELECT
             city_id, date,
@@ -428,8 +428,8 @@ def get_city_response(city, add_last_no_skip, h_city, use_simple_warnings, add_c
 
 
 def is_param_missing():
-    param_date_counts = cur.execute("SELECT * FROM forecast_age").fetchall()
-    return len(param_date_counts) > 1
+    param_date_counts = cur.execute("SELECT min_param_count, update_time_count FROM forecast_age").fetchall()
+    return param_date_counts[0][0] < MIN_PARAM_COUNT or param_date_counts[0][1] > 1
 
 
 # http://localhost:443/api/v1/forecast/cities?lat=56.9730&lon=24.1327
