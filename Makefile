@@ -1,3 +1,5 @@
 run_attached:
-	# TODO: looks like $(uname -p) isnt working properly - fix
-	docker compose build --no-cache --build-arg HOST_ARCHITECTURE="$(uname -p)" && docker compose up
+	docker compose build --no-cache --build-arg HOST_ARCHITECTURE="$$(uname -p)" && docker compose up
+
+run_app_bash:
+	docker exec -it meteo_server-app-1 sh
