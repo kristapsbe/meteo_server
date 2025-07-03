@@ -270,50 +270,16 @@ def update_table(t_conf, update_time, db_con):
         logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} old rows deleted")
         db_con.commit()
 
-        logging.info("UPDATING 'forecast_age'")
+        logging.info("UPDATING 'missing_params'")
         db_cur.execute("""
-            CREATE TABLE IF NOT EXISTS forecast_age (
-                min_param_count INTEGER,
-                update_time_count INTEGER,
-                update_time DATEH
-            )
-        """)
-        g_forecasts = db_cur.execute("""
-            WITH filtered_forecasts AS (
-               	SELECT
-              		COUNT(param_id) AS param_id, date, city_id, MAX(update_time) AS update_time
-               	FROM
-              		forecast_cities
-               	GROUP BY
-              		date, city_id
-            )
-            SELECT
-                MIN(param_id) AS min_param_count,
-                COUNT(DISTINCT update_time) AS update_time_count
-            FROM
-                filtered_forecasts
-        """).fetchall()
-        db_cur.executemany(f"""
-            INSERT INTO forecast_age (min_param_count, update_time_count, update_time)
-            VALUES (?, ?, {update_time})
-        """, g_forecasts)
-        logging.info(f"TABLE 'forecast_age' - {db_cur.rowcount} rows upserted")
-        db_con.commit()
-        db_cur.execute(f"DELETE FROM forecast_age WHERE update_time < {update_time}")
-        logging.info(f"TABLE 'forecast_age' - {db_cur.rowcount} old rows deleted")
-        db_con.commit()
-        logging.info("TABLE 'forecast_age' updated")
-
-        logging.info("UPDATING 'problematic_locations'")
-        db_cur.execute("""
-            CREATE TABLE IF NOT EXISTS problematic_locations (
+            CREATE TABLE IF NOT EXISTS missing_params (
                 city_id TEXT,
                 name TEXT,
                 type TEXT,
                 update_time DATEH
             )
         """)
-        problematic_locations = db_cur.execute(f"""
+        missing_params = db_cur.execute(f"""
             WITH filtered_forecasts AS (
                	SELECT
               		COUNT(param_id) AS param_id, date, city_id , MAX(update_time) AS update_time
@@ -327,20 +293,20 @@ def update_table(t_conf, update_time, db_con):
             FROM
                 filtered_forecasts f JOIN cities c on f.city_id = c.id
             WHERE
-               	param_id < {MIN_PARAM_COUNT} AND c."type" = 'ciems'
+               	param_id < {MIN_PARAM_COUNT}
             GROUP BY
                	city_id
         """).fetchall()
         db_cur.executemany(f"""
-            INSERT INTO problematic_locations (city_id, name, type, update_time)
+            INSERT INTO missing_params (city_id, name, type, update_time)
             VALUES (?, ?, ?, {update_time})
-        """, problematic_locations)
-        logging.info(f"TABLE 'problematic_locations' - {db_cur.rowcount} rows upserted")
+        """, missing_params)
+        logging.info(f"TABLE 'missing_params' - {db_cur.rowcount} rows upserted")
         db_con.commit()
-        db_cur.execute(f"DELETE FROM problematic_locations WHERE update_time < {update_time}")
-        logging.info(f"TABLE 'problematic_locations' - {db_cur.rowcount} old rows deleted")
+        db_cur.execute(f"DELETE FROM missing_params WHERE update_time < {update_time}")
+        logging.info(f"TABLE 'missing_params' - {db_cur.rowcount} old rows deleted")
         db_con.commit()
-        logging.info("TABLE 'problematic_locations' updated")
+        logging.info("TABLE 'missing_params' updated")
     else:
         db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE update_time < {update_time}")
         logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} old rows deleted")
