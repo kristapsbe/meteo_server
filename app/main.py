@@ -50,14 +50,8 @@ def is_emergency():
     return os.path.isfile(run_emergency)
 
 
-def is_param_missing(exclude_cities=False):
-    return cur.execute(f"""
-        SELECT
-            COUNT(*)
-        FROM
-            missing_params
-        { "WHERE \"type\" = 'ciems'" if exclude_cities else "" }
-    """).fetchall()[0][0] > 0
+def is_param_missing():
+    return cur.execute("SELECT COUNT(*) FROM missing_params").fetchall()[0][0] > 0
 
 
 def has_emergency_failed():
@@ -104,7 +98,7 @@ def get_closest_city(cur, lat, lon, distance=7, force_all=False, only_closest=Fa
                 cities
             WHERE
                 type IN {get_location_range(force_all)}
-                { "" if ignore_missing_params else " AND id NOT IN (SELECT city_id FROM problematic_locations WHERE \"type\" = 'ciems')" }
+                { "" if ignore_missing_params else " AND id NOT IN (SELECT city_id FROM problematic_locations)" }
         )
         SELECT
             id, name, lat, lon, ctype, distance
@@ -446,7 +440,7 @@ async def get_city_forecasts(lat: float, lon: float, add_last_no_skip: bool = Fa
     return get_city_response(
         city,
         add_last_no_skip,
-        get_closest_city(cur=cur, lat=city[2], lon=city[3], ignore_missing_params=False) if (is_emergency() or is_param_missing(True)) and len(city) > 0 else city, # getting hourly forecast for closest large city if we're in emergency mode
+        get_closest_city(cur=cur, lat=city[2], lon=city[3], ignore_missing_params=False) if (is_emergency() or is_param_missing()) and len(city) > 0 else city, # getting hourly forecast for closest large city if we're in emergency mode
         use_simple_warnings,
         add_city_coords
     )
@@ -460,7 +454,7 @@ async def get_city_forecasts_name(city_name: str, add_last_no_skip: bool = False
     return get_city_response(
         city,
         add_last_no_skip,
-        get_closest_city(cur=cur, lat=city[2], lon=city[3], ignore_missing_params=False) if (is_emergency() or is_param_missing(True)) and len(city) > 0 else city, # getting hourly forecast for closest large city if we're in emergency mode
+        get_closest_city(cur=cur, lat=city[2], lon=city[3], ignore_missing_params=False) if (is_emergency() or is_param_missing()) and len(city) > 0 else city, # getting hourly forecast for closest large city if we're in emergency mode
         use_simple_warnings,
         add_city_coords
     )
