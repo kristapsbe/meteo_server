@@ -50,6 +50,16 @@ def is_emergency():
     return os.path.isfile(run_emergency)
 
 
+def is_param_missing(exclude_cities=False):
+    return cur.execute(f"""
+        SELECT
+            COUNT(*)
+        FROM
+            missing_params
+        { "WHERE \"type\" = 'ciems'" if exclude_cities else "" }
+    """).fetchall()[0][0] > 0
+
+
 def has_emergency_failed():
     return os.path.isfile(run_emergency_failed)
 
@@ -61,7 +71,7 @@ def get_location_range(force_all=False):
         return "('pilsēta')"
 
 
-def get_closest_city(cur, lat, lon, distance=7, force_all=False, only_closest=False):
+def get_closest_city(cur, lat, lon, distance=7, force_all=False, only_closest=False, ignore_missing_params=True):
     cities = []
     only_closest_active = lat < 55.7 or lat > 58.05 or lon < 20.95 or lon > 28.25 or only_closest
     where_order_str = f"""
@@ -93,7 +103,8 @@ def get_closest_city(cur, lat, lon, distance=7, force_all=False, only_closest=Fa
             FROM
                 cities
             WHERE
-                type in {get_location_range(force_all)}
+                type IN {get_location_range(force_all)}
+                { "" if ignore_missing_params else " AND id NOT IN (SELECT city_id FROM problematic_locations WHERE \"type\" = 'ciems')" }
         )
         SELECT
             id, name, lat, lon, ctype, distance
@@ -107,7 +118,7 @@ def get_closest_city(cur, lat, lon, distance=7, force_all=False, only_closest=Fa
         if only_closest_active:
             return ()
         else:
-            return get_closest_city(cur, lat, lon, distance, force_all, only_closest=True)
+            return get_closest_city(cur, lat, lon, distance, force_all, only_closest=True, ignore_missing_params=ignore_missing_params)
     return cities[0]
 
 
@@ -427,11 +438,6 @@ def get_city_response(city, add_last_no_skip, h_city, use_simple_warnings, add_c
     return ret_val
 
 
-def is_param_missing():
-    param_date_counts = cur.execute("SELECT min_param_count, update_time_count FROM forecast_age").fetchall()
-    return param_date_counts[0][0] < MIN_PARAM_COUNT or param_date_counts[0][1] > 1
-
-
 # http://localhost:443/api/v1/forecast/cities?lat=56.9730&lon=24.1327
 @app.get("/api/v1/forecast/cities")
 @app.head("/api/v1/forecast/cities") # added for https://stats.uptimerobot.com/EAWZfpoMkw
@@ -440,7 +446,7 @@ async def get_city_forecasts(lat: float, lon: float, add_last_no_skip: bool = Fa
     return get_city_response(
         city,
         add_last_no_skip,
-        get_closest_city(cur=cur, lat=city[2], lon=city[3]) if is_emergency() and len(city) > 0 else city, # getting hourly forecast for closest large city if we're in emergency mode
+        get_closest_city(cur=cur, lat=city[2], lon=city[3], ignore_missing_params=False) if (is_emergency() or is_param_missing(True)) and len(city) > 0 else city, # getting hourly forecast for closest large city if we're in emergency mode
         use_simple_warnings,
         add_city_coords
     )
@@ -454,7 +460,7 @@ async def get_city_forecasts_name(city_name: str, add_last_no_skip: bool = False
     return get_city_response(
         city,
         add_last_no_skip,
-        get_closest_city(cur=cur, lat=city[2], lon=city[3]) if is_emergency() and len(city) > 0 else city, # getting hourly forecast for closest large city if we're in emergency mode
+        get_closest_city(cur=cur, lat=city[2], lon=city[3], ignore_missing_params=False) if (is_emergency() or is_param_missing(True)) and len(city) > 0 else city, # getting hourly forecast for closest large city if we're in emergency mode
         use_simple_warnings,
         add_city_coords
     )
