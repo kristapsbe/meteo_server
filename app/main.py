@@ -60,7 +60,7 @@ def has_emergency_failed():
 
 def get_location_range(force_all=False):
     if force_all or not is_emergency():
-        return "('pilsēta', 'ciems')"
+        return "('pilsēta', 'ciems', 'cits')"
     else:
         return "('pilsēta')"
 
@@ -91,14 +91,15 @@ def get_closest_city(cur, lat, lon, distance=7, force_all=False, only_closest=Fa
                 lon,
                 CASE type
                     WHEN 'pilseta' THEN 1
-                    WHEN 'ciems' THEN 5
+                    WHEN 'ciems' THEN 2
+                    WHEN 'cits' THEN 3
                 END as ctype,
                 ACOS((SIN(RADIANS(lat))*SIN(RADIANS({lat})))+(COS(RADIANS(lat))*COS(RADIANS({lat})))*(COS(RADIANS({lon})-RADIANS(lon))))*6371 as distance
             FROM
                 cities
             WHERE
                 type IN {get_location_range(force_all)}
-                { "" if ignore_missing_params else " AND id NOT IN (SELECT city_id FROM problematic_locations)" }
+                { "" if ignore_missing_params else " AND id NOT IN (SELECT city_id FROM missing_params)" }
         )
         SELECT
             id, name, lat, lon, ctype, distance
@@ -126,7 +127,8 @@ def get_city_by_name(city_name):
                 lon,
                 CASE type
                     WHEN 'pilseta' THEN 1
-                    WHEN 'ciems' THEN 5
+                    WHEN 'ciems' THEN 2
+                    WHEN 'cits' THEN 3
                 END as ctype,
                 fuzzy_editdist(search_name, '{city_name}') AS distance
             FROM
