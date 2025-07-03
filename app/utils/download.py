@@ -200,7 +200,7 @@ def update_table(t_conf, update_time, db_con):
     df = None
 
     for data_file in t_conf["files"]:
-        tmp_df = pd.read_csv(data_file["name"]).dropna()
+        tmp_df = pd.read_csv(data_file["name"]).dropna(how='all')
 
         if t_conf["table_name"] in {"warnings_municipalities", "warnings_polygons", "warnings"}:
             tmp_df = tmp_df[tmp_df.columns[1:]] # TODO: delete when the source gets fixed
