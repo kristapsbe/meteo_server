@@ -468,9 +468,20 @@ async def get_city_forecasts_name(city_name: str, add_last_no_skip: bool = False
 async def get_privacy_policy(lang: str = "en"):
     match lang:
         case "lv":
-            return open("privacy_policy/privatuma-politika.html").read()
+            return open("html/privatuma-politika.html").read()
         case _:
-            return open("privacy_policy/privacy-policy.html").read()
+            return open("html/privacy-policy.html").read()
+
+
+# http://localhost:443/attribution
+@app.get("/attribution", response_class=HTMLResponse)
+@app.head("/attribution") # added for https://stats.uptimerobot.com/EAWZfpoMkw
+async def get_privacy_attribution(lang: str = "en"):
+    match lang:
+        case "lv":
+            return open("html/atribucija.html").read()
+        case _:
+            return open("html/attribution.html").read()
 
 
 # http://localhost:443/api/v1/meta
