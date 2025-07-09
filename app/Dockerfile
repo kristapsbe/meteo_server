@@ -16,7 +16,8 @@ RUN [ "${HOST_ARCHITECTURE}" = "arm" ] &&\
     unzip sqlean.zip -d /sqlite_extensions
 
 RUN crontab -l > cron
-RUN echo "0	*/4	*	*	*	/app/run_job.sh download" >> cron
+# RUN echo "0	*/4	*	*	*	/app/run_job.sh download" >> cron
+RUN echo "*/20	*	*	*	*	/app/run_job.sh download" >> cron
 RUN echo "30	*/4	*	*	*	/app/run_job.sh crawl_site" >> cron
 RUN crontab cron
 
