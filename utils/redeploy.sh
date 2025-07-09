@@ -16,4 +16,6 @@ if [ $changed = 1 ]; then
     docker system prune -a -f --volumes
 
     bash utils/install.sh
+else
+    docker compose up -d # making sure that stuff's running even if there's no update to pull
 fi
