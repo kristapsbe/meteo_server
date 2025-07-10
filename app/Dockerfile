@@ -16,12 +16,9 @@ RUN [ "${HOST_ARCHITECTURE}" = "arm" ] &&\
     unzip sqlean.zip -d /sqlite_extensions
 
 RUN crontab -l > cron
-# TODO: this will be full downloads
 RUN echo "0 */4 * * *	/app/run_job.sh download" >> cron
-# TODO: this will be aurora downloads
-RUN echo "20,40 */4 * * *	/app/run_job.sh download" >> cron
-# TODO: this will be aurora downloads
-RUN echo "*/20	1,2,3,5,6,7,9,10,11,13,14,15,17,18,19,21,22,23	*	*	*	/app/run_job.sh download" >> cron
+RUN echo "20,40 */4 * * *	/app/run_job.sh download_aurora" >> cron
+RUN echo "*/20	1,2,3,5,6,7,9,10,11,13,14,15,17,18,19,21,22,23	*	*	*	/app/run_job.sh download_aurora" >> cron
 RUN echo "30	*/4	*	*	*	/app/run_job.sh crawl_site" >> cron
 RUN crontab cron
 
