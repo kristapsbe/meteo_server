@@ -517,6 +517,23 @@ def pull_uptimerobot_data(update_time):
                 upd_con.close()
 
 
+def pull_lt_data(update_time):
+    pass
+    # upd_con = sqlite3.connect(db_file)
+    # upd_cur = upd_con.cursor()
+
+    # try:
+    #     places = [e for e in json.loads(requests.get("https://api.meteo.lt/v1/places").content) if e['countryCode'] != "LV"]
+
+    #     for p in places:
+    #         print(json.loads(requests.get(f"https://api.meteo.lt/v1/places/{p['code']}/forecasts/long-term").content))
+    #         break
+    # except BaseException as e:
+    #     logging.error(f"DB update FAILED - {e}")
+    # finally:
+    #     upd_con.close()
+
+
 def run_downloads(datasets):
     logging.info("Triggering refresh")
     skipped_empty = False
