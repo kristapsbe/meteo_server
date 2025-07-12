@@ -40,7 +40,8 @@ col_parsers = {
     # TODO: do I really need minutes? - would mean that I consistently work with datetime strings that are YYYYMMDDHHMM
     # TODO: revert when the source gets fixed
     # "DATEH": lambda r: str(r).strip().replace(".", "").replace("-", "").replace(" ", "").replace(":", "").ljust(12, "0")[:12] # YYYYMMDDHHMM
-    "DATEH": lambda r: str(r).strip().replace(".", "").replace("-", "").replace(" ", "").replace(":", "").replace("T", "").ljust(12, "0")[:12] # YYYYMMDDHHMM
+    "DATEH": lambda r: str(r).strip().replace(".", "").replace("-", "").replace(" ", "").replace(":", "").replace("T", "").ljust(12, "0")[:12], # YYYYMMDDHHMM
+    "CONST_LV": lambda _: "LV",
 }
 
 col_types = {
@@ -54,12 +55,12 @@ table_conf = [{
     }],
     "table_name": "cities",
     "cols": [
-        [{"name": "id", "type": "TEXT", "pk": True}],
+        [{"name": "id", "type": "TEXT", "pk": True}, {"name": "source", "type": "CONST_LV", "pk": True}],
         [{"name": "name", "type": "TITLE_TEXT"}, {"name": "search_name", "type": "CLEANED_TEXT"}],
         [{"name": "lat", "type": "REAL"}],
         [{"name": "lon", "type": "REAL"}],
         [{"name": "type", "type": "TEXT"}],
-        [{"name": "county", "type": "TEXT"}],
+        [{"name": "county", "type": "TEXT"}, {"name": "country", "type": "CONST_LV"}],
     ],
 },{
     "files": [{
