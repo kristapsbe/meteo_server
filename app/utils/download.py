@@ -40,11 +40,15 @@ col_parsers = {
     # TODO: do I really need minutes? - would mean that I consistently work with datetime strings that are YYYYMMDDHHMM
     # TODO: revert when the source gets fixed
     # "DATEH": lambda r: str(r).strip().replace(".", "").replace("-", "").replace(" ", "").replace(":", "").ljust(12, "0")[:12] # YYYYMMDDHHMM
-    "DATEH": lambda r: str(r).strip().replace(".", "").replace("-", "").replace(" ", "").replace(":", "").replace("T", "").ljust(12, "0")[:12] # YYYYMMDDHHMM
+    "DATEH": lambda r: str(r).strip().replace(".", "").replace("-", "").replace(" ", "").replace(":", "").replace("T", "").ljust(12, "0")[:12], # YYYYMMDDHHMM
+    "CONST_LV": lambda _: "LV",
 }
 
 col_types = {
-    "DATEH": "TEXT"
+    "DATEH": "INTEGER",
+    "CONST_LV": "TEXT",
+    "TITLE_TEXT": "TEXT",
+    "CLEANED_TEXT": "TEXT",
 }
 
 table_conf = [{
@@ -54,12 +58,12 @@ table_conf = [{
     }],
     "table_name": "cities",
     "cols": [
-        [{"name": "id", "type": "TEXT", "pk": True}],
+        [{"name": "id", "type": "TEXT", "pk": True}, {"name": "source", "type": "CONST_LV", "pk": True}],
         [{"name": "name", "type": "TITLE_TEXT"}, {"name": "search_name", "type": "CLEANED_TEXT"}],
         [{"name": "lat", "type": "REAL"}],
         [{"name": "lon", "type": "REAL"}],
         [{"name": "type", "type": "TEXT"}],
-        [{"name": "county", "type": "TEXT"}],
+        [{"name": "county", "type": "TEXT"}, {"name": "country", "type": "CONST_LV"}],
     ],
 },{
     "files": [{
@@ -222,8 +226,8 @@ def update_table(t_conf, update_time, db_con):
     primary_key_q = "" if len(pks) < 1 else f", PRIMARY KEY ({", ".join(pks)})"
     db_cur.execute(f"""
         CREATE TABLE IF NOT EXISTS {t_conf["table_name"]} (
-            {", ".join([f"{c["name"]} {col_types.get(c["name"], c["type"])}" for cols in t_conf["cols"] for c in cols])},
-            update_time DATEH
+            {", ".join([f"{c["name"]} {col_types.get(c["type"], c["type"])}" for cols in t_conf["cols"] for c in cols])},
+            update_time INTEGER
             {primary_key_q}
         )
     """)
@@ -276,7 +280,7 @@ def update_table(t_conf, update_time, db_con):
                 city_id TEXT,
                 name TEXT,
                 type TEXT,
-                update_time DATEH
+                update_time INTEGER
             )
         """)
         missing_params = db_cur.execute(f"""
@@ -325,7 +329,7 @@ def update_warning_bounds_table(update_time, db_con):
             max_lat REAL,
             min_lon REAL,
             max_lon REAL,
-            update_time DATEH,
+            update_time INTEGER,
             PRIMARY KEY (warning_id, polygon_id)
         )
     """)
@@ -395,7 +399,7 @@ def update_aurora_forecast(update_time): # TODO: cleanup
                     lon INTEGER,
                     lat INTEGER,
                     aurora INTEGER,
-                    update_time DATEH,
+                    update_time INTEGER,
                     PRIMARY KEY (lon, lat)
                 )
             """)
@@ -494,7 +498,7 @@ def pull_uptimerobot_data(update_time):
                         type TEXT,
                         start_time INTEGER,
                         duration INTEGER,
-                        update_time DATEH,
+                        update_time INTEGER,
                         PRIMARY KEY (type, start_time)
                     )
                 """)
@@ -518,20 +522,52 @@ def pull_uptimerobot_data(update_time):
 
 
 def pull_lt_data(update_time):
-    pass
-    # upd_con = sqlite3.connect(db_file)
-    # upd_cur = upd_con.cursor()
+    upd_con = sqlite3.connect(db_file)
+    upd_cur = upd_con.cursor()
 
-    # try:
-    #     places = [e for e in json.loads(requests.get("https://api.meteo.lt/v1/places").content) if e['countryCode'] != "LV"]
+    try:
+        places = [e for e in json.loads(requests.get("https://api.meteo.lt/v1/places").content) if e['countryCode'] != "LV"]
+        f_places = [[
+            p['code'], # id
+            'LT', # source
+            p['name'], # name
+            simlpify_string(p['name'].strip().lower()), # search_name
+            p['coordinates']['latitude'], # lat
+            p['coordinates']['longitude'], # lon
+            'location_LT', # type
+            p['administrativeDivision'], # county
+            p['countryCode'], # country
+        ] for p in places]
+
+        upd_cur.executemany(f"""
+            INSERT INTO cities (id, source, name, search_name, lat, lon, type, county, country, update_time)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, {update_time})
+            ON CONFLICT(id, source) DO UPDATE SET
+                name=excluded.name,
+                search_name=excluded.search_name,
+                lat=excluded.lat,
+                lon=excluded.lon,
+                type=excluded.type,
+                county=excluded.county,
+                country=excluded.country,
+                update_time={update_time}
+        """, f_places)
+        logging.info(f"TABLE 'cities' - {upd_cur.rowcount} rows upserted")
+        upd_con.commit()
+        # TODO - moving deletion to its own separate step in the download process may make sense
+        # initial city dl deletes this stuff before we get here
+        upd_cur.execute(f"DELETE FROM cities WHERE update_time < {update_time}")
+        logging.info(f"TABLE 'cities' - {upd_cur.rowcount} old rows deleted")
+        upd_con.commit()
+        logging.info("DB update finished")
 
     #     for p in places:
     #         print(json.loads(requests.get(f"https://api.meteo.lt/v1/places/{p['code']}/forecasts/long-term").content))
     #         break
-    # except BaseException as e:
-    #     logging.error(f"DB update FAILED - {e}")
-    # finally:
-    #     upd_con.close()
+    except BaseException as e:
+        logging.error(f"DB update FAILED - {e}")
+    finally:
+        upd_con.close()
 
 
 def run_downloads(datasets):
@@ -552,6 +588,7 @@ def run_downloads(datasets):
     update_db(update_time)
     update_aurora_forecast(update_time)
     pull_uptimerobot_data(update_time)
+    pull_lt_data(update_time)
 
     if not skipped_empty:
         open(last_updated, 'w').write(
