@@ -186,5 +186,3 @@ https://www.met.no/en/free-meteorological-data - Norwegian
 https://www.smhi.se/en/weather/warnings-and-forecasts - Swedish - can't tell if they're offering access to data
 
 https://en.ilmatieteenlaitos.fi/ - Finnish - can't tell if they're offering access to data
-
-Add param to pull aurora on startup (redeployments currently interfere with aurora forecasts)
