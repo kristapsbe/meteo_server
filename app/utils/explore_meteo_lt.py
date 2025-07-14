@@ -1,22 +1,25 @@
 import json
 import requests
+import pandas as pd
 
 from utils import simlpify_string
 
 
 places = [e for e in json.loads(requests.get("https://api.meteo.lt/v1/places").content) if e['countryCode'] != "LV"]
 
-f_places = [{
-    'id': p['code'],
-    'source': 'LT',
-    'name': p['name'],
-    'search_name': simlpify_string(p['name'].strip().lower()),
-    'lat': p['coordinates']['latitude'],
-    'lon': p['coordinates']['longitude'],
-    'type': 'location_LT',
-    'county': p['administrativeDivision'],
-    'country': p['countryCode'],
-} for p in places]
+f_places = [[
+    p['code'], # id
+    'LT', # source
+    p['name'], # name
+    simlpify_string(p['name'].strip().lower()), # search_name
+    p['coordinates']['latitude'], # lat
+    p['coordinates']['longitude'], # lon
+    'location_LT', # type
+    p['administrativeDivision'], # county
+    p['countryCode'], # country
+] for p in places]
+
+print(pd.DataFrame(f_places).values.tolist())
 # print(f_places)
 
 countries = [p['countryCode'] for p in places]
