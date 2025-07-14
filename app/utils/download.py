@@ -47,6 +47,8 @@ col_parsers = {
 col_types = {
     "DATEH": "TEXT",
     "CONST_LV": "TEXT",
+    "TITLE_TEXT": "TEXT",
+    "CLEANED_TEXT": "TEXT",
 }
 
 table_conf = [{
@@ -225,7 +227,7 @@ def update_table(t_conf, update_time, db_con):
     db_cur.execute(f"""
         CREATE TABLE IF NOT EXISTS {t_conf["table_name"]} (
             {", ".join([f"{c["name"]} {col_types.get(c["type"], c["type"])}" for cols in t_conf["cols"] for c in cols])},
-            update_time DATEH
+            update_time TEXT
             {primary_key_q}
         )
     """)
@@ -278,7 +280,7 @@ def update_table(t_conf, update_time, db_con):
                 city_id TEXT,
                 name TEXT,
                 type TEXT,
-                update_time DATEH
+                update_time TEXT
             )
         """)
         missing_params = db_cur.execute(f"""
@@ -327,7 +329,7 @@ def update_warning_bounds_table(update_time, db_con):
             max_lat REAL,
             min_lon REAL,
             max_lon REAL,
-            update_time DATEH,
+            update_time TEXT,
             PRIMARY KEY (warning_id, polygon_id)
         )
     """)
@@ -397,7 +399,7 @@ def update_aurora_forecast(update_time): # TODO: cleanup
                     lon INTEGER,
                     lat INTEGER,
                     aurora INTEGER,
-                    update_time DATEH,
+                    update_time TEXT,
                     PRIMARY KEY (lon, lat)
                 )
             """)
@@ -496,7 +498,7 @@ def pull_uptimerobot_data(update_time):
                         type TEXT,
                         start_time INTEGER,
                         duration INTEGER,
-                        update_time DATEH,
+                        update_time TEXT,
                         PRIMARY KEY (type, start_time)
                     )
                 """)
