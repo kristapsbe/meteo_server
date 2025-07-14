@@ -45,7 +45,7 @@ col_parsers = {
 }
 
 col_types = {
-    "DATEH": "TEXT",
+    "DATEH": "INTEGER",
     "CONST_LV": "TEXT",
     "TITLE_TEXT": "TEXT",
     "CLEANED_TEXT": "TEXT",
