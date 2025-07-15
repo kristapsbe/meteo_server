@@ -7,6 +7,7 @@ import logging
 import datetime
 import requests
 
+from time import sleep
 from utils import simlpify_string, hourly_params, daily_params
 from settings import db_file, data_folder, data_uptimerobot_folder, last_updated, run_emergency, run_emergency_failed
 
@@ -521,9 +522,113 @@ def pull_uptimerobot_data(update_time):
                 upd_con.close()
 
 
+hourly_params = {
+    # is the condition code the icon?
+    'conditionCode': 1, # Laika apstākļu ikona
+    'airTemperature': 2, # Temperatūra
+    'feelsLikeTemperature': 3, # Sajūtu temperatūra
+    'windSpeed': 4, # Vēja ātrums
+    'windDirection': 5, # Vēja virziens
+    'windGust': 6, # Brāzmas
+    'totalPrecipitation': 7, # Nokrišņi
+    #8, # Atmosfēras spiediens
+    #9, # Gaisa relatīvais mitrums
+    # 'missing_1': 10, # UV indeks
+    # 'missing_2': 11, # Pērkona varbūtība
+}
+
+daily_params = {
+    #12, # Diennakts vidējais vēja virziens
+    'windSpeed': [(lambda a: sum(a)/len(a), 13)], # Diennakts vidējā vēja vērtība
+    'windGust': [(lambda a: max(a), 14)], # Diennakts maksimālā vēja brāzma
+    'airTemperature': [
+        (lambda a: max(a), 15), # Diennakts maksimālā temperatūra
+        (lambda a: min(a), 16), # Diennakts minimālā temperatūra
+    ],
+    'totalPrecipitation': [
+        (lambda a: sum(a), 17), # Diennakts nokrišņu summa
+        (lambda a: sum(a), 18), # Diennakts nokrišņu varbūtība
+    ],
+    'conditionCode': [
+        (lambda a: a, 19), # Laika apstākļu ikona nakti
+        (lambda a: a, 20), # Laika apstākļu ikona diena
+    ]
+}
+
+day_icons = {
+    'clear': '1101',
+    'partly-cloudy': '1102',
+    'cloudy-with-sunny-intervals': '1103',
+    'cloudy': '1104',
+    'light-rain': '1503',
+    'rain': '1505',
+    'heavy-rain': '1504',
+    'thunder': '1324',
+    'isolated-thunderstorms': '1312',
+    'thunderstorms': '1323',
+    'heavy-rain-with-thunderstorms': '1310',
+    'light-sleet': '1319',
+    'sleet': '1318',
+    'freezing-rain': '1317',
+    'hail': '1317',
+    'light-snow': '1602',
+    'snow': '1601',
+    'heavy-snow': '1604',
+    'fog': '1401',
+    'null': '0000',
+}
+
+night_icons = {
+    'clear': '2101',
+    'partly-cloudy': '2102',
+    'cloudy-with-sunny-intervals': '2103',
+    'cloudy': '2104',
+    'light-rain': '2503',
+    'rain': '2505',
+    'heavy-rain': '2504',
+    'thunder': '2324',
+    'isolated-thunderstorms': '2312',
+    'thunderstorms': '2323',
+    'heavy-rain-with-thunderstorms': '2310',
+    'light-sleet': '2319',
+    'sleet': '2318',
+    'freezing-rain': '2317',
+    'hail': '2317',
+    'light-snow': '2602',
+    'snow': '2601',
+    'heavy-snow': '2604',
+    'fog': '2401',
+    'null': '0000',
+}
+
+icon_prio = [
+    'heavy-rain-with-thunderstorms',
+    'thunderstorms',
+    'isolated-thunderstorms',
+    'thunder',
+    'heavy-snow',
+    'snow',
+    'light-snow',
+    'freezing-rain',
+    'hail',
+    'sleet',
+    'light-sleet',
+    'heavy-rain',
+    'rain',
+    'light-rain',
+    'fog',
+    'partly-cloudy',
+    'cloudy',
+    'cloudy-with-sunny-intervals',
+    'clear',
+]
+
+
 def pull_lt_data(update_time):
     upd_con = sqlite3.connect(db_file)
     upd_cur = upd_con.cursor()
+
+    place_data = None
 
     try:
         places = [e for e in json.loads(requests.get("https://api.meteo.lt/v1/places").content) if e['countryCode'] != "LV"]
@@ -552,20 +657,54 @@ def pull_lt_data(update_time):
                 country=excluded.country,
                 update_time={update_time}
         """, f_places)
-        logging.info(f"TABLE 'cities' - {upd_cur.rowcount} rows upserted")
+        logging.info(f"TABLE 'cities' - LT - {upd_cur.rowcount} rows upserted")
         upd_con.commit()
         # TODO - moving deletion to its own separate step in the download process may make sense
         # initial city dl deletes this stuff before we get here
         upd_cur.execute(f"DELETE FROM cities WHERE update_time < {update_time}")
-        logging.info(f"TABLE 'cities' - {upd_cur.rowcount} old rows deleted")
+        logging.info(f"TABLE 'cities' - LT - {upd_cur.rowcount} old rows deleted")
         upd_con.commit()
         logging.info("DB update finished")
 
-    #     for p in places:
-    #         print(json.loads(requests.get(f"https://api.meteo.lt/v1/places/{p['code']}/forecasts/long-term").content))
-    #         break
+        h_params = []
+        for p in places:
+            place_data = json.loads(requests.get(f"https://api.meteo.lt/v1/places/{p['code']}/forecasts/long-term").content)
+            h_dates = []
+            for i in range(len(place_data['forecastTimestamps'])-1):
+                if int(place_data['forecastTimestamps'][i]['forecastTimeUtc'][11:13])-int(place_data['forecastTimestamps'][i+1]['forecastTimeUtc'][11:13]) in {-1, 23}:
+                    h_dates.append(place_data['forecastTimestamps'][i]['forecastTimeUtc'])
+                else:
+                    break
+            h_dates = set(h_dates)
+            # d_dates = set([e['forecastTimeUtc'][:10] for e in place_data['forecastTimestamps']])
+
+            h_params.extend([[p['code'], hourly_params[k], f['forecastTimeUtc'].replace(" ", "").replace("-", "").replace(":", "")[:12], v] for f in place_data['forecastTimestamps'] for k,v in f.items() if f['forecastTimeUtc'] if h_dates and k in hourly_params])
+            sleep(0.4) # trying to stay below the advertised 180 rqs / minute
+
+        batch_size = 10000
+        total = len(h_params)
+        batch_count = total//batch_size
+        for i in range(batch_count+1):
+            upd_cur.executemany(f"""
+                INSERT INTO forecast_cities (city_id, param_id, date, value, update_time)
+                VALUES (?, ?, ?, ?, {update_time})
+                ON CONFLICT(city_id, param_id, date) DO UPDATE SET
+                    value=excluded.value,
+                    update_time={update_time}
+            """, h_params[i*batch_size:(i+1)*batch_size])
+            logging.info(f"TABLE 'forecast_cities' - LT - {upd_cur.rowcount} rows upserted (batch {i}/{batch_count}, total {total})")
+            upd_con.commit()
+        # TODO - moving deletion to its own separate step in the download process may make sense
+        # initial city dl deletes this stuff before we get here
+        upd_cur.execute(f"DELETE FROM forecast_cities WHERE update_time < {update_time}")
+        logging.info(f"TABLE 'forecast_cities' - LT - {upd_cur.rowcount} old rows deleted")
+        upd_con.commit()
+        logging.info("DB update finished")
+
     except BaseException as e:
         logging.error(f"DB update FAILED - {e}")
+        logging.error(place_data)
+        raise e
     finally:
         upd_con.close()
 
