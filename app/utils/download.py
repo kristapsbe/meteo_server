@@ -313,8 +313,11 @@ def update_table(t_conf, update_time, db_con):
         db_con.commit()
         logging.info("TABLE 'missing_params' updated")
     else:
-        db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE update_time < {update_time}")
+        db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE update_time < {update_time} LIMIT {batch_size}")
         logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} old rows deleted")
+        while db_cur.rowcount > 0:
+            db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE update_time < {update_time} LIMIT {batch_size}")
+            logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} old rows deleted")
         db_con.commit()
     logging.info(f"TABLE '{t_conf["table_name"]}' updated")
 
@@ -678,7 +681,7 @@ def pull_lt_data(update_time):
             h_dates = set(h_dates)
             # d_dates = set([e['forecastTimeUtc'][:10] for e in place_data['forecastTimestamps']])
 
-            h_params.extend([[p['code'], hourly_params[k], f['forecastTimeUtc'].replace(" ", "").replace("-", "").replace(":", "")[:12], v] for f in place_data['forecastTimestamps'] for k,v in f.items() if f['forecastTimeUtc'] if h_dates and k in hourly_params])
+            h_params.extend([[p['code'], hourly_params[k], f['forecastTimeUtc'].replace(" ", "").replace("-", "").replace(":", "")[:12], day_icons[v] if k == 'conditionCode' else v] for f in place_data['forecastTimestamps'] for k,v in f.items() if f['forecastTimeUtc'] if h_dates and k in hourly_params])
             sleep(0.4) # trying to stay below the advertised 180 rqs / minute
 
         batch_size = 10000
@@ -696,8 +699,11 @@ def pull_lt_data(update_time):
             upd_con.commit()
         # TODO - moving deletion to its own separate step in the download process may make sense
         # initial city dl deletes this stuff before we get here
-        upd_cur.execute(f"DELETE FROM forecast_cities WHERE update_time < {update_time}")
+        upd_cur.execute(f"DELETE FROM forecast_cities WHERE update_time < {update_time} LIMIT {batch_size}")
         logging.info(f"TABLE 'forecast_cities' - LT - {upd_cur.rowcount} old rows deleted")
+        while upd_cur.rowcount > 0:
+            upd_cur.execute(f"DELETE FROM forecast_cities WHERE update_time < {update_time} LIMIT {batch_size}")
+            logging.info(f"TABLE 'forecast_cities' - LT - {upd_cur.rowcount} old rows deleted")
         upd_con.commit()
         logging.info("DB update finished")
 

@@ -128,6 +128,9 @@ icon_prio = [
 
 for p in places:
     place_data = json.loads(requests.get(f"https://api.meteo.lt/v1/places/{p['code']}/forecasts/long-term").content)
+
+    # print(place_data)
+
     h_dates = []
     for i in range(len(place_data['forecastTimestamps'])-1):
         if int(place_data['forecastTimestamps'][i]['forecastTimeUtc'][11:13])-int(place_data['forecastTimestamps'][i+1]['forecastTimeUtc'][11:13]) in {-1, 23}:
@@ -137,7 +140,7 @@ for p in places:
     h_dates = set(h_dates)
     d_dates = set([e['forecastTimeUtc'][:10] for e in place_data['forecastTimestamps']])
 
-    h_params = [[p['code'], hourly_params[k], f['forecastTimeUtc'].replace(" ", "").replace("-", "").replace(":", "")[:12], v] for f in place_data['forecastTimestamps'] for k,v in f.items() if f['forecastTimeUtc'] if h_dates and k in hourly_params]
+    h_params = [[p['code'], hourly_params[k], f['forecastTimeUtc'].replace(" ", "").replace("-", "").replace(":", "")[:12], day_icons[v] if k == 'conditionCode' else v] for f in place_data['forecastTimestamps'] for k,v in f.items() if f['forecastTimeUtc'] if h_dates and k in hourly_params]
 
     print(h_params)
     # print(h_dates)

@@ -1,4 +1,11 @@
+import string
+
+
 char_map = {
+    # not discarding some special characters
+    ' ': ' ',
+    '(': '(',
+    ')': ')',
     # lv
     'ā': 'a',
     'č': 'c',
@@ -73,11 +80,12 @@ char_map = {
     'ź': 'z',
     'ż': 'z',
 }
+for c in string.ascii_lowercase:
+    char_map[c] = c
 
-# this is still mangled - just remove non-ASCII params
 
 def simlpify_string(s: str) -> str:
-    return ''.join([char_map.get(c, c) for c in s])
+    return ''.join([char_map.get(c, '') for c in s])
 
 
 hourly_params = [
