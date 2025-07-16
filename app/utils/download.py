@@ -522,7 +522,7 @@ def pull_uptimerobot_data(update_time):
                 upd_con.close()
 
 
-hourly_params = {
+lt_hourly_params = {
     # is the condition code the icon?
     'conditionCode': 1, # Laika apstākļu ikona
     'airTemperature': 2, # Temperatūra
@@ -537,7 +537,7 @@ hourly_params = {
     # 'missing_2': 11, # Pērkona varbūtība
 }
 
-daily_params = {
+lt_daily_params = {
     #12, # Diennakts vidējais vēja virziens
     'windSpeed': [(lambda a: sum(a)/len(a), 13)], # Diennakts vidējā vēja vērtība
     'windGust': [(lambda a: max(a), 14)], # Diennakts maksimālā vēja brāzma
@@ -555,7 +555,7 @@ daily_params = {
     ]
 }
 
-day_icons = {
+lt_day_icons = {
     'clear': '1101',
     'partly-cloudy': '1102',
     'cloudy-with-sunny-intervals': '1103',
@@ -578,7 +578,7 @@ day_icons = {
     'null': '0000',
 }
 
-night_icons = {
+lt_night_icons = {
     'clear': '2101',
     'partly-cloudy': '2102',
     'cloudy-with-sunny-intervals': '2103',
@@ -601,7 +601,7 @@ night_icons = {
     'null': '0000',
 }
 
-icon_prio = [
+lt_icon_prio = [
     'heavy-rain-with-thunderstorms',
     'thunderstorms',
     'isolated-thunderstorms',
@@ -678,7 +678,7 @@ def pull_lt_data(update_time):
             h_dates = set(h_dates)
             # d_dates = set([e['forecastTimeUtc'][:10] for e in place_data['forecastTimestamps']])
 
-            h_params.extend([[p['code'], hourly_params[k], f['forecastTimeUtc'].replace(" ", "").replace("-", "").replace(":", "")[:12], day_icons[v] if k == 'conditionCode' else v] for f in place_data['forecastTimestamps'] for k,v in f.items() if f['forecastTimeUtc'] if h_dates and k in hourly_params])
+            h_params.extend([[p['code'], lt_hourly_params[k], f['forecastTimeUtc'].replace(" ", "").replace("-", "").replace(":", "")[:12], lt_day_icons[v] if k == 'conditionCode' else v] for f in place_data['forecastTimestamps'] for k,v in f.items() if f['forecastTimeUtc'] if h_dates and k in lt_hourly_params])
             sleep(0.4) # trying to stay below the advertised 180 rqs / minute
 
         batch_size = 10000
