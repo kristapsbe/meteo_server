@@ -313,11 +313,8 @@ def update_table(t_conf, update_time, db_con):
         db_con.commit()
         logging.info("TABLE 'missing_params' updated")
     else:
-        db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE update_time < {update_time} LIMIT {batch_size}")
+        db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE update_time < {update_time}")
         logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} old rows deleted")
-        while db_cur.rowcount > 0:
-            db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE update_time < {update_time} LIMIT {batch_size}")
-            logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} old rows deleted")
         db_con.commit()
     logging.info(f"TABLE '{t_conf["table_name"]}' updated")
 
@@ -699,12 +696,13 @@ def pull_lt_data(update_time):
             upd_con.commit()
         # TODO - moving deletion to its own separate step in the download process may make sense
         # initial city dl deletes this stuff before we get here
-        upd_cur.execute(f"DELETE FROM forecast_cities WHERE update_time < {update_time} LIMIT {batch_size}")
+        upd_cur.execute(f"DELETE FROM forecast_cities WHERE update_time < {update_time} AND city_id IN (SELECT DISTINCT city_id FROM forecast_cities WHERE update_time < {update_time} LIMIT 400)")
         logging.info(f"TABLE 'forecast_cities' - LT - {upd_cur.rowcount} old rows deleted")
-        while upd_cur.rowcount > 0:
-            upd_cur.execute(f"DELETE FROM forecast_cities WHERE update_time < {update_time} LIMIT {batch_size}")
-            logging.info(f"TABLE 'forecast_cities' - LT - {upd_cur.rowcount} old rows deleted")
         upd_con.commit()
+        while upd_cur.rowcount > 0:
+            upd_cur.execute(f"DELETE FROM forecast_cities WHERE update_time < {update_time} AND city_id IN (SELECT DISTINCT city_id FROM forecast_cities WHERE update_time < {update_time} LIMIT 400)")
+            logging.info(f"TABLE 'forecast_cities' - LT - {upd_cur.rowcount} old rows deleted")
+            upd_con.commit()
         logging.info("DB update finished")
 
     except BaseException as e:
@@ -733,7 +731,7 @@ def run_downloads(datasets):
     update_db(update_time)
     update_aurora_forecast(update_time)
     pull_uptimerobot_data(update_time)
-    pull_lt_data(update_time)
+    # pull_lt_data(update_time)
 
     if not skipped_empty:
         open(last_updated, 'w').write(
