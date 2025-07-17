@@ -668,8 +668,9 @@ def pull_lt_data(update_time):
         upd_con.commit()
         logging.info("DB update finished")
 
-        params = []
         for p in places:
+            params = []
+
             place_data = json.loads(requests.get(f"https://api.meteo.lt/v1/places/{p['code']}/forecasts/long-term").content)
             h_dates = []
             for i in range(len(place_data['forecastTimestamps'])-1):
@@ -694,19 +695,19 @@ def pull_lt_data(update_time):
 
             sleep(0.4) # trying to stay below the advertised 180 rqs / minute
 
-        batch_size = 10000
-        total = len(params)
-        batch_count = total//batch_size
-        for i in range(batch_count+1):
-            upd_cur.executemany(f"""
-                INSERT INTO forecast_cities (city_id, param_id, date, value, update_time)
-                VALUES (?, ?, ?, ?, {update_time})
-                ON CONFLICT(city_id, param_id, date) DO UPDATE SET
-                    value=excluded.value,
-                    update_time={update_time}
-            """, params[i*batch_size:(i+1)*batch_size])
-            logging.info(f"TABLE 'forecast_cities' - LT - {upd_cur.rowcount} rows upserted (batch {i}/{batch_count}, total {total})")
-            upd_con.commit()
+            batch_size = 10000
+            total = len(params)
+            batch_count = total//batch_size
+            for i in range(batch_count+1):
+                upd_cur.executemany(f"""
+                    INSERT INTO forecast_cities (city_id, param_id, date, value, update_time)
+                    VALUES (?, ?, ?, ?, {update_time})
+                    ON CONFLICT(city_id, param_id, date) DO UPDATE SET
+                        value=excluded.value,
+                        update_time={update_time}
+                """, params[i*batch_size:(i+1)*batch_size])
+                logging.info(f"TABLE 'forecast_cities' - LT - {upd_cur.rowcount} rows upserted (batch {i}/{batch_count}, total {total})")
+                upd_con.commit()
 
         upd_cur.execute(f"DELETE FROM forecast_cities WHERE update_time < {update_time}")
         logging.info(f"TABLE 'forecast_cities' - LT - {upd_cur.rowcount} old rows deleted")
