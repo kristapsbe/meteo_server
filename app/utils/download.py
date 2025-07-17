@@ -254,8 +254,6 @@ def update_table(t_conf, update_time, db_con):
             # clocks getting turned can mess the data up - leaving this as a contingency in case I just need to clear out all of the old data
             # TODO: it may be worth dealing with this in a more automated fashion
             db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE update_time < {update_time}")
-            logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} old rows deleted")
-            db_con.commit()
         else:
             # dealing with cases when a single forecast param may have gone missing
             not_params = f"param_id NOT IN ({",".join([str(p) for p in hourly_params+daily_params])})"
@@ -274,27 +272,10 @@ def update_table(t_conf, update_time, db_con):
                 WHERE
                     ((date < {h_valid_dates[0][0]} OR date > {h_valid_dates[0][1]}) AND {h_where}) OR
                     ((date < {d_valid_dates[0][0]} OR date > {d_valid_dates[0][1]}) AND {d_where}) OR
-                    {not_params} OR param_id IS NULL AND
-                    city_id IN (SELECT DISTINCT city_id FROM forecast_cities WHERE ((date < {h_valid_dates[0][0]} OR date > {h_valid_dates[0][1]}) AND {h_where}) OR
-                    ((date < {d_valid_dates[0][0]} OR date > {d_valid_dates[0][1]}) AND {d_where}) OR
-                    {not_params} OR param_id IS NULL LIMIT 400)
+                    {not_params} OR param_id IS NULL
             """)
-            db_cur.execute(f"DELETE FROM forecast_cities WHERE update_time < {update_time} AND ")
-            logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} old rows deleted")
-            db_cur.commit()
-            while db_cur.rowcount > 0:
-                db_cur.execute(f"""
-                    DELETE FROM {t_conf["table_name"]}
-                    WHERE
-                        ((date < {h_valid_dates[0][0]} OR date > {h_valid_dates[0][1]}) AND {h_where}) OR
-                        ((date < {d_valid_dates[0][0]} OR date > {d_valid_dates[0][1]}) AND {d_where}) OR
-                        {not_params} OR param_id IS NULL AND
-                        city_id IN (SELECT DISTINCT city_id FROM forecast_cities WHERE ((date < {h_valid_dates[0][0]} OR date > {h_valid_dates[0][1]}) AND {h_where}) OR
-                        ((date < {d_valid_dates[0][0]} OR date > {d_valid_dates[0][1]}) AND {d_where}) OR
-                        {not_params} OR param_id IS NULL LIMIT 400)
-                """)
-                logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} old rows deleted")
-                db_cur.commit()
+        logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} old rows deleted")
+        db_con.commit()
 
         logging.info("UPDATING 'missing_params'")
         db_cur.execute("""
@@ -726,15 +707,10 @@ def pull_lt_data(update_time):
             """, params[i*batch_size:(i+1)*batch_size])
             logging.info(f"TABLE 'forecast_cities' - LT - {upd_cur.rowcount} rows upserted (batch {i}/{batch_count}, total {total})")
             upd_con.commit()
-        # TODO - moving deletion to its own separate step in the download process may make sense
-        # initial city dl deletes this stuff before we get here
-        upd_cur.execute(f"DELETE FROM forecast_cities WHERE update_time < {update_time} AND city_id IN (SELECT DISTINCT city_id FROM forecast_cities WHERE update_time < {update_time} LIMIT 400)")
+
+        upd_cur.execute(f"DELETE FROM forecast_cities WHERE update_time < {update_time}")
         logging.info(f"TABLE 'forecast_cities' - LT - {upd_cur.rowcount} old rows deleted")
         upd_con.commit()
-        while upd_cur.rowcount > 0:
-            upd_cur.execute(f"DELETE FROM forecast_cities WHERE update_time < {update_time} AND city_id IN (SELECT DISTINCT city_id FROM forecast_cities WHERE update_time < {update_time} LIMIT 400)")
-            logging.info(f"TABLE 'forecast_cities' - LT - {upd_cur.rowcount} old rows deleted")
-            upd_con.commit()
         logging.info("DB update finished")
 
     except BaseException as e:
