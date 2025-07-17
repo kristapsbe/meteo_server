@@ -41,19 +41,19 @@ hourly_params = {
 
 daily_params = {
     #12, # Diennakts vidējais vēja virziens
-    'windSpeed': [(lambda a: sum(a)/len(a), 13)], # Diennakts vidējā vēja vērtība
-    'windGust': [(lambda a: max(a), 14)], # Diennakts maksimālā vēja brāzma
+    'windSpeed': [(lambda d, n: sum(d+n)/len(d+n), 13)], # Diennakts vidējā vēja vērtība
+    'windGust': [(lambda d, n: max(d+n), 14)], # Diennakts maksimālā vēja brāzma
     'airTemperature': [
-        (lambda a: max(a), 15), # Diennakts maksimālā temperatūra
-        (lambda a: min(a), 16), # Diennakts minimālā temperatūra
+        (lambda d, n: max(d+n), 15), # Diennakts maksimālā temperatūra
+        (lambda d, n: min(d+n), 16), # Diennakts minimālā temperatūra
     ],
     'totalPrecipitation': [
-        (lambda a: sum(a), 17), # Diennakts nokrišņu summa
-        (lambda a: sum(a), 18), # Diennakts nokrišņu varbūtība
+        (lambda d, n: sum(d+n), 17), # Diennakts nokrišņu summa
+        # (lambda a: sum(a), 18), # Diennakts nokrišņu varbūtība
     ],
     'conditionCode': [
-        (lambda a: a, 19), # Laika apstākļu ikona nakti
-        (lambda a: a, 20), # Laika apstākļu ikona diena
+        (lambda _, n: night_icons[[e for e in icon_prio if e in n][0]], 19), # Laika apstākļu ikona nakti
+        (lambda d, _: day_icons[[e for e in icon_prio if e in d][0]], 20), # Laika apstākļu ikona diena
     ]
 }
 
@@ -140,10 +140,22 @@ for p in places:
     h_dates = set(h_dates)
     d_dates = set([e['forecastTimeUtc'][:10] for e in place_data['forecastTimestamps']])
 
-    h_params = [[p['code'], hourly_params[k], f['forecastTimeUtc'].replace(" ", "").replace("-", "").replace(":", "")[:12], day_icons[v] if k == 'conditionCode' else v] for f in place_data['forecastTimestamps'] for k,v in f.items() if f['forecastTimeUtc'] if h_dates and k in hourly_params]
+    params = [[p['code'], hourly_params[k], f['forecastTimeUtc'].replace(" ", "").replace("-", "").replace(":", "")[:12], day_icons[v] if k == 'conditionCode' else v] for f in place_data['forecastTimestamps'] for k,v in f.items() if f['forecastTimeUtc'] if h_dates and k in hourly_params]
+    params = []
+    # print(h_params)
+    sorted_d_dates = sorted(list(d_dates))
+    all_h_dates = list(set([e['forecastTimeUtc'] for e in place_data['forecastTimestamps']]))
+    # print(sorted_d_dates)
+    for i in range(1, len(sorted_d_dates)):
+        tmp_day = [e for e in place_data['forecastTimestamps'] if e['forecastTimeUtc'] >= f"{sorted_d_dates[i-1][:10]} 09:00:00" and e['forecastTimeUtc'] < f"{sorted_d_dates[i-1][:10]} 21:00:00"]
+        tmp_night = [e for e in place_data['forecastTimestamps'] if e['forecastTimeUtc'] >= f"{sorted_d_dates[i-1][:10]} 21:00:00" and e['forecastTimeUtc'] < f"{sorted_d_dates[i][:10]} 09:00:00"]
+        for k in tmp_day[0].keys():
+            if k in daily_params:
+                for f in daily_params[k]:
+                    params.append([p['code'], f[1], f"{tmp_day[0]['forecastTimeUtc'].replace(' ', '').replace('-', '').replace(':', '')[:8]}0000", f[0]([e[k] for e in tmp_day], [e[k] for e in tmp_night])])
 
-    print(h_params)
-    # print(h_dates)
+    print(params)
+    # print(d_dates)
     # print(d_dates)
     # print([e['forecastTimeUtc'] for e in json.loads(requests.get(f"https://api.meteo.lt/v1/places/{p['code']}/forecasts/long-term").content)['forecastTimestamps']])
     break
