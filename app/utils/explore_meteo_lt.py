@@ -132,16 +132,17 @@ for p in places:
     # print(place_data)
 
     h_dates = []
-    for i in range(len(place_data['forecastTimestamps'])-1):
-        if int(place_data['forecastTimestamps'][i]['forecastTimeUtc'][11:13])-int(place_data['forecastTimestamps'][i+1]['forecastTimeUtc'][11:13]) in {-1, 23}:
-            h_dates.append(place_data['forecastTimestamps'][i]['forecastTimeUtc'])
+    all_forecasts = sorted([e['forecastTimeUtc'] for e in place_data['forecastTimestamps']])
+    for i in range(len(all_forecasts)-1):
+        if int(all_forecasts[i][11:13])-int(all_forecasts[i+1][11:13]) in {-1, 23}:
+            print(all_forecasts[i], all_forecasts[i+1], int(all_forecasts[i][11:13])-int(all_forecasts[i+1][11:13]))
+            h_dates.append(all_forecasts[i])
         else:
             break
     h_dates = set(h_dates)
     d_dates = set([e['forecastTimeUtc'][:10] for e in place_data['forecastTimestamps']])
 
-    params = [[p['code'], hourly_params[k], f['forecastTimeUtc'].replace(" ", "").replace("-", "").replace(":", "")[:12], day_icons[v] if k == 'conditionCode' else v] for f in place_data['forecastTimestamps'] for k,v in f.items() if f['forecastTimeUtc'] if h_dates and k in hourly_params]
-    params = []
+    params = [[p['code'], hourly_params[k], f['forecastTimeUtc'].replace(" ", "").replace("-", "").replace(":", "")[:12], day_icons[v] if k == 'conditionCode' else v] for f in place_data['forecastTimestamps'] for k,v in f.items() if f['forecastTimeUtc'] in h_dates and k in hourly_params]
     # print(h_params)
     sorted_d_dates = sorted(list(d_dates))
     all_h_dates = list(set([e['forecastTimeUtc'] for e in place_data['forecastTimestamps']]))
@@ -152,6 +153,7 @@ for p in places:
         for k in tmp_day[0].keys():
             if k in daily_params:
                 for f in daily_params[k]:
+                    # pass
                     params.append([p['code'], f[1], f"{tmp_day[0]['forecastTimeUtc'].replace(' ', '').replace('-', '').replace(':', '')[:8]}0000", f[0]([e[k] for e in tmp_day], [e[k] for e in tmp_night])])
 
     print(params)

@@ -669,8 +669,6 @@ def pull_lt_data(update_time):
         logging.info("DB update finished")
 
         for p in places:
-            params = []
-
             place_data = json.loads(requests.get(f"https://api.meteo.lt/v1/places/{p['code']}/forecasts/long-term").content)
             h_dates = []
             for i in range(len(place_data['forecastTimestamps'])-1):
@@ -681,7 +679,7 @@ def pull_lt_data(update_time):
             h_dates = set(h_dates)
             d_dates = set([e['forecastTimeUtc'][:10] for e in place_data['forecastTimestamps']])
 
-            params.extend([[p['code'], lt_hourly_params[k], f['forecastTimeUtc'].replace(" ", "").replace("-", "").replace(":", "")[:12], lt_day_icons[v] if k == 'conditionCode' else v] for f in place_data['forecastTimestamps'] for k,v in f.items() if f['forecastTimeUtc'] if h_dates and k in lt_hourly_params])
+            params = [[p['code'], lt_hourly_params[k], f['forecastTimeUtc'].replace(" ", "").replace("-", "").replace(":", "")[:12], lt_day_icons[v] if k == 'conditionCode' else v] for f in place_data['forecastTimestamps'] for k,v in f.items() if f['forecastTimeUtc'] in h_dates and k in lt_hourly_params]
 
             sorted_d_dates = sorted(list(d_dates))
             # print(sorted_d_dates)
@@ -689,8 +687,8 @@ def pull_lt_data(update_time):
                 tmp_day = [e for e in place_data['forecastTimestamps'] if e['forecastTimeUtc'] >= f"{sorted_d_dates[i-1][:10]} 09:00:00" and e['forecastTimeUtc'] < f"{sorted_d_dates[i-1][:10]} 21:00:00"]
                 tmp_night = [e for e in place_data['forecastTimestamps'] if e['forecastTimeUtc'] >= f"{sorted_d_dates[i-1][:10]} 21:00:00" and e['forecastTimeUtc'] < f"{sorted_d_dates[i][:10]} 09:00:00"]
                 for k in tmp_day[0].keys():
-                    if k in daily_params:
-                        for f in daily_params[k]:
+                    if k in lt_daily_params:
+                        for f in lt_daily_params[k]:
                             params.append([p['code'], f[1], f"{tmp_day[0]['forecastTimeUtc'].replace(' ', '').replace('-', '').replace(':', '')[:8]}0000", f[0]([e[k] for e in tmp_day], [e[k] for e in tmp_night])])
 
             sleep(0.4) # trying to stay below the advertised 180 rqs / minute
