@@ -265,6 +265,8 @@ def update_table(t_conf, update_time, db_con):
             d_valid_dates = db_cur.execute(f"""
                 SELECT MIN(date), MAX(date) FROM {t_conf["table_name"]} WHERE update_time = {update_time} AND {d_where}
             """).fetchall() # better than getting all dates, but still slow
+            # TODO: I've made this very forecast_cities city specific now - need to do this so that deleting the lt sources will not mangle performance
+            # TODO: and the q is bad, but should work
             db_cur.execute(f"""
                 DELETE FROM {t_conf["table_name"]}
                 WHERE
@@ -539,19 +541,19 @@ lt_hourly_params = {
 
 lt_daily_params = {
     #12, # Diennakts vidējais vēja virziens
-    'windSpeed': [(lambda a: sum(a)/len(a), 13)], # Diennakts vidējā vēja vērtība
-    'windGust': [(lambda a: max(a), 14)], # Diennakts maksimālā vēja brāzma
+    'windSpeed': [(lambda d, n: sum(d+n)/len(d+n), 13)], # Diennakts vidējā vēja vērtība
+    'windGust': [(lambda d, n: max(d+n), 14)], # Diennakts maksimālā vēja brāzma
     'airTemperature': [
-        (lambda a: max(a), 15), # Diennakts maksimālā temperatūra
-        (lambda a: min(a), 16), # Diennakts minimālā temperatūra
+        (lambda d, n: max(d+n), 15), # Diennakts maksimālā temperatūra
+        (lambda d, n: min(d+n), 16), # Diennakts minimālā temperatūra
     ],
     'totalPrecipitation': [
-        (lambda a: sum(a), 17), # Diennakts nokrišņu summa
-        (lambda a: sum(a), 18), # Diennakts nokrišņu varbūtība
+        (lambda d, n: sum(d+n), 17), # Diennakts nokrišņu summa
+        # (lambda a: sum(a), 18), # Diennakts nokrišņu varbūtība
     ],
     'conditionCode': [
-        (lambda a: a, 19), # Laika apstākļu ikona nakti
-        (lambda a: a, 20), # Laika apstākļu ikona diena
+        (lambda _, n: lt_night_icons[[e for e in lt_icon_prio if e in n][0]], 19), # Laika apstākļu ikona nakti
+        (lambda d, _: lt_day_icons[[e for e in lt_icon_prio if e in d][0]], 20), # Laika apstākļu ikona diena
     ]
 }
 
@@ -666,8 +668,9 @@ def pull_lt_data(update_time):
         upd_con.commit()
         logging.info("DB update finished")
 
-        h_params = []
         for p in places:
+            params = []
+
             place_data = json.loads(requests.get(f"https://api.meteo.lt/v1/places/{p['code']}/forecasts/long-term").content)
             h_dates = []
             for i in range(len(place_data['forecastTimestamps'])-1):
@@ -676,33 +679,39 @@ def pull_lt_data(update_time):
                 else:
                     break
             h_dates = set(h_dates)
-            # d_dates = set([e['forecastTimeUtc'][:10] for e in place_data['forecastTimestamps']])
+            d_dates = set([e['forecastTimeUtc'][:10] for e in place_data['forecastTimestamps']])
 
-            h_params.extend([[p['code'], lt_hourly_params[k], f['forecastTimeUtc'].replace(" ", "").replace("-", "").replace(":", "")[:12], lt_day_icons[v] if k == 'conditionCode' else v] for f in place_data['forecastTimestamps'] for k,v in f.items() if f['forecastTimeUtc'] if h_dates and k in lt_hourly_params])
+            params.extend([[p['code'], lt_hourly_params[k], f['forecastTimeUtc'].replace(" ", "").replace("-", "").replace(":", "")[:12], lt_day_icons[v] if k == 'conditionCode' else v] for f in place_data['forecastTimestamps'] for k,v in f.items() if f['forecastTimeUtc'] if h_dates and k in lt_hourly_params])
+
+            sorted_d_dates = sorted(list(d_dates))
+            # print(sorted_d_dates)
+            for i in range(1, len(sorted_d_dates)):
+                tmp_day = [e for e in place_data['forecastTimestamps'] if e['forecastTimeUtc'] >= f"{sorted_d_dates[i-1][:10]} 09:00:00" and e['forecastTimeUtc'] < f"{sorted_d_dates[i-1][:10]} 21:00:00"]
+                tmp_night = [e for e in place_data['forecastTimestamps'] if e['forecastTimeUtc'] >= f"{sorted_d_dates[i-1][:10]} 21:00:00" and e['forecastTimeUtc'] < f"{sorted_d_dates[i][:10]} 09:00:00"]
+                for k in tmp_day[0].keys():
+                    if k in daily_params:
+                        for f in daily_params[k]:
+                            params.append([p['code'], f[1], f"{tmp_day[0]['forecastTimeUtc'].replace(' ', '').replace('-', '').replace(':', '')[:8]}0000", f[0]([e[k] for e in tmp_day], [e[k] for e in tmp_night])])
+
             sleep(0.4) # trying to stay below the advertised 180 rqs / minute
 
-        batch_size = 10000
-        total = len(h_params)
-        batch_count = total//batch_size
-        for i in range(batch_count+1):
-            upd_cur.executemany(f"""
-                INSERT INTO forecast_cities (city_id, param_id, date, value, update_time)
-                VALUES (?, ?, ?, ?, {update_time})
-                ON CONFLICT(city_id, param_id, date) DO UPDATE SET
-                    value=excluded.value,
-                    update_time={update_time}
-            """, h_params[i*batch_size:(i+1)*batch_size])
-            logging.info(f"TABLE 'forecast_cities' - LT - {upd_cur.rowcount} rows upserted (batch {i}/{batch_count}, total {total})")
-            upd_con.commit()
-        # TODO - moving deletion to its own separate step in the download process may make sense
-        # initial city dl deletes this stuff before we get here
-        upd_cur.execute(f"DELETE FROM forecast_cities WHERE update_time < {update_time} AND city_id IN (SELECT DISTINCT city_id FROM forecast_cities WHERE update_time < {update_time} LIMIT 400)")
+            batch_size = 10000
+            total = len(params)
+            batch_count = total//batch_size
+            for i in range(batch_count+1):
+                upd_cur.executemany(f"""
+                    INSERT INTO forecast_cities (city_id, param_id, date, value, update_time)
+                    VALUES (?, ?, ?, ?, {update_time})
+                    ON CONFLICT(city_id, param_id, date) DO UPDATE SET
+                        value=excluded.value,
+                        update_time={update_time}
+                """, params[i*batch_size:(i+1)*batch_size])
+                logging.info(f"TABLE 'forecast_cities' - LT - {upd_cur.rowcount} rows upserted (batch {i}/{batch_count}, total {total})")
+                upd_con.commit()
+
+        upd_cur.execute(f"DELETE FROM forecast_cities WHERE update_time < {update_time}")
         logging.info(f"TABLE 'forecast_cities' - LT - {upd_cur.rowcount} old rows deleted")
         upd_con.commit()
-        while upd_cur.rowcount > 0:
-            upd_cur.execute(f"DELETE FROM forecast_cities WHERE update_time < {update_time} AND city_id IN (SELECT DISTINCT city_id FROM forecast_cities WHERE update_time < {update_time} LIMIT 400)")
-            logging.info(f"TABLE 'forecast_cities' - LT - {upd_cur.rowcount} old rows deleted")
-            upd_con.commit()
         logging.info("DB update finished")
 
     except BaseException as e:
@@ -731,7 +740,7 @@ def run_downloads(datasets):
     update_db(update_time)
     update_aurora_forecast(update_time)
     pull_uptimerobot_data(update_time)
-    # pull_lt_data(update_time)
+    pull_lt_data(update_time)
 
     if not skipped_empty:
         open(last_updated, 'w').write(
