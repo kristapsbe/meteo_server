@@ -186,3 +186,5 @@ https://www.met.no/en/free-meteorological-data - Norwegian
 https://www.smhi.se/en/weather/warnings-and-forecasts - Swedish - can't tell if they're offering access to data
 
 https://en.ilmatieteenlaitos.fi/ - Finnish - can't tell if they're offering access to data
+
+delete forecasts on a source by source basis to avoid situations where the first source clears out data from the other sources too early
