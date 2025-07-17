@@ -739,7 +739,7 @@ def run_downloads(datasets):
     update_db(update_time)
     update_aurora_forecast(update_time)
     pull_uptimerobot_data(update_time)
-    # pull_lt_data(update_time)
+    pull_lt_data(update_time)
 
     if not skipped_empty:
         open(last_updated, 'w').write(
