@@ -5,4 +5,8 @@ elif [ "$DO_RUN_AURORA" = "true" ]; then \
 fi
 
 crond
-uv run main.py
+if [ "$DO_RUN_AURORA" = "true" ]; then \
+    sh run_job.sh download_aurora & uv run main.py
+else
+    uv run main.py
+fi
