@@ -10,7 +10,7 @@ import requests
 from time import sleep
 from utils import simlpify_string, hourly_params, daily_params
 from download_utils import lt_daily_params, lt_day_icons, lt_hourly_params, update_aurora_forecast
-from download_every_20_minutes import do_20_m_download
+from download_small import do_20_m_download
 from settings import db_file, data_folder, data_uptimerobot_folder, last_updated, run_emergency, run_emergency_failed
 
 
