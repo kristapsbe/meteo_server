@@ -10,10 +10,9 @@ import requests
 from time import sleep
 from utils import simlpify_string, hourly_params, daily_params
 from download_utils import lt_daily_params, lt_day_icons, lt_hourly_params, update_aurora_forecast
+from download_every_20_minutes import do_20_m_download
 from settings import db_file, data_folder, data_uptimerobot_folder, last_updated, run_emergency, run_emergency_failed
 
-
-skip_download = False
 
 logging.basicConfig(
     filename='/data/download.log',
@@ -572,7 +571,7 @@ def pull_lt_data(update_time):
         upd_con.close()
 
 
-def run_downloads(datasets):
+def do_4_h_download(datasets):
     logging.info("Triggering refresh")
     skipped_empty = False
     try:
@@ -588,7 +587,6 @@ def run_downloads(datasets):
 
     update_time = datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
     update_db(update_time)
-    update_aurora_forecast(update_time)
     pull_uptimerobot_data(update_time)
     pull_lt_data(update_time)
 
@@ -604,9 +602,5 @@ def run_downloads(datasets):
 
 if __name__ == "__main__":
     logging.info("Download job starting")
-    if skip_download:
-        update_time = datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
-        update_db(update_time)
-        update_aurora_forecast(update_time)
-    else:
-        run_downloads(target_ds)
+    do_20_m_download()
+    do_4_h_download(target_ds) # TODO: make emergency dl part of this?
