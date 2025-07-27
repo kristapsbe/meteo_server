@@ -9,9 +9,9 @@ import requests
 
 from time import sleep
 from utils import simlpify_string, hourly_params, daily_params
-from download_utils import lt_daily_params, lt_day_icons, lt_hourly_params, update_aurora_forecast
-from download_small import do_20_m_download
 from settings import db_file, data_folder, data_uptimerobot_folder, last_updated, run_emergency, run_emergency_failed
+from download_utils import lt_daily_params, lt_day_icons, lt_hourly_params, table_conf, base_url, forecast_s, warning_s, col_parsers, col_types, MIN_PARAM_COUNT, target_ds
+from download_small import do_20_m_download
 
 
 logging.basicConfig(
@@ -20,130 +20,6 @@ logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s [%(levelname)s] %(message)s'
 )
-
-base_url = "https://data.gov.lv/dati/api/3/"
-
-warning_s = "hidrometeorologiskie-bridinajumi"
-forecast_s = "meteorologiskas-prognozes-apdzivotam-vietam-jaunaka-datu-kopa"
-
-MIN_PARAM_COUNT = min(len(hourly_params), len(daily_params))
-target_ds = [warning_s, forecast_s]
-
-for ds in target_ds:
-    os.makedirs(f"{data_folder}{ds}/", exist_ok=True)
-
-col_parsers = {
-    "TEXT": lambda r: str(r).strip(),
-    "TITLE_TEXT": lambda r: str(r).strip().title(),
-    "CLEANED_TEXT": lambda r: simlpify_string(str(r).strip().lower()),
-    "INTEGER": lambda r: int(str(r).strip()),
-    "REAL": lambda r: float(str(r).strip()),
-    # TODO: do I really need minutes? - would mean that I consistently work with datetime strings that are YYYYMMDDHHMM
-    # TODO: revert when the source gets fixed
-    # "DATEH": lambda r: str(r).strip().replace(".", "").replace("-", "").replace(" ", "").replace(":", "").ljust(12, "0")[:12] # YYYYMMDDHHMM
-    "DATEH": lambda r: str(r).strip().replace(".", "").replace("-", "").replace(" ", "").replace(":", "").replace("T", "").ljust(12, "0")[:12], # YYYYMMDDHHMM
-    "CONST_LV": lambda _: "LV",
-}
-
-col_types = {
-    "DATEH": "INTEGER",
-    "CONST_LV": "TEXT",
-    "TITLE_TEXT": "TEXT",
-    "CLEANED_TEXT": "TEXT",
-}
-
-table_conf = [{
-    "files": [{
-        "name": f"{data_folder}{forecast_s}/cities.csv",
-        "skip_if_empty": True
-    }],
-    "table_name": "cities",
-    "cols": [
-        [{"name": "id", "type": "TEXT", "pk": True}, {"name": "source", "type": "CONST_LV", "pk": True}],
-        [{"name": "name", "type": "TITLE_TEXT"}, {"name": "search_name", "type": "CLEANED_TEXT"}],
-        [{"name": "lat", "type": "REAL"}],
-        [{"name": "lon", "type": "REAL"}],
-        [{"name": "type", "type": "TEXT"}],
-        [{"name": "county", "type": "TEXT"}, {"name": "country", "type": "CONST_LV"}],
-    ],
-},{
-    "files": [{
-        "name": f"{data_folder}{forecast_s}/forcity_param.csv",
-        "skip_if_empty": True
-    }],
-    "table_name": "forecast_cities_params",
-    "cols": [
-        [{"name": "id", "type": "INTEGER", "pk": True}],
-        [{"name": "title_lv", "type": "TEXT"}],
-        [{"name": "title_en", "type": "TEXT"}],
-    ]
-},{
-    "files": [{
-        "name": f"{data_folder}{forecast_s}/forecast_cities_day.csv",
-        "skip_if_empty": True
-    }, {
-        "name": f"{data_folder}{forecast_s}/forecast_cities.csv",
-        "skip_if_empty": True,
-        "do_emergency_dl": True
-    }],
-    "table_name": "forecast_cities",
-    "cols": [
-        [{"name": "city_id", "type": "TEXT", "pk": True}],
-        [{"name": "param_id", "type": "INTEGER", "pk": True}],
-        [{"name": "date", "type": "DATEH", "pk": True}],
-        [{"name": "value", "type": "REAL"}],
-    ]
-},{
-    "files": [{
-        "name": f"{data_folder}{warning_s}/novadi.csv"
-    }],
-    "table_name": "municipalities",
-    "cols": [
-        [{"name": "id", "type": "INTEGER", "pk": True}],
-        [{"name": "name_lv", "type": "TEXT"}],
-        [{"name": "name_en", "type": "TEXT"}],
-    ]
-},{
-    "files": [{
-        "name": f"{data_folder}{warning_s}/bridinajumu_novadi.csv"
-    }],
-    "table_name": "warnings_municipalities",
-    "cols": [
-        [{"name": "warning_id", "type": "INTEGER"}],
-        [{"name": "municipality_id", "type": "INTEGER"}],
-    ]
-},{
-    "files": [{
-        "name": f"{data_folder}{warning_s}/bridinajumu_poligoni.csv"
-    }],
-    "table_name": "warnings_polygons",
-    "cols": [
-        [{"name": "warning_id", "type": "INTEGER", "pk": True}],
-        [{"name": "polygon_id", "type": "INTEGER", "pk": True}],
-        [{"name": "lat", "type": "REAL"}],
-        [{"name": "lon", "type": "REAL"}],
-        [{"name": "order_id", "type": "INTEGER", "pk": True}],
-    ]
-},{ # TODO: partial at the moment - finish this
-    "files": [{
-        "name": f"{data_folder}{warning_s}/bridinajumu_metadata.csv"
-    }],
-    "table_name": "warnings",
-    "cols": [
-        [{"name": "number", "type": "TEXT", "pk": True}],
-        [{"name": "id", "type": "INTEGER", "pk": True}],
-        [{"name": "intensity_lv", "type": "TEXT"}],
-        [{"name": "intensity_en", "type": "TEXT"}],
-        [{"name": "regions_lv", "type": "TEXT"}],
-        [{"name": "regions_en", "type": "TEXT"}],
-        [{"name": "type_lv", "type": "TEXT"}],
-        [{"name": "type_en", "type": "TEXT"}],
-        [{"name": "time_from", "type": "DATEH"}],
-        [{"name": "time_to", "type": "DATEH"}],
-        [{"name": "description_lv", "type": "TEXT"}],
-        [{"name": "description_en", "type": "TEXT"}],
-    ]
-}]
 
 
 def refresh_file(url, fpath, verify_download):
