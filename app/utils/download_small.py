@@ -179,12 +179,14 @@ def update_table(t_conf, update_time, db_con):
             GROUP BY
                	city_id
         """).fetchall()
-        db_cur.executemany(f"""
-            INSERT INTO missing_params (city_id, name, type, update_time)
-            VALUES (?, ?, ?, {update_time})
-        """, missing_params)
-        logging.info(f"TABLE 'missing_params' - {db_cur.rowcount} rows upserted")
-        db_con.commit()
+        # db_cur.executemany(f"""
+        #     INSERT INTO missing_params (city_id, name, type, update_time)
+        #     VALUES (?, ?, ?, {update_time})
+        # """, missing_params)
+        # logging.info(f"TABLE 'missing_params' - {db_cur.rowcount} rows upserted")
+        # db_con.commit()
+        # TODO: this interacts with the LT forecasts in a weird fashion atm, fix and reenable
+        logging.info(f"TABLE 'missing_params' - skipping upsert for now")
         db_cur.execute(f"DELETE FROM missing_params WHERE update_time < {update_time}")
         logging.info(f"TABLE 'missing_params' - {db_cur.rowcount} old rows deleted")
         db_con.commit()
