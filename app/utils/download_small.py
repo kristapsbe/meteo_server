@@ -189,6 +189,11 @@ def update_table(t_conf, update_time, db_con):
         logging.info(f"TABLE 'missing_params' - {db_cur.rowcount} old rows deleted")
         db_con.commit()
         logging.info("TABLE 'missing_params' updated")
+    elif t_conf["table_name"] == "cities":
+        # making sure I don't delete LT cities
+        db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE update_time < {update_time} AND source='LV'")
+        logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} old rows deleted")
+        db_con.commit()
     else:
         db_cur.execute(f"DELETE FROM {t_conf["table_name"]} WHERE update_time < {update_time}")
         logging.info(f"TABLE '{t_conf["table_name"]}' - {db_cur.rowcount} old rows deleted")
