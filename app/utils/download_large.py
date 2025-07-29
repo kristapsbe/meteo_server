@@ -8,8 +8,8 @@ import requests
 from time import sleep
 from utils import simlpify_string
 from settings import db_file
-from download_utils import lt_hourly_params, lt_daily_params, lt_day_icons, MIN_PARAM_COUNT, target_ds
-from download_small import do_20_m_download, target_ds
+from download_utils import lt_hourly_params, lt_daily_params, lt_day_icons, target_ds
+from download_small import do_20_m_download
 from download_aurora import do_aurora_download
 
 
@@ -104,7 +104,7 @@ def pull_lt_data(update_time):
 
         # upd_cur.execute(f"DELETE FROM forecast_cities WHERE update_time < {update_time}")
         # logging.info(f"TABLE 'forecast_cities' - LT - {upd_cur.rowcount} old rows deleted")
-        logging.info(f"TABLE 'forecast_cities' - LT - deletion currently disabled")
+        logging.info("TABLE 'forecast_cities' - LT - deletion currently disabled")
         upd_con.commit()
         logging.info("DB update finished")
 
