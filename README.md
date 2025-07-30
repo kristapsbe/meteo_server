@@ -179,7 +179,7 @@ cd utils
 
 https://www.ilmateenistus.ee/teenused/teenuste-tellimine/mida-pakume/?lang=en - I don't immediately see where I'd get info from the Estonian agency
 
-https://www.met.no/en/free-meteorological-data - Norwegian
+https://www.met.no/en/free-meteorological-data - Norwegian (could also use https://www.yr.no/nb)
 
 https://www.smhi.se/en/weather/warnings-and-forecasts - Swedish - can't tell if they're offering access to data
 
