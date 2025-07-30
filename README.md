@@ -177,8 +177,6 @@ cd utils
 
 ## TODO
 
-https://api.meteo.lt/ - looks like the Lithuanian weather service has a nice API that I could cache
-
 https://www.ilmateenistus.ee/teenused/teenuste-tellimine/mida-pakume/?lang=en - I don't immediately see where I'd get info from the Estonian agency
 
 https://www.met.no/en/free-meteorological-data - Norwegian
