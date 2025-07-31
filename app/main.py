@@ -58,17 +58,15 @@ def has_emergency_failed():
     return os.path.isfile(run_emergency_failed)
 
 
-def get_location_range(force_all=False, add_lt=False):
-    if add_lt:
+def get_location_range(force_all=False, enable_experimental=False):
+    # TODO: use enable_experimental to enable limited access to new types of locations
+    if force_all or not is_emergency():
         return "('pilsēta', 'ciems', 'cits', 'location_LT')"
     else:
-        if force_all or not is_emergency():
-            return "('pilsēta', 'ciems', 'cits')"
-        else:
-            return "('pilsēta')"
+        return "('pilsēta', 'location_LT')"
 
 
-def get_closest_city(cur, lat, lon, distance=7, force_all=False, only_closest=False, ignore_missing_params=True, add_lt=False):
+def get_closest_city(cur, lat, lon, distance=7, force_all=False, only_closest=False, ignore_missing_params=True, enable_experimental=False):
     cities = []
     only_closest_active = lat < 55.7 or lat > 58.05 or lon < 20.95 or lon > 28.25 or only_closest
     where_order_str = f"""
@@ -102,7 +100,7 @@ def get_closest_city(cur, lat, lon, distance=7, force_all=False, only_closest=Fa
             FROM
                 cities
             WHERE
-                type IN {get_location_range(force_all, add_lt)}
+                type IN {get_location_range(force_all, enable_experimental)}
                 { "" if ignore_missing_params else " AND id NOT IN (SELECT city_id FROM missing_params)" }
         )
         SELECT
@@ -117,11 +115,11 @@ def get_closest_city(cur, lat, lon, distance=7, force_all=False, only_closest=Fa
         if only_closest_active:
             return ()
         else:
-            return get_closest_city(cur, lat, lon, distance, force_all, only_closest=True, ignore_missing_params=ignore_missing_params, add_lt=add_lt)
+            return get_closest_city(cur, lat, lon, distance, force_all, only_closest=True, ignore_missing_params=ignore_missing_params, enable_experimental=enable_experimental)
     return cities[0]
 
 
-def get_city_by_name(city_name, add_lt=False):
+def get_city_by_name(city_name, enable_experimental=False):
     cities = cur.execute(f"""
         WITH edit_distances AS (
             SELECT
@@ -139,7 +137,7 @@ def get_city_by_name(city_name, add_lt=False):
             FROM
                 cities
             WHERE
-                type in {get_location_range(True, add_lt)}
+                type in {get_location_range(True, enable_experimental)}
         )
         SELECT
             id, name, lat, lon, ctype, distance
@@ -443,11 +441,11 @@ def get_city_response(city, add_last_no_skip, h_city, use_simple_warnings, add_c
 @app.get("/api/v1/forecast/cities")
 @app.head("/api/v1/forecast/cities") # added for https://stats.uptimerobot.com/EAWZfpoMkw
 async def get_city_forecasts(lat: float, lon: float, add_last_no_skip: bool = False, use_simple_warnings: bool = False, add_city_coords: bool = False, enable_experimental: bool = False):
-    city = get_closest_city(cur=cur, lat=lat, lon=lon, force_all=True, add_lt=enable_experimental) # always getting closest city since override only affects hourly forecasts
+    city = get_closest_city(cur=cur, lat=lat, lon=lon, force_all=True, enable_experimental=enable_experimental) # always getting closest city since override only affects hourly forecasts
     return get_city_response(
         city,
         add_last_no_skip,
-        get_closest_city(cur=cur, lat=city[2], lon=city[3], ignore_missing_params=False, add_lt=enable_experimental) if (is_emergency() or is_param_missing()) and len(city) > 0 else city, # getting hourly forecast for closest large city if we're in emergency mode
+        get_closest_city(cur=cur, lat=city[2], lon=city[3], ignore_missing_params=False, enable_experimental=enable_experimental) if (is_emergency() or is_param_missing()) and len(city) > 0 else city, # getting hourly forecast for closest large city if we're in emergency mode
         use_simple_warnings,
         add_city_coords
     )
@@ -457,11 +455,11 @@ async def get_city_forecasts(lat: float, lon: float, add_last_no_skip: bool = Fa
 @app.get("/api/v1/forecast/cities/name")
 @app.head("/api/v1/forecast/cities/name") # added for https://stats.uptimerobot.com/EAWZfpoMkw
 async def get_city_forecasts_name(city_name: str, add_last_no_skip: bool = False, use_simple_warnings: bool = False, add_city_coords: bool = False, enable_experimental: bool = False):
-    city = get_city_by_name(simlpify_string(regex.sub('', city_name).strip().lower()), add_lt=enable_experimental) # always getting closest city since override only affects hourly forecasts
+    city = get_city_by_name(simlpify_string(regex.sub('', city_name).strip().lower()), enable_experimental=enable_experimental) # always getting closest city since override only affects hourly forecasts
     return get_city_response(
         city,
         add_last_no_skip,
-        get_closest_city(cur=cur, lat=city[2], lon=city[3], ignore_missing_params=False, add_lt=enable_experimental) if (is_emergency() or is_param_missing()) and len(city) > 0 else city, # getting hourly forecast for closest large city if we're in emergency mode
+        get_closest_city(cur=cur, lat=city[2], lon=city[3], ignore_missing_params=False, enable_experimental=enable_experimental) if (is_emergency() or is_param_missing()) and len(city) > 0 else city, # getting hourly forecast for closest large city if we're in emergency mode
         use_simple_warnings,
         add_city_coords
     )
