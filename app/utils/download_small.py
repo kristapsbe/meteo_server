@@ -305,7 +305,7 @@ def pull_uptimerobot_data(update_time):
             for e in monit_data["monitors"]:
                 is_meta = e["friendly_name"] in meta
                 if is_meta:
-                    # adds a bunch of duplicate stuff if multiple monits are looking at a specific meta val, shouldn't matted since they'll be 0 len though
+                    # adds a bunch of duplicate stuff if multiple monits are looking at a specific meta val, shouldn't matter since they'll be 0 len though
                     metrics[meta[e["friendly_name"]]][e["create_datetime"]] = e["create_datetime"]
                 if is_meta or e["friendly_name"] in uptime:
                     for ent in e["logs"]:
