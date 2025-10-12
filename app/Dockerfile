@@ -11,7 +11,7 @@ COPY utils/settings.example.py utils/settings.py
 
 RUN apk update && \
     apk upgrade && \
-    apk add --no-cache libc6-compat=1.1.0-r4 curl=8.14.1-r2 python3=3.12.11-r0 uv=0.7.22-r0
+    apk add --no-cache libc6-compat=1.1.0-r4 curl=8.14.1-r2 python3=3.12.12-r0 uv=0.7.22-r0
 
 RUN [ "${HOST_ARCHITECTURE}" = "arm" ] &&\
     wget "https://github.com/nalgeon/sqlean/releases/download/0.27.1/sqlean-linux-arm64.zip" -O sqlean.zip ||\
