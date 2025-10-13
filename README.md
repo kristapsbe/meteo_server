@@ -184,5 +184,3 @@ https://www.met.no/en/free-meteorological-data - Norwegian (could also use https
 https://www.smhi.se/en/weather/warnings-and-forecasts - Swedish - can't tell if they're offering access to data
 
 https://en.ilmatieteenlaitos.fi/ - Finnish - can't tell if they're offering access to data
-
-redeployments unacceptably slow now - look to take around 3 mins
