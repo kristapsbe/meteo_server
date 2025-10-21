@@ -13,17 +13,27 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
 from utils.utils import simlpify_string, hourly_params, daily_params
-from utils.settings import editdist_extension, db_file, data_folder, last_updated, run_emergency, run_emergency_failed
+from utils.settings import (
+    editdist_extension,
+    db_file,
+    data_folder,
+    last_updated,
+    run_emergency,
+    run_emergency_failed,
+)
 
 
 if not os.path.isfile(last_updated):
-    open(last_updated, 'w').write("197001010000")
+    with open(last_updated, "w") as f:
+        _ = f.write("197001010000")
 
-regex = re.compile('[^a-zA-Z āčēģīķļņšūžĀČĒĢĪĶĻŅŠŪŽ]')
+regex = re.compile("[^a-zA-Z āčēģīķļņšūžĀČĒĢĪĶĻŅŠŪŽ]")
 
 con = sqlite3.connect(f"{db_file}", timeout=5)
 con.enable_load_extension(True)
-con.load_extension(".".join(editdist_extension.split(".")[:-1])) # getting rid of extension
+con.load_extension(
+    ".".join(editdist_extension.split(".")[:-1])
+)  # getting rid of extension
 
 # the cursor doesn't actually do anything in sqlite3, just reusing it
 # https://stackoverflow.com/questions/54395773/what-are-the-side-effects-of-reusing-a-sqlite3-cursor
@@ -34,13 +44,10 @@ cur = con.cursor()
 #    MAJOR version when you make incompatible API changes
 #    MINOR version when you add functionality in a backward compatible manner
 #    PATCH version when you make backward compatible bug fixes
-app = FastAPI(
-    title="Meteo",
-    version="0.1.0",
-    docs_url=None,
-    redoc_url=None
+app = FastAPI(title="Meteo", version="0.1.0", docs_url=None, redoc_url=None)
+logging.basicConfig(
+    level=logging.DEBUG, format="%(asctime)s [%(levelname)s] %(message)s"
 )
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s')
 
 
 MIN_PARAM_COUNT = min(len(hourly_params), len(daily_params))
@@ -58,7 +65,7 @@ def has_emergency_failed():
     return os.path.isfile(run_emergency_failed)
 
 
-def get_location_range(force_all=False, enable_experimental=False):
+def get_location_range(force_all: bool = False, _enable_experimental: bool = False):
     # TODO: use enable_experimental to enable limited access to new types of locations
     if force_all or not is_emergency():
         return "('pilsēta', 'ciems', 'cits', 'location_LT')"
@@ -66,9 +73,20 @@ def get_location_range(force_all=False, enable_experimental=False):
         return "('pilsēta', 'location_LT')"
 
 
-def get_closest_city(cur, lat, lon, distance=7, force_all=False, only_closest=False, ignore_missing_params=True, enable_experimental=False):
+def get_closest_city(
+    cur,
+    lat,
+    lon,
+    distance=7,
+    force_all=False,
+    only_closest=False,
+    ignore_missing_params=True,
+    enable_experimental=False,
+):
     cities = []
-    only_closest_active = lat < 55.7 or lat > 58.05 or lon < 20.95 or lon > 28.25 or only_closest
+    only_closest_active = (
+        lat < 55.7 or lat > 58.05 or lon < 20.95 or lon > 28.25 or only_closest
+    )
     where_order_str = f"""
         WHERE
             distance <= {distance}
@@ -101,7 +119,7 @@ def get_closest_city(cur, lat, lon, distance=7, force_all=False, only_closest=Fa
                 cities
             WHERE
                 type IN {get_location_range(force_all, enable_experimental)}
-                { "" if ignore_missing_params else " AND id NOT IN (SELECT city_id FROM missing_params)" }
+                {"" if ignore_missing_params else " AND id NOT IN (SELECT city_id FROM missing_params)"}
         )
         SELECT
             id, name, lat, lon, ctype, distance
@@ -115,7 +133,16 @@ def get_closest_city(cur, lat, lon, distance=7, force_all=False, only_closest=Fa
         if only_closest_active:
             return ()
         else:
-            return get_closest_city(cur, lat, lon, distance, force_all, only_closest=True, ignore_missing_params=ignore_missing_params, enable_experimental=enable_experimental)
+            return get_closest_city(
+                cur,
+                lat,
+                lon,
+                distance,
+                force_all,
+                only_closest=True,
+                ignore_missing_params=ignore_missing_params,
+                enable_experimental=enable_experimental,
+            )
     return cities[0]
 
 
@@ -360,23 +387,36 @@ def get_aurora_probability(cur, lat, lon):
             lat={lat} AND lon={lon}
         LIMIT 1
     """).fetchall()
-    aurora_probs_time = datetime.datetime.strptime(json.loads(open(f"{data_folder}/ovation_aurora_times.json", "r").read())["Forecast Time"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga'))
-    curr_date = datetime.datetime.now(pytz.timezone('Europe/Riga'))
+    aurora_probs_time = (
+        datetime.datetime.strptime(
+            json.loads(open(f"{data_folder}/ovation_aurora_times.json", "r").read())[
+                "Forecast Time"
+            ],
+            "%Y-%m-%dT%H:%M:%SZ",
+        )
+        .replace(tzinfo=pytz.timezone("UTC"))
+        .astimezone(pytz.timezone("Europe/Riga"))
+    )
+    curr_date = datetime.datetime.now(pytz.timezone("Europe/Riga"))
 
     return {
-        "prob": aurora_probs[0][0] if len(aurora_probs) > 0 and aurora_probs_time >= curr_date else 0, # just default to 0 if there's no data
-        "time": aurora_probs_time.strftime("%Y%m%d%H%M")
+        "prob": aurora_probs[0][0]
+        if len(aurora_probs) > 0 and aurora_probs_time >= curr_date
+        else 0,  # just default to 0 if there's no data
+        "time": aurora_probs_time.strftime("%Y%m%d%H%M"),
     }
 
 
 # TODO: delete the params that are no longer needed
-def get_city_response(city, add_last_no_skip, h_city, use_simple_warnings, add_city_coords):
+def get_city_response(
+    city, add_last_no_skip, h_city, use_simple_warnings, add_city_coords
+):
     lat = lon = 0.0
     if len(city) > 0:
         lat = float(city[2])
         lon = float(city[3])
 
-    c_date = datetime.datetime.now(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M")
+    c_date = datetime.datetime.now(pytz.timezone("Europe/Riga")).strftime("%Y%m%d%H%M")
     h_forecast = get_forecast(cur, h_city, c_date, hourly_params)
     d_forecast = get_forecast(cur, city, c_date, daily_params)
     metadata_f = f"{data_folder}meteorologiskas-prognozes-apdzivotam-vietam-jaunaka-datu-kopa.json"
@@ -384,18 +424,31 @@ def get_city_response(city, add_last_no_skip, h_city, use_simple_warnings, add_c
 
     ret_val = {
         "city": str(city[1]) if len(city) > 0 else "",
-        "hourly_forecast": [{
-            "time": f[1],
-            "vals": f[2:]
-        } for f in h_forecast],
-        "daily_forecast": [{
-            "time": f[1] if str(f[1])[-4:] != "2300" else int((datetime.datetime.strptime(str(f[1]), "%Y%m%d%H%M") + datetime.timedelta(hours=1)).strftime("%Y%m%d%H%M")), # dealing with the clock getting turned forward
-            "vals": f[2:]
-        } for f in d_forecast],
+        "hourly_forecast": [{"time": f[1], "vals": f[2:]} for f in h_forecast],
+        "daily_forecast": [
+            {
+                "time": f[1]
+                if str(f[1])[-4:] != "2300"
+                else int(
+                    (
+                        datetime.datetime.strptime(str(f[1]), "%Y%m%d%H%M")
+                        + datetime.timedelta(hours=1)
+                    ).strftime("%Y%m%d%H%M")
+                ),  # dealing with the clock getting turned forward
+                "vals": f[2:],
+            }
+            for f in d_forecast
+        ],
         "aurora_probs": get_aurora_probability(cur, round(lat), round(lon)),
-        "last_updated": metadata["result"]["metadata_modified"].replace("-", "").replace("T", "").replace(":", "")[:12],
+        "last_updated": metadata["result"]["metadata_modified"]
+        .replace("-", "")
+        .replace("T", "")
+        .replace(":", "")[:12],
         # TODO: get local timezone instead - at the moment I just assume that everyone's in Latvia (could also use UTC and use decides timezone in the app)
-        "last_downloaded": datetime.datetime.fromtimestamp(os.path.getmtime(metadata_f)).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"),
+        "last_downloaded": datetime.datetime.fromtimestamp(os.path.getmtime(metadata_f))
+        .replace(tzinfo=pytz.timezone("UTC"))
+        .astimezone(pytz.timezone("Europe/Riga"))
+        .strftime("%Y%m%d%H%M"),
     }
 
     if add_city_coords:
@@ -406,7 +459,7 @@ def get_city_response(city, add_last_no_skip, h_city, use_simple_warnings, add_c
         warnings = get_simple_warnings(cur, lat, lon)
         tmp_warnings = {}
         for w in warnings:
-            tmp_key = f"{w[1]}:{w[3]}" # type and intensity
+            tmp_key = f"{w[1]}:{w[3]}"  # type and intensity
             if tmp_key not in tmp_warnings:
                 tmp_warnings[tmp_key] = {
                     "ids": [w[0]],
@@ -423,51 +476,96 @@ def get_city_response(city, add_last_no_skip, h_city, use_simple_warnings, add_c
     else:
         # TODO: get rid of this once noone's using it
         warnings = get_warnings(cur, lat, lon)
-        ret_val["warnings"] = [{
-            "id": w[0],
-            "intensity": w[1:3],
-            "regions": w[3:5],
-            "type": w[5:7],
-            "time": w[7:9],
-            "description": w[9:]
-        } for w in warnings]
+        ret_val["warnings"] = [
+            {
+                "id": w[0],
+                "intensity": w[1:3],
+                "regions": w[3:5],
+                "type": w[5:7],
+                "time": w[7:9],
+                "description": w[9:],
+            }
+            for w in warnings
+        ]
 
     if add_last_no_skip:
-        ret_val["last_downloaded_no_skip"] = open(last_updated, 'r').readline().strip()
+        ret_val["last_downloaded_no_skip"] = open(last_updated, "r").readline().strip()
     return ret_val
 
 
 # http://localhost:443/api/v1/forecast/cities?lat=56.9730&lon=24.1327
 @app.get("/api/v1/forecast/cities")
-@app.head("/api/v1/forecast/cities") # added for https://stats.uptimerobot.com/EAWZfpoMkw
-async def get_city_forecasts(lat: float, lon: float, add_last_no_skip: bool = False, use_simple_warnings: bool = False, add_city_coords: bool = False, enable_experimental: bool = False):
-    city = get_closest_city(cur=cur, lat=lat, lon=lon, force_all=True, enable_experimental=enable_experimental) # always getting closest city since override only affects hourly forecasts
+@app.head(
+    "/api/v1/forecast/cities"
+)  # added for https://stats.uptimerobot.com/EAWZfpoMkw
+async def get_city_forecasts(
+    lat: float,
+    lon: float,
+    add_last_no_skip: bool = False,
+    use_simple_warnings: bool = False,
+    add_city_coords: bool = False,
+    enable_experimental: bool = False,
+):
+    city = get_closest_city(
+        cur=cur,
+        lat=lat,
+        lon=lon,
+        force_all=True,
+        enable_experimental=enable_experimental,
+    )  # always getting closest city since override only affects hourly forecasts
     return get_city_response(
         city,
         add_last_no_skip,
-        get_closest_city(cur=cur, lat=city[2], lon=city[3], ignore_missing_params=False, enable_experimental=enable_experimental) if (is_emergency() or is_param_missing()) and len(city) > 0 else city, # getting hourly forecast for closest large city if we're in emergency mode
+        get_closest_city(
+            cur=cur,
+            lat=city[2],
+            lon=city[3],
+            ignore_missing_params=False,
+            enable_experimental=enable_experimental,
+        )
+        if (is_emergency() or is_param_missing()) and len(city) > 0
+        else city,  # getting hourly forecast for closest large city if we're in emergency mode
         use_simple_warnings,
-        add_city_coords
+        add_city_coords,
     )
 
 
 # http://localhost:443/api/v1/forecast/cities/name?city_name=vamier
 @app.get("/api/v1/forecast/cities/name")
-@app.head("/api/v1/forecast/cities/name") # added for https://stats.uptimerobot.com/EAWZfpoMkw
-async def get_city_forecasts_name(city_name: str, add_last_no_skip: bool = False, use_simple_warnings: bool = False, add_city_coords: bool = False, enable_experimental: bool = False):
-    city = get_city_by_name(simlpify_string(regex.sub('', city_name).strip().lower()), enable_experimental=enable_experimental) # always getting closest city since override only affects hourly forecasts
+@app.head(
+    "/api/v1/forecast/cities/name"
+)  # added for https://stats.uptimerobot.com/EAWZfpoMkw
+async def get_city_forecasts_name(
+    city_name: str,
+    add_last_no_skip: bool = False,
+    use_simple_warnings: bool = False,
+    add_city_coords: bool = False,
+    enable_experimental: bool = False,
+):
+    city = get_city_by_name(
+        simlpify_string(regex.sub("", city_name).strip().lower()),
+        enable_experimental=enable_experimental,
+    )  # always getting closest city since override only affects hourly forecasts
     return get_city_response(
         city,
         add_last_no_skip,
-        get_closest_city(cur=cur, lat=city[2], lon=city[3], ignore_missing_params=False, enable_experimental=enable_experimental) if (is_emergency() or is_param_missing()) and len(city) > 0 else city, # getting hourly forecast for closest large city if we're in emergency mode
+        get_closest_city(
+            cur=cur,
+            lat=city[2],
+            lon=city[3],
+            ignore_missing_params=False,
+            enable_experimental=enable_experimental,
+        )
+        if (is_emergency() or is_param_missing()) and len(city) > 0
+        else city,  # getting hourly forecast for closest large city if we're in emergency mode
         use_simple_warnings,
-        add_city_coords
+        add_city_coords,
     )
 
 
 # http://localhost:443/privacy-policy
 @app.get("/privacy-policy", response_class=HTMLResponse)
-@app.head("/privacy-policy") # added for https://stats.uptimerobot.com/EAWZfpoMkw
+@app.head("/privacy-policy")  # added for https://stats.uptimerobot.com/EAWZfpoMkw
 async def get_privacy_policy(lang: str = "en"):
     match lang:
         case "lv":
@@ -478,7 +576,7 @@ async def get_privacy_policy(lang: str = "en"):
 
 # http://localhost:443/attribution
 @app.get("/attribution", response_class=HTMLResponse)
-@app.head("/attribution") # added for https://stats.uptimerobot.com/EAWZfpoMkw
+@app.head("/attribution")  # added for https://stats.uptimerobot.com/EAWZfpoMkw
 async def get_privacy_attribution(lang: str = "en"):
     match lang:
         case "lv":
@@ -489,35 +587,47 @@ async def get_privacy_attribution(lang: str = "en"):
 
 # http://localhost:443/api/v1/meta
 @app.get("/api/v1/meta")
-@app.head("/api/v1/meta") # added for https://stats.uptimerobot.com/EAWZfpoMkw
+@app.head("/api/v1/meta")  # added for https://stats.uptimerobot.com/EAWZfpoMkw
 async def get_meta():
-    aurora_probs_time = datetime.datetime.strptime(json.loads(open(f"{data_folder}/ovation_aurora_times.json", "r").read())["Forecast Time"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga'))
-    curr_date = datetime.datetime.now(pytz.timezone('Europe/Riga'))
+    aurora_probs_time = (
+        datetime.datetime.strptime(
+            json.loads(open(f"{data_folder}/ovation_aurora_times.json", "r").read())[
+                "Forecast Time"
+            ],
+            "%Y-%m-%dT%H:%M:%SZ",
+        )
+        .replace(tzinfo=pytz.timezone("UTC"))
+        .astimezone(pytz.timezone("Europe/Riga"))
+    )
+    curr_date = datetime.datetime.now(pytz.timezone("Europe/Riga"))
 
     retval = {
         "is_emergency": is_emergency(),
         "is_param_missing": is_param_missing(),
-        "is_aurora_ood": (aurora_probs_time < curr_date)
+        "is_aurora_ood": (aurora_probs_time < curr_date),
     }
     if retval["is_emergency"]:
-        retval["emergency_dl"] = open(run_emergency, 'r').readline()
+        retval["emergency_dl"] = open(run_emergency, "r").readline()
         retval["has_emergency_failed"] = has_emergency_failed()
     return retval
 
 
 # http://localhost:443/api/v1/version
 @app.get("/api/v1/version")
-@app.head("/api/v1/version") # added for https://stats.uptimerobot.com/EAWZfpoMkw
+@app.head("/api/v1/version")  # added for https://stats.uptimerobot.com/EAWZfpoMkw
 async def get_version():
     return {
         "version": open("version.txt", "r").read().strip(),
-        "updated": datetime.datetime.fromtimestamp(os.path.getmtime("version.txt")).replace(tzinfo=pytz.timezone('UTC')).astimezone(pytz.timezone('Europe/Riga')).strftime("%Y%m%d%H%M"),
+        "updated": datetime.datetime.fromtimestamp(os.path.getmtime("version.txt"))
+        .replace(tzinfo=pytz.timezone("UTC"))
+        .astimezone(pytz.timezone("Europe/Riga"))
+        .strftime("%Y%m%d%H%M"),
     }
 
 
 # http://localhost:443/api/v1/metrics
 @app.get("/api/v1/metrics")
-@app.head("/api/v1/metrics") # added for https://stats.uptimerobot.com/EAWZfpoMkw
+@app.head("/api/v1/metrics")  # added for https://stats.uptimerobot.com/EAWZfpoMkw
 async def get_metrics():
     now = int(time.time())
     uptimes = cur.execute(f"""
@@ -552,7 +662,7 @@ async def get_metrics():
     ret = {
         "dashboard": "https://stats.uptimerobot.com/EAWZfpoMkw",
         "uptime": {},
-        "download": {}
+        "download": {},
     }
     for e in uptimes:
         if e[0] == "downtime":
@@ -561,7 +671,7 @@ async def get_metrics():
                 "90d": e[2],
                 "30d": e[3],
                 "7d": e[4],
-                "1d": e[5]
+                "1d": e[5],
             }
         else:
             ret["download"][e[0]] = {
@@ -569,7 +679,7 @@ async def get_metrics():
                 "90d": e[2],
                 "30d": e[3],
                 "7d": e[4],
-                "1d": e[5]
+                "1d": e[5],
             }
     return ret
 
