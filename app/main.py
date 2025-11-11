@@ -1,27 +1,26 @@
-import os
-import re
-import json
-import pytz
-import time
-import sqlite3
-import logging
-import pathlib
-import uvicorn
 import datetime
+import json
+import logging
+import os
+import pathlib
+import re
+import sqlite3
+import time
 
+import pytz
+import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
-from utils.utils import simlpify_string, hourly_params, daily_params
 from utils.settings import (
-    editdist_extension,
-    db_file,
     data_folder,
+    db_file,
+    editdist_extension,
     last_updated,
     run_emergency,
     run_emergency_failed,
 )
-
+from utils.utils import daily_params, hourly_params, simlpify_string
 
 if not os.path.isfile(last_updated):
     with open(last_updated, "w") as f:
@@ -197,7 +196,7 @@ def get_forecast(cur, city, c_date, params):
     """).fetchall()
 
 
-def get_warnings(cur, lat, lon):
+def get_warnings(cur, lat, lon, c_date):
     # TODO: turning the warning polygons into big squares - this should at least work - should use the actual poly bounds at some point
     relevant_warnings = cur.execute(f"""
         SELECT
@@ -269,7 +268,7 @@ def get_warnings(cur, lat, lon):
                 FROM
                     warnings
                 WHERE
-                    id in warning_filtered_ids
+                    id in warning_filtered_ids AND time_to > {c_date}
             )
             SELECT
                 id,
@@ -291,7 +290,7 @@ def get_warnings(cur, lat, lon):
     return warnings
 
 
-def get_simple_warnings(cur, lat, lon):
+def get_simple_warnings(cur, lat, lon, c_date):
     # TODO: turning the warning polygons into big squares - this should at least work - should use the actual poly bounds at some point
     relevant_warnings = cur.execute(f"""
         SELECT
@@ -359,7 +358,7 @@ def get_simple_warnings(cur, lat, lon):
                 FROM
                     warnings
                 WHERE
-                    id in warning_filtered_ids
+                    id in warning_filtered_ids AND time_to > {c_date}
             )
             SELECT
                 id,
@@ -456,7 +455,7 @@ def get_city_response(
         ret_val["lon"] = lon
 
     if use_simple_warnings:
-        warnings = get_simple_warnings(cur, lat, lon)
+        warnings = get_simple_warnings(cur, lat, lon, c_date)
         tmp_warnings = {}
         for w in warnings:
             tmp_key = f"{w[1]}:{w[3]}"  # type and intensity
@@ -475,7 +474,7 @@ def get_city_response(
         ret_val["warnings"] = list(tmp_warnings.values())
     else:
         # TODO: get rid of this once noone's using it
-        warnings = get_warnings(cur, lat, lon)
+        warnings = get_warnings(cur, lat, lon, c_date)
         ret_val["warnings"] = [
             {
                 "id": w[0],
