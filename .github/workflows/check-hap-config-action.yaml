@@ -8,7 +8,7 @@ jobs:
     #if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Install HAProxy # I want 3.0.7, looks like I can only get 2.8.5 on ubuntu at the moment
         run: sudo apt-get update && sudo apt-get install -y haproxy
       - name: Fix binding before check
