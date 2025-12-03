@@ -1,4 +1,4 @@
-FROM alpine:3.22
+FROM alpine:3.23
 
 ARG HOST_ARCHITECTURE="unknown"
 ARG DO_RUN_AURORA=false
