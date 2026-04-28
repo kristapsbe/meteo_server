@@ -8,6 +8,9 @@ services:
 
   haproxy:
     build: haproxy
+    depends_on:
+      app:
+        condition: service_started
     ports:
       - "80:80" # used for ssl certificate renewal
       - "443:443"
