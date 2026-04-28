@@ -25,4 +25,4 @@ RUN echo "*/20	1,2,3,5,6,7,9,10,11,13,14,15,17,18,19,21,22,23	*	*	*	/app/run_job
 RUN echo "30	*/4	*	*	*	/app/run_job.sh crawl_site" >> cron
 RUN crontab cron
 
-CMD ["sh", "start.sh"]
+CMD ["sh", "/app/start.sh"]

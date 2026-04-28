@@ -9,5 +9,5 @@ RUN crontab -l > cron
 RUN echo "0	0	1	*/2	*	/haproxy/renew_certs.sh &> /certs/cert_renewal.log" >> cron
 RUN crontab cron
 
-CMD ["sh", "start.sh"]
+CMD ["sh", "/haproxy/start.sh"]
 EXPOSE 80 443
