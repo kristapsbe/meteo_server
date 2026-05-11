@@ -18,7 +18,7 @@ services:
     volumes:
       - certs:/certs
       - letsencrypt:/etc/letsencrypt
-      # - ./app/uv.lock:/app/uv.lock # mounting to rewrite from inside of container
+      # - ./haproxy/uv.lock:/haproxy/uv.lock # mounting to rewrite from inside of container
 
 volumes:
   data:
