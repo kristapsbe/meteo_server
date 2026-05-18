@@ -90,7 +90,7 @@ def download_resources(ds_name):
 
     skipped_empty = False
     for r in ds_data["result"]["resources"]:
-        if ds_name == warning_s:
+        if False and ds_name == warning_s: # looks like it may work - disabling for now
             # TODO: get rid of this when the source gets fixed
             skipped_empty = (
                 refresh_file(
