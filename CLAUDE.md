@@ -18,6 +18,11 @@ docker compose build --no-cache --build-arg HOST_ARCHITECTURE="$(uname -p)" && d
 make run_attached
 ```
 
+**Upgrade dependencies in both containers (requires containers to be running):**
+```bash
+make upgrade_deps
+```
+
 **Open a shell in a running container:**
 ```bash
 make terminal_app   # app container
