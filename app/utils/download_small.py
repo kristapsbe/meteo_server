@@ -1,33 +1,33 @@
-import os
-import json
-import pytz
-import pandas as pd
-import sqlite3
-import logging
 import datetime
-import requests
+import json
+import logging
+import os
+import sqlite3
 
-from utils import hourly_params, daily_params
+import pandas as pd
+import pytz
+import requests
+from download_aurora import do_aurora_download
+from download_utils import (
+    MIN_PARAM_COUNT,
+    base_url,
+    col_parsers,
+    col_types,
+    forecast_s,
+    table_conf,
+    target_ds,
+    warning_s,
+)
 from settings import (
-    db_file,
     data_folder,
     data_uptimerobot_folder,
+    db_file,
     last_updated,
     run_emergency,
     run_emergency_failed,
 )
-from download_utils import (
-    table_conf,
-    base_url,
-    forecast_s,
-    warning_s,
-    col_parsers,
-    col_types,
-    MIN_PARAM_COUNT,
-    target_ds,
-)
-from download_aurora import do_aurora_download
 
+from utils import daily_params, hourly_params
 
 logging.basicConfig(
     filename="/data/download.log",
@@ -38,7 +38,7 @@ logging.basicConfig(
 
 
 def refresh_file(url, fpath, verify_download):
-    r = requests.get(url, timeout=10)
+    r = requests.get(url, timeout=15)
     # TODO: there's a damaged .csv - may want to deal with this in a more generic fashion (?)
     r_text = (
         r.content.replace(b'""Lidosta', b'"Lidosta')
@@ -70,14 +70,14 @@ def refresh_file(url, fpath, verify_download):
 
 def verif_json(s, _):
     try:
-        return json.loads(s)["success"] == True
+        return json.loads(s)["success"]
     except:
         return False
 
 
 verif_funcs = {
     "json": verif_json,
-    "csv": lambda s, skip_if_empty: (len(s.split(b"\n")) > 2 or not skip_if_empty),
+    "csv": lambda s, skip_if_empty: len(s.split(b"\n")) > 2 or not skip_if_empty,
 }
 
 
@@ -90,7 +90,7 @@ def download_resources(ds_name):
 
     skipped_empty = False
     for r in ds_data["result"]["resources"]:
-        if False and ds_name == warning_s: # looks like it may work - disabling for now
+        if False and ds_name == warning_s:  # looks like it may work - disabling for now
             # TODO: get rid of this when the source gets fixed
             skipped_empty = (
                 refresh_file(
