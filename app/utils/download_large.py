@@ -92,9 +92,7 @@ def pull_lt_data(update_time):
                 else:
                     break
             h_dates = set(h_dates)
-            d_dates = set(
-                [e["forecastTimeUtc"][:10] for e in place_data["forecastTimestamps"]]
-            )
+            d_dates = {e["forecastTimeUtc"][:10] for e in place_data["forecastTimestamps"]}
 
             params = [
                 [
@@ -111,7 +109,7 @@ def pull_lt_data(update_time):
                 if f["forecastTimeUtc"] in h_dates and k in lt_hourly_params
             ]
 
-            sorted_d_dates = sorted(list(d_dates))
+            sorted_d_dates = sorted(d_dates)
             # print(sorted_d_dates)
             for i in range(1, len(sorted_d_dates)):
                 tmp_day = [
@@ -126,7 +124,7 @@ def pull_lt_data(update_time):
                     if e["forecastTimeUtc"] >= f"{sorted_d_dates[i - 1][:10]} 21:00:00"
                     and e["forecastTimeUtc"] < f"{sorted_d_dates[i][:10]} 09:00:00"
                 ]
-                for k in tmp_day[0].keys():
+                for k in tmp_day[0]:
                     if k in lt_daily_params:
                         for f in lt_daily_params[k]:
                             params.append(
