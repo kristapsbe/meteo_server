@@ -574,6 +574,13 @@ async def get_privacy_policy(lang: str = "en"):
             return open("html/privacy-policy.html").read()
 
 
+# http://localhost:443/privacy-policy-solitaire
+@app.get("/privacy-policy-solitaire", response_class=HTMLResponse)
+@app.head("/privacy-policy-solitaire")
+async def get_privacy_policy_solitaire():
+    return open("html/privacy-policy-solitaire.html").read()
+
+
 # http://localhost:443/attribution
 @app.get("/attribution", response_class=HTMLResponse)
 @app.head("/attribution")  # added for https://stats.uptimerobot.com/EAWZfpoMkw
