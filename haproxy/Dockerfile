@@ -3,7 +3,7 @@ FROM python:3.14-alpine3.23
 WORKDIR /haproxy
 COPY . .
 
-RUN apk update && apk upgrade && apk add --no-cache haproxy=3.2.23-r0 uv=0.10.2-r0
+RUN apk update && apk upgrade && apk add --no-cache haproxy=3.4.4-r0 uv=0.10.2-r0
 
 RUN uv sync --frozen
 
