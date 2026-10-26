@@ -1,4 +1,4 @@
-FROM python:3.14-alpine3.23
+FROM python:3.15-alpine3.23
 
 ARG HOST_ARCHITECTURE="unknown"
 ARG DO_RUN_AURORA=false
