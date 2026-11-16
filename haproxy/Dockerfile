@@ -1,9 +1,9 @@
-FROM python:3.14-alpine3.23
+FROM python:3.15-alpine3.24
 
 WORKDIR /haproxy
 COPY . .
 
-RUN apk update && apk upgrade && apk add --no-cache haproxy=3.2.26-r0 uv=0.10.2-r0
+RUN apk update && apk upgrade && apk add --no-cache haproxy=3.4.7-r0 uv=0.11.19-r2
 
 RUN uv sync --frozen
 
